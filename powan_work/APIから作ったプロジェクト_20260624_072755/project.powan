@@ -132,7 +132,13 @@
       "body": "国家を運営する仕組み。決定し、実行し、調整する役目を持つ。",
       "code": "",
       "parent": "node-7001a6d464",
-      "children": [],
+      "children": [
+        "node-f9b63ddfd3",
+        "node-1a5a4f413a",
+        "node-82a1a6059d",
+        "node-856e964b62",
+        "node-8b3922622f"
+      ],
       "style": {
         "shape": "cloud",
         "color": "#ffffff",
@@ -163,7 +169,16 @@
       "body": "人々が同じ社会で動くためのルール。自由と制限の線引きを作る。",
       "code": "",
       "parent": "node-7001a6d464",
-      "children": [],
+      "children": [
+        "node-36f87cb703",
+        "node-08893e3b0f",
+        "node-a9e125766c",
+        "node-2176c88cee",
+        "node-96ed8a649f",
+        "node-3971b8d3d7",
+        "node-41df68a02b",
+        "node-179f48f2a8"
+      ],
       "style": {
         "shape": "cloud",
         "color": "#ffffff",
@@ -1527,6 +1542,942 @@
         }
       },
       "codeLanguage": "auto"
+    },
+    {
+      "id": "node-f9b63ddfd3",
+      "title": "政策意思決定",
+      "body": "政府が社会課題を把握し、優先順位を決め、方針として採択するための神経ポワン。議題化、審議、決定、変更判断を束ねる。",
+      "powanKind": "nerve",
+      "code": "",
+      "parent": "node-77a5f3ded7",
+      "children": [
+        "node-7197b4333a",
+        "node-6969a3200b",
+        "node-54092edb64"
+      ],
+      "style": {
+        "shape": "cloud",
+        "color": "#ffffff",
+        "accent": "#8ddcff",
+        "glow": true,
+        "blur": true,
+        "motion": "soft"
+      }
+    },
+    {
+      "id": "node-7197b4333a",
+      "title": "課題受付記録",
+      "body": "国民・省庁・現場から上がる課題を受け取り、日時、発信元、要旨、重要度として記録する臓器ポワン候補。",
+      "powanKind": "organ",
+      "code": "",
+      "parent": "node-f9b63ddfd3",
+      "children": [],
+      "style": {
+        "shape": "cloud",
+        "color": "#ffffff",
+        "accent": "#8ddcff",
+        "glow": true,
+        "blur": true,
+        "motion": "soft"
+      }
+    },
+    {
+      "id": "node-6969a3200b",
+      "title": "政策案比較表",
+      "body": "複数の政策案について目的、費用、効果、リスク、実施時期を並べて比較できる形に整える臓器ポワン候補。",
+      "powanKind": "organ",
+      "code": "",
+      "parent": "node-f9b63ddfd3",
+      "children": [],
+      "style": {
+        "shape": "cloud",
+        "color": "#ffffff",
+        "accent": "#8ddcff",
+        "glow": true,
+        "blur": true,
+        "motion": "soft"
+      }
+    },
+    {
+      "id": "node-54092edb64",
+      "title": "決定ログ保存",
+      "body": "採択された方針について決定者、根拠、決定日時、保留事項を保存し、後から説明できるようにする臓器ポワン候補。",
+      "powanKind": "organ",
+      "code": "",
+      "parent": "node-f9b63ddfd3",
+      "children": [],
+      "style": {
+        "shape": "cloud",
+        "color": "#ffffff",
+        "accent": "#8ddcff",
+        "glow": true,
+        "blur": true,
+        "motion": "soft"
+      }
+    },
+    {
+      "id": "node-1a5a4f413a",
+      "title": "行政実行",
+      "body": "決定された政策を実際の制度、手続き、現場運用へ変換して動かす神経ポワン。省庁、地方機関、担当部署への実施指示を束ねる。",
+      "powanKind": "nerve",
+      "code": "",
+      "parent": "node-77a5f3ded7",
+      "children": [
+        "node-189e68dde3",
+        "node-0bbccc6e96",
+        "node-bcb6e374d1"
+      ],
+      "style": {
+        "shape": "cloud",
+        "color": "#ffffff",
+        "accent": "#8ddcff",
+        "glow": true,
+        "blur": true,
+        "motion": "soft"
+      }
+    },
+    {
+      "id": "node-189e68dde3",
+      "title": "実施タスク分配",
+      "body": "政策を実行可能なタスクに分割し、担当組織、期限、成果物を割り当てる臓器ポワン候補。",
+      "powanKind": "organ",
+      "code": "",
+      "parent": "node-1a5a4f413a",
+      "children": [],
+      "style": {
+        "shape": "cloud",
+        "color": "#ffffff",
+        "accent": "#8ddcff",
+        "glow": true,
+        "blur": true,
+        "motion": "soft"
+      }
+    },
+    {
+      "id": "node-0bbccc6e96",
+      "title": "進捗収集",
+      "body": "各担当から進捗率、完了事項、遅延理由、次の予定を集めて更新する臓器ポワン候補。",
+      "powanKind": "organ",
+      "code": "",
+      "parent": "node-1a5a4f413a",
+      "children": [],
+      "style": {
+        "shape": "cloud",
+        "color": "#ffffff",
+        "accent": "#8ddcff",
+        "glow": true,
+        "blur": true,
+        "motion": "soft"
+      }
+    },
+    {
+      "id": "node-bcb6e374d1",
+      "title": "実施結果報告",
+      "body": "行政実行の結果を、目標達成度、未解決課題、必要な追加対応としてまとめる臓器ポワン候補。",
+      "powanKind": "organ",
+      "code": "",
+      "parent": "node-1a5a4f413a",
+      "children": [],
+      "style": {
+        "shape": "cloud",
+        "color": "#ffffff",
+        "accent": "#8ddcff",
+        "glow": true,
+        "blur": true,
+        "motion": "soft"
+      }
+    },
+    {
+      "id": "node-82a1a6059d",
+      "title": "財政管理",
+      "body": "政府活動に必要な予算を見積もり、配分し、支出を監視する神経ポワン。政策の実行可能性をお金の面から支える。",
+      "powanKind": "nerve",
+      "code": "",
+      "parent": "node-77a5f3ded7",
+      "children": [
+        "node-b8c157b3b9",
+        "node-c710856542",
+        "node-a6448174c5"
+      ],
+      "style": {
+        "shape": "cloud",
+        "color": "#ffffff",
+        "accent": "#8ddcff",
+        "glow": true,
+        "blur": true,
+        "motion": "soft"
+      }
+    },
+    {
+      "id": "node-b8c157b3b9",
+      "title": "予算要求集計",
+      "body": "各政策・部門からの予算要求を集計し、項目、金額、根拠、優先度を整理する臓器ポワン候補。",
+      "powanKind": "organ",
+      "code": "",
+      "parent": "node-82a1a6059d",
+      "children": [],
+      "style": {
+        "shape": "cloud",
+        "color": "#ffffff",
+        "accent": "#8ddcff",
+        "glow": true,
+        "blur": true,
+        "motion": "soft"
+      }
+    },
+    {
+      "id": "node-c710856542",
+      "title": "支出チェック",
+      "body": "支出予定や実績が予算枠、目的、承認条件に合っているか確認する臓器ポワン候補。",
+      "powanKind": "organ",
+      "code": "",
+      "parent": "node-82a1a6059d",
+      "children": [],
+      "style": {
+        "shape": "cloud",
+        "color": "#ffffff",
+        "accent": "#8ddcff",
+        "glow": true,
+        "blur": true,
+        "motion": "soft"
+      }
+    },
+    {
+      "id": "node-a6448174c5",
+      "title": "財政見通し計算",
+      "body": "予定収入、予定支出、既存債務から短期的な財政余力や不足額を計算する臓器ポワン候補。",
+      "powanKind": "organ",
+      "code": "",
+      "parent": "node-82a1a6059d",
+      "children": [],
+      "style": {
+        "shape": "cloud",
+        "color": "#ffffff",
+        "accent": "#8ddcff",
+        "glow": true,
+        "blur": true,
+        "motion": "soft"
+      }
+    },
+    {
+      "id": "node-856e964b62",
+      "title": "公共サービス運営",
+      "body": "教育、医療、福祉、防災、生活基盤など、政府が人々へ提供するサービスを設計し維持する神経ポワン。",
+      "powanKind": "nerve",
+      "code": "",
+      "parent": "node-77a5f3ded7",
+      "children": [
+        "node-43b512a63e",
+        "node-4116b9c8c9",
+        "node-ddc86e1245"
+      ],
+      "style": {
+        "shape": "cloud",
+        "color": "#ffffff",
+        "accent": "#8ddcff",
+        "glow": true,
+        "blur": true,
+        "motion": "soft"
+      }
+    },
+    {
+      "id": "node-43b512a63e",
+      "title": "サービス申請受付",
+      "body": "公共サービスの申請を受け取り、申請者、対象制度、必要書類、受付状態を記録する臓器ポワン候補。",
+      "powanKind": "organ",
+      "code": "",
+      "parent": "node-856e964b62",
+      "children": [],
+      "style": {
+        "shape": "cloud",
+        "color": "#ffffff",
+        "accent": "#8ddcff",
+        "glow": true,
+        "blur": true,
+        "motion": "soft"
+      }
+    },
+    {
+      "id": "node-4116b9c8c9",
+      "title": "給付判定",
+      "body": "申請内容と制度条件を照合し、対象可否、理由、不足情報を返す臓器ポワン候補。",
+      "powanKind": "organ",
+      "code": "",
+      "parent": "node-856e964b62",
+      "children": [],
+      "style": {
+        "shape": "cloud",
+        "color": "#ffffff",
+        "accent": "#8ddcff",
+        "glow": true,
+        "blur": true,
+        "motion": "soft"
+      }
+    },
+    {
+      "id": "node-ddc86e1245",
+      "title": "窓口応答記録",
+      "body": "住民や事業者からの問い合わせ内容、回答、保留事項、担当者を記録する臓器ポワン候補。",
+      "powanKind": "organ",
+      "code": "",
+      "parent": "node-856e964b62",
+      "children": [],
+      "style": {
+        "shape": "cloud",
+        "color": "#ffffff",
+        "accent": "#8ddcff",
+        "glow": true,
+        "blur": true,
+        "motion": "soft"
+      }
+    },
+    {
+      "id": "node-8b3922622f",
+      "title": "監督調整",
+      "body": "政府内部の実行が法令、決定方針、予算、公共目的に沿っているかを見守り、ずれを調整する神経ポワン。",
+      "powanKind": "nerve",
+      "code": "",
+      "parent": "node-77a5f3ded7",
+      "children": [
+        "node-d816b2e8af",
+        "node-385cb2fa60",
+        "node-7231b8b696"
+      ],
+      "style": {
+        "shape": "cloud",
+        "color": "#ffffff",
+        "accent": "#8ddcff",
+        "glow": true,
+        "blur": true,
+        "motion": "soft"
+      }
+    },
+    {
+      "id": "node-d816b2e8af",
+      "title": "合規性点検",
+      "body": "行政行為や支出が定められた規則、承認条件、説明責任に合っているかを点検する臓器ポワン候補。",
+      "powanKind": "organ",
+      "code": "",
+      "parent": "node-8b3922622f",
+      "children": [],
+      "style": {
+        "shape": "cloud",
+        "color": "#ffffff",
+        "accent": "#8ddcff",
+        "glow": true,
+        "blur": true,
+        "motion": "soft"
+      }
+    },
+    {
+      "id": "node-385cb2fa60",
+      "title": "部門間調整メモ",
+      "body": "複数部門の責任範囲、衝突点、合意事項、次の担当を整理して残す臓器ポワン候補。",
+      "powanKind": "organ",
+      "code": "",
+      "parent": "node-8b3922622f",
+      "children": [],
+      "style": {
+        "shape": "cloud",
+        "color": "#ffffff",
+        "accent": "#8ddcff",
+        "glow": true,
+        "blur": true,
+        "motion": "soft"
+      }
+    },
+    {
+      "id": "node-7231b8b696",
+      "title": "是正指示発行",
+      "body": "問題が見つかった時に、対象、理由、求める対応、期限を明記した是正指示を作る臓器ポワン候補。",
+      "powanKind": "organ",
+      "code": "",
+      "parent": "node-8b3922622f",
+      "children": [],
+      "style": {
+        "shape": "cloud",
+        "color": "#ffffff",
+        "accent": "#8ddcff",
+        "glow": true,
+        "blur": true,
+        "motion": "soft"
+      }
+    },
+    {
+      "id": "node-36f87cb703",
+      "title": "権利",
+      "body": "人が社会の中で守られる自由や大切なもの。法律は権利を明確にして、他者や権力から不当に奪われないようにする。",
+      "powanKind": "nerve",
+      "code": "",
+      "parent": "node-e558225bde",
+      "children": [
+        "node-3b6ece033b",
+        "node-3f47bc65a2",
+        "node-10772f150d"
+      ],
+      "style": {
+        "shape": "cloud",
+        "color": "#ffffff",
+        "accent": "#8ddcff",
+        "glow": true,
+        "blur": true,
+        "motion": "soft"
+      }
+    },
+    {
+      "id": "node-3b6ece033b",
+      "title": "自由",
+      "body": "考える、話す、動く、選ぶなど、人が自分らしく行動できる範囲を示す。",
+      "powanKind": "nerve",
+      "code": "",
+      "parent": "node-36f87cb703",
+      "children": [],
+      "style": {
+        "shape": "cloud",
+        "color": "#ffffff",
+        "accent": "#8ddcff",
+        "glow": true,
+        "blur": true,
+        "motion": "soft"
+      }
+    },
+    {
+      "id": "node-3f47bc65a2",
+      "title": "財産",
+      "body": "持ち物、お金、土地、成果など、人が所有し管理できるものを守る。",
+      "powanKind": "nerve",
+      "code": "",
+      "parent": "node-36f87cb703",
+      "children": [],
+      "style": {
+        "shape": "cloud",
+        "color": "#ffffff",
+        "accent": "#8ddcff",
+        "glow": true,
+        "blur": true,
+        "motion": "soft"
+      }
+    },
+    {
+      "id": "node-10772f150d",
+      "title": "安全",
+      "body": "身体や生活が不当に傷つけられないように守る。",
+      "powanKind": "nerve",
+      "code": "",
+      "parent": "node-36f87cb703",
+      "children": [],
+      "style": {
+        "shape": "cloud",
+        "color": "#ffffff",
+        "accent": "#8ddcff",
+        "glow": true,
+        "blur": true,
+        "motion": "soft"
+      }
+    },
+    {
+      "id": "node-08893e3b0f",
+      "title": "義務",
+      "body": "社会の一員として果たすべき役割。自由に暮らすために、互いに引き受ける責任を示す。",
+      "powanKind": "nerve",
+      "code": "",
+      "parent": "node-e558225bde",
+      "children": [
+        "node-8a0f470761",
+        "node-4657d5c8f8",
+        "node-3a377783f4"
+      ],
+      "style": {
+        "shape": "cloud",
+        "color": "#ffffff",
+        "accent": "#8ddcff",
+        "glow": true,
+        "blur": true,
+        "motion": "soft"
+      }
+    },
+    {
+      "id": "node-8a0f470761",
+      "title": "納税",
+      "body": "公共の仕組みを支えるために、決められた負担を分かち合う。",
+      "powanKind": "nerve",
+      "code": "",
+      "parent": "node-08893e3b0f",
+      "children": [],
+      "style": {
+        "shape": "cloud",
+        "color": "#ffffff",
+        "accent": "#8ddcff",
+        "glow": true,
+        "blur": true,
+        "motion": "soft"
+      }
+    },
+    {
+      "id": "node-4657d5c8f8",
+      "title": "契約を守る",
+      "body": "交わした約束を守り、人と人の信頼を成り立たせる。",
+      "powanKind": "nerve",
+      "code": "",
+      "parent": "node-08893e3b0f",
+      "children": [],
+      "style": {
+        "shape": "cloud",
+        "color": "#ffffff",
+        "accent": "#8ddcff",
+        "glow": true,
+        "blur": true,
+        "motion": "soft"
+      }
+    },
+    {
+      "id": "node-3a377783f4",
+      "title": "他者を害さない",
+      "body": "自分の行動で他の人の権利や安全を不当に傷つけない。",
+      "powanKind": "nerve",
+      "code": "",
+      "parent": "node-08893e3b0f",
+      "children": [],
+      "style": {
+        "shape": "cloud",
+        "color": "#ffffff",
+        "accent": "#8ddcff",
+        "glow": true,
+        "blur": true,
+        "motion": "soft"
+      }
+    },
+    {
+      "id": "node-a9e125766c",
+      "title": "禁止",
+      "body": "社会の中でしてはいけない行為の線引き。自由が他者への害に変わる境目を示す。",
+      "powanKind": "nerve",
+      "code": "",
+      "parent": "node-e558225bde",
+      "children": [
+        "node-aae035f1ea",
+        "node-db321f2a33",
+        "node-ff7cccf19c"
+      ],
+      "style": {
+        "shape": "cloud",
+        "color": "#ffffff",
+        "accent": "#8ddcff",
+        "glow": true,
+        "blur": true,
+        "motion": "soft"
+      }
+    },
+    {
+      "id": "node-aae035f1ea",
+      "title": "暴力",
+      "body": "他者の身体や心を力で傷つける行為を止める。",
+      "powanKind": "nerve",
+      "code": "",
+      "parent": "node-a9e125766c",
+      "children": [],
+      "style": {
+        "shape": "cloud",
+        "color": "#ffffff",
+        "accent": "#8ddcff",
+        "glow": true,
+        "blur": true,
+        "motion": "soft"
+      }
+    },
+    {
+      "id": "node-db321f2a33",
+      "title": "盗み",
+      "body": "他者の財産を勝手に奪う行為を止める。",
+      "powanKind": "nerve",
+      "code": "",
+      "parent": "node-a9e125766c",
+      "children": [],
+      "style": {
+        "shape": "cloud",
+        "color": "#ffffff",
+        "accent": "#8ddcff",
+        "glow": true,
+        "blur": true,
+        "motion": "soft"
+      }
+    },
+    {
+      "id": "node-ff7cccf19c",
+      "title": "詐欺",
+      "body": "だまして利益を得たり、相手に損をさせたりする行為を止める。",
+      "powanKind": "nerve",
+      "code": "",
+      "parent": "node-a9e125766c",
+      "children": [],
+      "style": {
+        "shape": "cloud",
+        "color": "#ffffff",
+        "accent": "#8ddcff",
+        "glow": true,
+        "blur": true,
+        "motion": "soft"
+      }
+    },
+    {
+      "id": "node-2176c88cee",
+      "title": "罰",
+      "body": "ルールを破った時に、社会がどのように責任を求めるかを示す。抑止と回復のための仕組み。",
+      "powanKind": "nerve",
+      "code": "",
+      "parent": "node-e558225bde",
+      "children": [
+        "node-f92e68e633",
+        "node-3c7ae62fb1",
+        "node-a5b95ab06a"
+      ],
+      "style": {
+        "shape": "cloud",
+        "color": "#ffffff",
+        "accent": "#8ddcff",
+        "glow": true,
+        "blur": true,
+        "motion": "soft"
+      }
+    },
+    {
+      "id": "node-f92e68e633",
+      "title": "刑罰",
+      "body": "重大な違反に対して、国家が責任を問うための制裁。",
+      "powanKind": "nerve",
+      "code": "",
+      "parent": "node-2176c88cee",
+      "children": [],
+      "style": {
+        "shape": "cloud",
+        "color": "#ffffff",
+        "accent": "#8ddcff",
+        "glow": true,
+        "blur": true,
+        "motion": "soft"
+      }
+    },
+    {
+      "id": "node-3c7ae62fb1",
+      "title": "罰金",
+      "body": "違反に対して金銭で責任を負わせる。",
+      "powanKind": "nerve",
+      "code": "",
+      "parent": "node-2176c88cee",
+      "children": [],
+      "style": {
+        "shape": "cloud",
+        "color": "#ffffff",
+        "accent": "#8ddcff",
+        "glow": true,
+        "blur": true,
+        "motion": "soft"
+      }
+    },
+    {
+      "id": "node-a5b95ab06a",
+      "title": "損害賠償",
+      "body": "傷つけられた人や物の損失を補うための責任。",
+      "powanKind": "nerve",
+      "code": "",
+      "parent": "node-2176c88cee",
+      "children": [],
+      "style": {
+        "shape": "cloud",
+        "color": "#ffffff",
+        "accent": "#8ddcff",
+        "glow": true,
+        "blur": true,
+        "motion": "soft"
+      }
+    },
+    {
+      "id": "node-96ed8a649f",
+      "title": "契約",
+      "body": "人や組織が約束によって関係を作り、取引や協力を進める仕組み。",
+      "powanKind": "nerve",
+      "code": "",
+      "parent": "node-e558225bde",
+      "children": [
+        "node-8e40744d61",
+        "node-0b73fea39d",
+        "node-7729a814ad"
+      ],
+      "style": {
+        "shape": "cloud",
+        "color": "#ffffff",
+        "accent": "#8ddcff",
+        "glow": true,
+        "blur": true,
+        "motion": "soft"
+      }
+    },
+    {
+      "id": "node-8e40744d61",
+      "title": "売買",
+      "body": "物やサービスと代金を交換する約束。",
+      "powanKind": "nerve",
+      "code": "",
+      "parent": "node-96ed8a649f",
+      "children": [],
+      "style": {
+        "shape": "cloud",
+        "color": "#ffffff",
+        "accent": "#8ddcff",
+        "glow": true,
+        "blur": true,
+        "motion": "soft"
+      }
+    },
+    {
+      "id": "node-0b73fea39d",
+      "title": "雇用",
+      "body": "働くことと報酬を結びつける約束。",
+      "powanKind": "nerve",
+      "code": "",
+      "parent": "node-96ed8a649f",
+      "children": [],
+      "style": {
+        "shape": "cloud",
+        "color": "#ffffff",
+        "accent": "#8ddcff",
+        "glow": true,
+        "blur": true,
+        "motion": "soft"
+      }
+    },
+    {
+      "id": "node-7729a814ad",
+      "title": "貸し借り",
+      "body": "物やお金を一時的に使わせ、返すことを決める約束。",
+      "powanKind": "nerve",
+      "code": "",
+      "parent": "node-96ed8a649f",
+      "children": [],
+      "style": {
+        "shape": "cloud",
+        "color": "#ffffff",
+        "accent": "#8ddcff",
+        "glow": true,
+        "blur": true,
+        "motion": "soft"
+      }
+    },
+    {
+      "id": "node-3971b8d3d7",
+      "title": "裁判",
+      "body": "争いが起きた時に、事実とルールを照らして判断する仕組み。",
+      "powanKind": "nerve",
+      "code": "",
+      "parent": "node-e558225bde",
+      "children": [
+        "node-c1216e7298",
+        "node-10f51762ed",
+        "node-dbbe97f52a"
+      ],
+      "style": {
+        "shape": "cloud",
+        "color": "#ffffff",
+        "accent": "#8ddcff",
+        "glow": true,
+        "blur": true,
+        "motion": "soft"
+      }
+    },
+    {
+      "id": "node-c1216e7298",
+      "title": "事実を確かめる",
+      "body": "何が起きたのかを証拠や証言から整理する。",
+      "powanKind": "nerve",
+      "code": "",
+      "parent": "node-3971b8d3d7",
+      "children": [],
+      "style": {
+        "shape": "cloud",
+        "color": "#ffffff",
+        "accent": "#8ddcff",
+        "glow": true,
+        "blur": true,
+        "motion": "soft"
+      }
+    },
+    {
+      "id": "node-10f51762ed",
+      "title": "ルールに照らす",
+      "body": "確かめた事実を法律の基準に当てはめる。",
+      "powanKind": "nerve",
+      "code": "",
+      "parent": "node-3971b8d3d7",
+      "children": [],
+      "style": {
+        "shape": "cloud",
+        "color": "#ffffff",
+        "accent": "#8ddcff",
+        "glow": true,
+        "blur": true,
+        "motion": "soft"
+      }
+    },
+    {
+      "id": "node-dbbe97f52a",
+      "title": "判断を出す",
+      "body": "争いに対して結論を示し、責任や解決方法を決める。",
+      "powanKind": "nerve",
+      "code": "",
+      "parent": "node-3971b8d3d7",
+      "children": [],
+      "style": {
+        "shape": "cloud",
+        "color": "#ffffff",
+        "accent": "#8ddcff",
+        "glow": true,
+        "blur": true,
+        "motion": "soft"
+      }
+    },
+    {
+      "id": "node-41df68a02b",
+      "title": "法律を作る仕組み",
+      "body": "社会の変化に合わせて、新しいルールを作ったり直したりする仕組み。",
+      "powanKind": "nerve",
+      "code": "",
+      "parent": "node-e558225bde",
+      "children": [
+        "node-12562d79c5",
+        "node-417c7c24f9",
+        "node-86fec2a5d8"
+      ],
+      "style": {
+        "shape": "cloud",
+        "color": "#ffffff",
+        "accent": "#8ddcff",
+        "glow": true,
+        "blur": true,
+        "motion": "soft"
+      }
+    },
+    {
+      "id": "node-12562d79c5",
+      "title": "議論",
+      "body": "社会に必要なルールについて意見を出し合う。",
+      "powanKind": "nerve",
+      "code": "",
+      "parent": "node-41df68a02b",
+      "children": [],
+      "style": {
+        "shape": "cloud",
+        "color": "#ffffff",
+        "accent": "#8ddcff",
+        "glow": true,
+        "blur": true,
+        "motion": "soft"
+      }
+    },
+    {
+      "id": "node-417c7c24f9",
+      "title": "制定",
+      "body": "新しい法律として正式に形にする。",
+      "powanKind": "nerve",
+      "code": "",
+      "parent": "node-41df68a02b",
+      "children": [],
+      "style": {
+        "shape": "cloud",
+        "color": "#ffffff",
+        "accent": "#8ddcff",
+        "glow": true,
+        "blur": true,
+        "motion": "soft"
+      }
+    },
+    {
+      "id": "node-86fec2a5d8",
+      "title": "改正",
+      "body": "古くなった法律や足りない部分を直す。",
+      "powanKind": "nerve",
+      "code": "",
+      "parent": "node-41df68a02b",
+      "children": [],
+      "style": {
+        "shape": "cloud",
+        "color": "#ffffff",
+        "accent": "#8ddcff",
+        "glow": true,
+        "blur": true,
+        "motion": "soft"
+      }
+    },
+    {
+      "id": "node-179f48f2a8",
+      "title": "行政のルール",
+      "body": "政府や役所が社会を運営するための具体的な決まり。日々の手続きや規制を支える。",
+      "powanKind": "nerve",
+      "code": "",
+      "parent": "node-e558225bde",
+      "children": [
+        "node-e7a4e837bd",
+        "node-dae79f531b",
+        "node-62715ebf5a"
+      ],
+      "style": {
+        "shape": "cloud",
+        "color": "#ffffff",
+        "accent": "#8ddcff",
+        "glow": true,
+        "blur": true,
+        "motion": "soft"
+      }
+    },
+    {
+      "id": "node-e7a4e837bd",
+      "title": "許可",
+      "body": "特定の行為をしてよいかを公的に認める仕組み。",
+      "powanKind": "nerve",
+      "code": "",
+      "parent": "node-179f48f2a8",
+      "children": [],
+      "style": {
+        "shape": "cloud",
+        "color": "#ffffff",
+        "accent": "#8ddcff",
+        "glow": true,
+        "blur": true,
+        "motion": "soft"
+      }
+    },
+    {
+      "id": "node-dae79f531b",
+      "title": "手続き",
+      "body": "申請、届出、確認などを決まった順序で進める仕組み。",
+      "powanKind": "nerve",
+      "code": "",
+      "parent": "node-179f48f2a8",
+      "children": [],
+      "style": {
+        "shape": "cloud",
+        "color": "#ffffff",
+        "accent": "#8ddcff",
+        "glow": true,
+        "blur": true,
+        "motion": "soft"
+      }
+    },
+    {
+      "id": "node-62715ebf5a",
+      "title": "規制",
+      "body": "危険や不公平を防ぐために、行為の条件や範囲を決める。",
+      "powanKind": "nerve",
+      "code": "",
+      "parent": "node-179f48f2a8",
+      "children": [],
+      "style": {
+        "shape": "cloud",
+        "color": "#ffffff",
+        "accent": "#8ddcff",
+        "glow": true,
+        "blur": true,
+        "motion": "soft"
+      }
     }
   ]
 }
