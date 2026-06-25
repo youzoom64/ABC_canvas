@@ -87,6 +87,9 @@ function render() {
   });
   selectNode(powanExplorer.ensureSelected(nodes));
   renderTreePanel();
+  if (typeof renderConversationTabs === "function") {
+    renderConversationTabs();
+  }
 }
 
 function renderWorldBoundary(layer) {

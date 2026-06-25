@@ -459,6 +459,168 @@ function normalizeConversationId(value) {
   return Number.isFinite(number) ? number : null;
 }
 
+function conversationTabIndex(nodeId) {
+  return conversationTabs.findIndex((tab) => tab.nodeId === nodeId);
+}
+
+function conversationTabState(nodeId) {
+  const current = conversationTabStates.get(nodeId) || {};
+  conversationTabStates.set(nodeId, current);
+  return current;
+}
+
+function cloneConversationAttachments(attachments) {
+  return Array.isArray(attachments)
+    ? attachments.map((attachment) => ({ ...attachment }))
+    : [];
+}
+
+function rememberConversationTabState(nodeId = conversationNodeId) {
+  if (!nodeId) {
+    return;
+  }
+  const state = conversationTabState(nodeId);
+  state.draft = conversationInput?.value || "";
+  state.attachments = cloneConversationAttachments(conversationPendingAttachments);
+  state.scrollTop = conversationLog ? conversationLog.scrollTop : 0;
+  state.activeSessionId = normalizeConversationId(conversationActiveSessionId);
+  state.viewingSessionId = normalizeConversationId(conversationViewingSessionId);
+  state.viewingAllSessions = Boolean(conversationViewingAllSessions);
+  state.autoFollow = Boolean(conversationAutoFollow);
+}
+
+function ensureConversationTab(nodeId) {
+  const node = nodeById(nodeId);
+  if (!node) {
+    return null;
+  }
+  let tab = conversationTabs.find((item) => item.nodeId === node.id);
+  if (!tab) {
+    tab = {
+      nodeId: node.id,
+      openedAt: Date.now(),
+    };
+    conversationTabs.push(tab);
+    logEvent("debug", "conversation-tab-created", { nodeId: node.id, name: meaningName(node) });
+  }
+  return tab;
+}
+
+function renderConversationTabs() {
+  if (!conversationTabBar) {
+    return;
+  }
+  conversationTabs = conversationTabs.filter((tab) => nodeById(tab.nodeId));
+  for (const nodeId of [...conversationTabStates.keys()]) {
+    if (!nodeById(nodeId)) {
+      conversationTabStates.delete(nodeId);
+    }
+  }
+  conversationTabBar.innerHTML = "";
+  conversationTabBar.hidden = conversationTabs.length === 0;
+  for (const tab of conversationTabs) {
+    const node = nodeById(tab.nodeId);
+    if (!node) {
+      continue;
+    }
+    const item = document.createElement("div");
+    item.className = "conversation-tab";
+    item.classList.toggle("active", tab.nodeId === conversationNodeId);
+    item.role = "tab";
+    item.ariaSelected = tab.nodeId === conversationNodeId ? "true" : "false";
+    item.title = meaningName(node);
+    const label = document.createElement("button");
+    label.type = "button";
+    label.className = "conversation-tab-label";
+    label.textContent = meaningName(node);
+    label.addEventListener("click", () => switchConversationTab(tab.nodeId));
+    const close = document.createElement("button");
+    close.type = "button";
+    close.className = "conversation-tab-close";
+    close.textContent = "×";
+    close.title = "タブを閉じる";
+    close.addEventListener("click", (event) => {
+      event.stopPropagation();
+      closeConversationTab(tab.nodeId);
+    });
+    item.append(label, close);
+    conversationTabBar.appendChild(item);
+  }
+}
+
+function clearConversationView() {
+  conversationNodeId = null;
+  conversationActiveSessionId = null;
+  conversationViewingSessionId = null;
+  conversationViewingAllSessions = false;
+  conversationSessionList = [];
+  conversationPendingAttachments = [];
+  conversationLog.innerHTML = "";
+  conversationInput.value = "";
+  renderConversationAttachmentTray();
+  updateConversationSessionMode();
+  renderConversationTabs();
+}
+
+function restoreConversationDraftState(nodeId) {
+  const state = conversationTabStates.get(nodeId) || {};
+  conversationInput.value = state.draft || "";
+  conversationPendingAttachments = cloneConversationAttachments(state.attachments);
+  renderConversationAttachmentTray();
+  return state;
+}
+
+async function restoreConversationScroll(nodeId, state) {
+  if (!state || !conversationLog || conversationNodeId !== nodeId) {
+    return;
+  }
+  await Promise.resolve();
+  if (conversationNodeId === nodeId && Number.isFinite(Number(state.scrollTop))) {
+    conversationLog.scrollTop = Number(state.scrollTop);
+    conversationAutoFollow = Boolean(state.autoFollow);
+  }
+}
+
+function switchConversationTab(nodeId, reason = "conversation-tab-switch") {
+  const node = nodeById(nodeId);
+  if (!node) {
+    closeConversationTab(nodeId, "conversation-tab-missing-close");
+    return;
+  }
+  if (conversationNodeId === node.id && conversationPanel && !conversationPanel.hidden) {
+    expandConversationPanel(reason);
+    renderConversationTabs();
+    return;
+  }
+  openConversationPanel(node.id, { fromTab: true, reason });
+}
+
+function closeConversationTab(nodeId, reason = "conversation-tab-close") {
+  const index = conversationTabIndex(nodeId);
+  if (index < 0) {
+    return;
+  }
+  const wasActive = conversationNodeId === nodeId;
+  if (wasActive) {
+    rememberConversationTabState(nodeId);
+  }
+  conversationTabs.splice(index, 1);
+  conversationTabStates.delete(nodeId);
+  logEvent("debug", reason, { nodeId, wasActive, remaining: conversationTabs.length });
+  if (wasActive) {
+    const next = conversationTabs[Math.min(index, conversationTabs.length - 1)];
+    conversationNodeId = null;
+    if (next) {
+      switchConversationTab(next.nodeId, "conversation-tab-close-switch-next");
+    } else {
+      clearConversationView();
+      conversationPanel.hidden = true;
+    }
+  } else {
+    renderConversationTabs();
+  }
+}
+
 function conversationCanEditSession() {
   if (conversationViewingAllSessions) {
     return false;
@@ -525,6 +687,7 @@ async function refreshConversationSessions(nodeId, selectedId = null) {
     conversationSessionList = data.sessions || [];
     conversationActiveSessionId = normalizeConversationId(data.activeConversationId);
     renderConversationSessions(conversationSessionList, selectedId);
+    renderConversationTabs();
     updateConversationSessionMode();
     logEvent("debug", "conversation-sessions-load-complete", {
       nodeId,
@@ -557,6 +720,7 @@ async function loadConversationMessages(nodeId) {
     for (const message of data.messages || []) {
       appendConversationMessage(message.role, message.text || "");
     }
+    renderConversationTabs();
     refreshConversationSessions(nodeId, data.conversationId);
     logEvent("debug", "conversation-load-complete", {
       nodeId,
@@ -587,6 +751,8 @@ async function loadConversationSession(nodeId, conversationId) {
     if (conversationSessionSelect) {
       conversationSessionSelect.value = String(data.conversationId);
     }
+    refreshConversationSessions(nodeId, data.conversationId);
+    renderConversationTabs();
     updateConversationSessionMode();
     logEvent("debug", "conversation-session-load-complete", {
       nodeId,
@@ -612,6 +778,7 @@ async function loadAllConversationSessions(nodeId) {
     conversationViewingSessionId = null;
     conversationViewingAllSessions = true;
     renderConversationSessions(conversationSessionList, CONVERSATION_ALL_SESSIONS_VALUE);
+    renderConversationTabs();
     conversationLog.innerHTML = "";
     conversationAutoFollow = false;
     const orderedSessions = [...conversationSessionList].sort((left, right) => normalizeConversationId(left.id) - normalizeConversationId(right.id));
@@ -1252,13 +1419,19 @@ function focusConversationInputIfOpen() {
   }
 }
 
-function openConversationPanel(nodeId) {
+function openConversationPanel(nodeId, options = {}) {
+  const { fromTab = false, reason = "conversation-open" } = options;
   const node = nodeById(nodeId);
   if (!node) {
     return;
   }
+  if (conversationNodeId && conversationNodeId !== node.id) {
+    rememberConversationTabState(conversationNodeId);
+  }
+  ensureConversationTab(node.id);
   if (conversationNodeId === node.id && conversationPanel && !conversationPanel.hidden) {
     conversationNodeName.textContent = meaningName(node);
+    renderConversationTabs();
     expandConversationPanel("conversation-open-existing");
     return;
   }
@@ -1267,16 +1440,24 @@ function openConversationPanel(nodeId) {
   conversationViewingSessionId = null;
   conversationViewingAllSessions = false;
   conversationSessionList = [];
-  conversationPendingAttachments = [];
   conversationNodeName.textContent = meaningName(node);
   conversationPanel.hidden = false;
   setConversationPanelCollapsed(false, "conversation-open-expand");
   conversationAutoFollow = true;
   conversationLog.innerHTML = "";
-  renderConversationAttachmentTray();
+  const state = restoreConversationDraftState(node.id);
+  renderConversationTabs();
   focusConversationInputIfOpen();
-  logEvent("debug", "conversation-open", { nodeId: node.id });
-  loadConversationMessages(node.id);
+  logEvent("debug", reason, { nodeId: node.id, fromTab });
+  let loader;
+  if (fromTab && state.viewingAllSessions) {
+    loader = loadAllConversationSessions(node.id);
+  } else if (fromTab && state.viewingSessionId) {
+    loader = loadConversationSession(node.id, state.viewingSessionId);
+  } else {
+    loader = loadConversationMessages(node.id);
+  }
+  loader.then(() => restoreConversationScroll(node.id, state));
 }
 
 function closeConversationPanel(reason = "conversation-close") {
@@ -1285,6 +1466,7 @@ function closeConversationPanel(reason = "conversation-close") {
     logEvent("debug", reason, { nodeId: null, collapsed: false });
     return;
   }
+  rememberConversationTabState(conversationNodeId);
   setConversationPanelCollapsed(true, reason);
 }
 
@@ -1464,6 +1646,8 @@ async function startNewConversationSession(nodeId, reason = "conversation-new-se
       appendConversationMessage(message.role, message.text || "");
     }
     appendConversationMessage("system", "新規セッションを開始しました", { forceFollow: true });
+    rememberConversationTabState(node.id);
+    renderConversationTabs();
     refreshConversationSessions(node.id, data.conversationId);
     logEvent("info", reason, { nodeId: node.id, conversationId: data.conversationId });
   } catch (error) {
@@ -1502,6 +1686,8 @@ async function summarizeConversationIntoNewSession(nodeId, reason = "conversatio
     if (!(data.messages || []).length) {
       appendConversationMessage("system", "要約できる会話がまだありません", { forceFollow: true });
     }
+    rememberConversationTabState(node.id);
+    renderConversationTabs();
     refreshConversationSessions(node.id, data.conversationId);
     logEvent("info", reason, {
       nodeId: node.id,
@@ -1837,6 +2023,7 @@ conversationForm.addEventListener("submit", async (event) => {
   conversationInput.value = "";
   conversationPendingAttachments = [];
   renderConversationAttachmentTray();
+  rememberConversationTabState(node.id);
   logEvent("debug", "conversation-send", {
     nodeId: node.id,
     length: text.length,
@@ -1877,6 +2064,8 @@ conversationForm.addEventListener("submit", async (event) => {
     conversationActiveSessionId = normalizeConversationId(data.conversationId);
     conversationViewingSessionId = normalizeConversationId(data.conversationId);
     conversationViewingAllSessions = false;
+    rememberConversationTabState(node.id);
+    renderConversationTabs();
     refreshConversationSessions(node.id, data.conversationId);
     await reloadCurrentDocument({
       force: true,

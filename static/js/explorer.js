@@ -159,12 +159,20 @@ var powanExplorer = {
       childEditParentId = null;
       codePanelNodeId = null;
       conversationNodeId = null;
+      conversationTabs = [];
+      conversationTabStates.clear();
       viewportBeforeInterior = null;
     } else if (preserveView) {
       openParentId = nodeById(previousOpenParentId) ? previousOpenParentId : null;
       childEditParentId = nodeById(previousChildEditParentId) ? previousChildEditParentId : null;
       codePanelNodeId = nodeById(previousCodePanelNodeId) ? previousCodePanelNodeId : null;
       conversationNodeId = nodeById(previousConversationNodeId) ? previousConversationNodeId : null;
+      conversationTabs = conversationTabs.filter((tab) => nodeById(tab.nodeId));
+      for (const nodeId of [...conversationTabStates.keys()]) {
+        if (!nodeById(nodeId)) {
+          conversationTabStates.delete(nodeId);
+        }
+      }
       previousCollapsedIds.forEach((id) => {
         if (nodeById(id)) {
           collapsedTreeNodeIds.add(id);
