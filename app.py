@@ -64,33 +64,6 @@ WORKSPACE_ORIGIN_Y = 5000
 DEFAULT_NODE_WIDTH = 280
 DEFAULT_NODE_HEIGHT = 160
 CONSOLE_TEXT_PREVIEW_CHARS = 30
-CONSOLE_OMIT_KEYS = {
-    "console",
-    "message",
-    "request",
-    "response",
-    "userMessage",
-    "assistantMessage",
-    "agentRun",
-    "messages",
-    "document",
-    "payload",
-    "attachments",
-    "renderedText",
-    "stdout",
-    "stderr",
-    "outputText",
-    "errorText",
-}
-CONSOLE_PREVIEW_KEYS = {
-    "text",
-    "userText",
-    "instruction",
-    "textPreview",
-    "instructionPreview",
-    "error",
-    "detail",
-}
 POWAN_WORK_EVENT_LIMIT = 500
 POWAN_COLOR_PALETTE = [
     {"color": "#fff1b8", "accent": "#d8b500"},
@@ -147,30 +120,14 @@ def compact_console_text(value: Any, limit: int = CONSOLE_TEXT_PREVIEW_CHARS) ->
     return text[:limit]
 
 
-def compact_console_value(key: str, value: Any) -> Any:
-    if isinstance(value, str):
-        if key in CONSOLE_PREVIEW_KEYS or len(value) > CONSOLE_TEXT_PREVIEW_CHARS:
-            return compact_console_text(value)
-        return value
-    if isinstance(value, list):
-        return [compact_console_value(key, item) for item in value[:5]]
-    if isinstance(value, dict):
-        return {
-            child_key: compact_console_value(child_key, child_value)
-            for child_key, child_value in value.items()
-            if child_key not in CONSOLE_OMIT_KEYS
-        }
-    return value
-
-
-def console_log_details(details: dict[str, Any] | None) -> dict[str, Any]:
+def console_preview_text(details: dict[str, Any] | None) -> str:
     if not details:
-        return {}
-    return {
-        key: compact_console_value(key, value)
-        for key, value in details.items()
-        if key not in CONSOLE_OMIT_KEYS
-    }
+        return ""
+    for key in ("textPreview", "instructionPreview", "error", "detail"):
+        value = details.get(key)
+        if value:
+            return compact_console_text(value)
+    return ""
 
 
 def should_print_server_event(level: str, details: dict[str, Any] | None) -> bool:
@@ -179,8 +136,8 @@ def should_print_server_event(level: str, details: dict[str, Any] | None) -> boo
 
 def print_server_event(level: str, action: str, details: dict[str, Any] | None) -> None:
     message = str((details or {}).get("message") or "")
-    payload = console_log_details(details)
-    suffix = f" {json.dumps(payload, ensure_ascii=False, separators=(',', ':'))}" if payload else ""
+    preview = console_preview_text(details)
+    suffix = f' "{preview}"' if preview else ""
     print(f"{datetime.now().isoformat(timespec='seconds')} {level.upper()} {action} {message}{suffix}", flush=True)
 
 
