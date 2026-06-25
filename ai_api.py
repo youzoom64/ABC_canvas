@@ -3,6 +3,7 @@ from __future__ import annotations
 import random
 import threading
 from datetime import datetime, timezone
+from math import cos, pi, sin
 from typing import Any, Callable
 from uuid import uuid4
 
@@ -19,6 +20,11 @@ WORKSPACE_ORIGIN_X = 5000
 WORKSPACE_ORIGIN_Y = 5000
 DEFAULT_NODE_WIDTH = 280
 DEFAULT_NODE_HEIGHT = 160
+INTERIOR_STAGE_WIDTH = 560
+INTERIOR_STAGE_HEIGHT = 360
+NESTED_DISPLAY_INSET = 28
+DEFAULT_ARRANGE_SPACING = 1.0
+DEFAULT_ARRANGE_SIZE = 1.0
 POWAN_COLOR_PALETTE = [
     {"color": "#fff1b8", "accent": "#d8b500"},
     {"color": "#ffe1ef", "accent": "#ef6ea8"},
@@ -347,6 +353,11 @@ class AiPowanExplorer:
             "height": height,
         }
 
+    def clamp_number(self, value: float, minimum: float, maximum: float) -> float:
+        if maximum < minimum:
+            return minimum
+        return min(maximum, max(minimum, value))
+
     def root_layout_area(self) -> dict[str, int]:
         return {
             "x": WORKSPACE_ORIGIN_X - 2 * (DEFAULT_NODE_WIDTH + 48),
@@ -355,9 +366,119 @@ class AiPowanExplorer:
             "height": 720,
         }
 
+    def arrange_world_area(self) -> dict[str, int]:
+        return {
+            "x": round(WORKSPACE_ORIGIN_X - INTERIOR_STAGE_WIDTH / 2),
+            "y": round(WORKSPACE_ORIGIN_Y - INTERIOR_STAGE_HEIGHT / 2),
+            "width": INTERIOR_STAGE_WIDTH,
+            "height": INTERIOR_STAGE_HEIGHT,
+        }
+
+    def parent_nested_area(self, parent: dict[str, Any]) -> dict[str, int]:
+        layout = parent.get("layout") or {}
+        width = self.number(layout.get("width"), DEFAULT_NODE_WIDTH)
+        height = self.number(layout.get("height"), DEFAULT_NODE_HEIGHT)
+        return {
+            "x": NESTED_DISPLAY_INSET,
+            "y": NESTED_DISPLAY_INSET,
+            "width": round(max(56, width - NESTED_DISPLAY_INSET * 2)),
+            "height": round(max(40, height - NESTED_DISPLAY_INSET * 2)),
+        }
+
+    def scaled_size(self, size: dict[str, float], scale: float = DEFAULT_ARRANGE_SIZE) -> dict[str, int]:
+        factor = self.clamp_number(self.number(scale, DEFAULT_ARRANGE_SIZE), 0.5, 1.8)
+        return {
+            "width": round(size["width"] * factor),
+            "height": round(size["height"] * factor),
+        }
+
+    def world_child_size(self, count: int, scale: float = DEFAULT_ARRANGE_SIZE) -> dict[str, int]:
+        if count <= 1:
+            size = {"width": 300, "height": 180}
+        elif count <= 4:
+            size = {"width": 220, "height": 132}
+        elif count <= 9:
+            size = {"width": 180, "height": 112}
+        else:
+            size = {"width": 150, "height": 96}
+        return self.scaled_size(size, scale)
+
+    def nested_child_size(self, count: int, scale: float = DEFAULT_ARRANGE_SIZE) -> dict[str, int]:
+        if count <= 1:
+            size = {"width": 150, "height": 58}
+        elif count <= 4:
+            size = {"width": 96, "height": 38}
+        elif count <= 9:
+            size = {"width": 72, "height": 30}
+        else:
+            size = {"width": 58, "height": 24}
+        return self.scaled_size(size, scale)
+
+    def arrange_anchors(self, count: int, spacing: float = DEFAULT_ARRANGE_SPACING) -> list[dict[str, float]]:
+        if count <= 1:
+            return [{"x": 0.5, "y": 0.5}]
+        spacing_scale = self.clamp_number(self.number(spacing, DEFAULT_ARRANGE_SPACING), 0.5, 1.5)
+        if count == 2:
+            offset = self.clamp_number(0.18 * spacing_scale, 0.08, 0.46)
+            return [{"x": 0.5 - offset, "y": 0.5}, {"x": 0.5 + offset, "y": 0.5}]
+        radius = self.clamp_number((0.34 if count <= 4 else 0.38) * spacing_scale, 0.12, 0.48)
+        return [
+            {
+                "x": 0.5 + cos(-pi / 2 + (pi * 2 * index) / count) * radius,
+                "y": 0.5 + sin(-pi / 2 + (pi * 2 * index) / count) * radius,
+            }
+            for index in range(count)
+        ]
+
+    def rect_at_anchor(self, area: dict[str, float], size: dict[str, float], anchor: dict[str, float]) -> dict[str, int]:
+        width = min(size["width"], max(8, self.number(area.get("width"), size["width"])))
+        height = min(size["height"], max(6, self.number(area.get("height"), size["height"])))
+        area_x = self.number(area.get("x"), 0)
+        area_y = self.number(area.get("y"), 0)
+        area_width = self.number(area.get("width"), width)
+        area_height = self.number(area.get("height"), height)
+        center_x = area_x + area_width * anchor["x"]
+        center_y = area_y + area_height * anchor["y"]
+        return {
+            "x": round(self.clamp_number(center_x - width / 2, area_x, area_x + area_width - width)),
+            "y": round(self.clamp_number(center_y - height / 2, area_y, area_y + area_height - height)),
+            "width": round(width),
+            "height": round(height),
+        }
+
+    def plan_arranged_children(self, parent: dict[str, Any], children: list[dict[str, Any]]) -> list[dict[str, Any]]:
+        anchors = self.arrange_anchors(len(children))
+        world_area = self.arrange_world_area()
+        nested_area = self.parent_nested_area(parent)
+        world_size = self.world_child_size(len(children))
+        nested_size = self.nested_child_size(len(children))
+        return [
+            {
+                "node": child,
+                "worldLayout": self.rect_at_anchor(world_area, world_size, anchors[index]),
+                "nestedLayout": self.rect_at_anchor(nested_area, nested_size, anchors[index]),
+            }
+            for index, child in enumerate(children)
+        ]
+
+    def arrange_children(self, parent_id: str, reason: str) -> None:
+        parent = self.node(parent_id)
+        children = self.children_of(parent_id)
+        if not children:
+            return
+        for plan in self.plan_arranged_children(parent, children):
+            child = plan["node"]
+            child["layout"] = self.clamp_layout(plan["worldLayout"])
+            nested_by_parent = child.setdefault("nestedLayoutByParent", {})
+            nested_by_parent[parent_id] = plan["nestedLayout"]
+        self.workspace.log_event(
+            "debug",
+            reason,
+            {"project": self.project, "file": self.file, "parentId": parent_id, "childCount": len(children)},
+        )
+
     def default_layout(self, index: int | None = None) -> dict[str, int]:
-        # ルートポワンのみバックエンドが初期位置を持つ。子の配置はフロントの
-        # powanPlacement が唯一の権限なので、ここでは扱わない。
+        # ルートポワンの初期位置。子ポワンは create_node 後に arrange_children で並べる。
         siblings = self.children_of(None)
         slot = len(siblings) if index is None else max(0, index)
         return self.grid_rect(
@@ -392,8 +513,7 @@ class AiPowanExplorer:
             "children": [],
             "style": {**self.default_style(request.randomStyle), **(request.style or {})},
         }
-        # 位置はフロントの powanPlacement が唯一の権限。ルートと明示指定だけ
-        # layout を持たせ、子ポワンの配置はフロントが読み込み時に決める。
+        # ルートはここで初期位置を持つ。子は親へ追加したあと兄弟まとめて整列する。
         if parent_id is None:
             sibling_index = len(self.children_of(None))
             node["layout"] = self.clamp_layout({**self.default_layout(sibling_index), **(request.layout or {})})
@@ -406,6 +526,8 @@ class AiPowanExplorer:
             parent = self.node(parent_id)
             parent["children"] = list(dict.fromkeys([*(parent.get("children") or []), node["id"]]))
         self.normalize_children()
+        if parent_id:
+            self.arrange_children(parent_id, "ai-create-powan-arrange")
         self.save("ai-create-powan", {"nodeId": node["id"], "parentId": parent_id})
         return node
 

@@ -680,13 +680,9 @@ function divideMeaningDisplaySizeByMeaningCount(count) {
 function arrangeHeldMeaningsEvenly(parent, children, scale, { expanded = false } = {}) {
   return powanPlacement.planParentChildren(parent, children).map((plan) => {
     if (expanded) {
-      const parentLayout = parent.layout || {};
       return {
         node: plan.node,
-        x: plan.worldLayout.x - Number(parentLayout.x || 0),
-        y: plan.worldLayout.y - Number(parentLayout.y || 0),
-        width: plan.worldLayout.width,
-        height: plan.worldLayout.height,
+        ...powanPlacement.worldRectToInteriorRect(parent, plan.worldLayout),
       };
     }
     return nestedPlacementFromLayout(parent, plan.node, plan.nestedLayout);
@@ -825,14 +821,14 @@ function isMeaningOutsideParent(child) {
     return false;
   }
   const childLayout = child.layout || {};
-  const parentLayout = parent.layout || {};
+  const worldArea = powanPlacement.parentWorldArea(parent);
   const childCenterX = Number(childLayout.x || 0) + Number(childLayout.width || 0) / 2;
   const childCenterY = Number(childLayout.y || 0) + Number(childLayout.height || 0) / 2;
   return (
-    childCenterX < Number(parentLayout.x || 0) ||
-    childCenterY < Number(parentLayout.y || 0) ||
-    childCenterX > Number(parentLayout.x || 0) + Number(parentLayout.width || 0) ||
-    childCenterY > Number(parentLayout.y || 0) + Number(parentLayout.height || 0)
+    childCenterX < worldArea.x ||
+    childCenterY < worldArea.y ||
+    childCenterX > worldArea.x + worldArea.width ||
+    childCenterY > worldArea.y + worldArea.height
   );
 }
 

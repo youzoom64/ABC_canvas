@@ -31,11 +31,14 @@ var powanPlacement = {
     };
   },
 
-  parentWorldArea(parent) {
-    const layout = this.nodeLayout(parent);
+  parentWorldArea(_parent) {
+    return this.rootWorldArea();
+  },
+
+  parentWorldViewportArea(_parent) {
     return {
-      x: layout.x + INTERIOR_STAGE.x,
-      y: layout.y + INTERIOR_STAGE.y,
+      x: INTERIOR_STAGE.x,
+      y: INTERIOR_STAGE.y,
       width: INTERIOR_STAGE.width,
       height: INTERIOR_STAGE.height,
     };
@@ -145,17 +148,21 @@ var powanPlacement = {
     };
   },
 
-  planParentChildren(parent, children, options = {}) {
+  planWorldChildren(parent, children, options = {}) {
     const anchors = this.anchors(children.length, options.spacing);
-    const worldArea = this.parentWorldArea(parent);
-    const nestedArea = this.parentNestedArea(parent);
+    const worldArea = parent ? this.parentWorldArea(parent) : this.rootWorldArea();
+    const nestedArea = parent ? this.parentNestedArea(parent) : null;
     const worldSize = this.worldChildSize(children.length, options.sizeScale);
-    const nestedSize = this.nestedChildSize(children.length, options.sizeScale);
+    const nestedSize = parent ? this.nestedChildSize(children.length, options.sizeScale) : null;
     return children.map((child, index) => ({
       node: child,
       worldLayout: this.rectAtAnchor(worldArea, worldSize, anchors[index]),
-      nestedLayout: this.rectAtAnchor(nestedArea, nestedSize, anchors[index]),
+      nestedLayout: parent ? this.rectAtAnchor(nestedArea, nestedSize, anchors[index]) : null,
     }));
+  },
+
+  planParentChildren(parent, children, options = {}) {
+    return this.planWorldChildren(parent, children, options);
   },
 
   rootWorldArea() {
@@ -168,13 +175,7 @@ var powanPlacement = {
   },
 
   planRootChildren(children, options = {}) {
-    const anchors = this.anchors(children.length, options.spacing);
-    const worldArea = this.rootWorldArea();
-    const worldSize = this.worldChildSize(children.length, options.sizeScale);
-    return children.map((child, index) => ({
-      node: child,
-      worldLayout: this.rectAtAnchor(worldArea, worldSize, anchors[index]),
-    }));
+    return this.planWorldChildren(null, children, options);
   },
 
   hasWorldLayout(node) {
@@ -269,17 +270,33 @@ var powanPlacement = {
   // === A2: 入れ子チップは「親の内部世界の等比縮小ビュー」 ===
   // 子の位置の真実は世界座標(layout)のみ。チップ位置はそこから導出する。
 
-  // 子の位置を親の内部世界フレーム(INTERIOR_STAGE と同じ座標)で返す。
-  // = 親世界に入ったときの表示位置（child.layout - parent.layout）。
-  childInteriorRect(parent, child) {
-    const parentLayout = this.nodeLayout(parent);
-    const childLayout = this.nodeLayout(child);
+  worldRectToInteriorRect(parent, rect) {
+    const worldArea = this.parentWorldArea(parent);
     return {
-      x: childLayout.x - parentLayout.x,
-      y: childLayout.y - parentLayout.y,
-      width: childLayout.width,
-      height: childLayout.height,
+      x: Math.round(INTERIOR_STAGE.x + this.number(rect?.x) - worldArea.x),
+      y: Math.round(INTERIOR_STAGE.y + this.number(rect?.y) - worldArea.y),
+      width: Math.round(this.number(rect?.width, 260)),
+      height: Math.round(this.number(rect?.height, 150)),
     };
+  },
+
+  interiorRectToWorldLayout(parent, child, rect) {
+    const worldArea = this.parentWorldArea(parent);
+    const childLayout = this.nodeLayout(child);
+    const width = this.number(rect?.width, childLayout.width);
+    const height = this.number(rect?.height, childLayout.height);
+    return {
+      x: Math.round(worldArea.x + this.number(rect?.x) - INTERIOR_STAGE.x),
+      y: Math.round(worldArea.y + this.number(rect?.y) - INTERIOR_STAGE.y),
+      width: Math.round(width),
+      height: Math.round(height),
+    };
+  },
+
+  // 子の位置を親の内部世界フレーム(INTERIOR_STAGE と同じ座標)で返す。
+  // 中の世界も最上位と同じ 10000 座標を使うので、親の左上ではなく共通世界エリアから写像する。
+  childInteriorRect(parent, child) {
+    return this.worldRectToInteriorRect(parent, this.nodeLayout(child));
   },
 
   // 親の箱の入れ子レイヤー(layerSize)へ INTERIOR_STAGE を等比で収めるスケールと、
@@ -310,7 +327,6 @@ var powanPlacement = {
   // 入れ子レイヤー内のチップ矩形 → 世界座標の子 layout（nestedViewRect の逆）。
   // チップをドラッグしたとき、世界座標へ書き戻すために使う。
   worldLayoutFromNestedView(parent, child, chipRect, layerSize) {
-    const parentLayout = this.nodeLayout(parent);
     const { scale, offsetX, offsetY } = this.nestedViewScale(layerSize);
     const safeScale = Math.max(0.0001, scale);
     const interiorX = INTERIOR_STAGE.x + (this.number(chipRect?.x) - offsetX) / safeScale;
@@ -318,11 +334,11 @@ var powanPlacement = {
     const childLayout = this.nodeLayout(child);
     const width = chipRect?.width != null ? this.number(chipRect.width) / safeScale : childLayout.width;
     const height = chipRect?.height != null ? this.number(chipRect.height) / safeScale : childLayout.height;
-    return {
-      x: Math.round(parentLayout.x + interiorX),
-      y: Math.round(parentLayout.y + interiorY),
+    return this.interiorRectToWorldLayout(parent, child, {
+      x: interiorX,
+      y: interiorY,
       width: Math.round(width),
       height: Math.round(height),
-    };
+    });
   },
 };

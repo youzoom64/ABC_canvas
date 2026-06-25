@@ -718,8 +718,7 @@ function saveViewportToDocument() {
   return nextViewport;
 }
 
-// バックエンドは子ポワンの位置を持たない（位置はフロントの powanPlacement が唯一の権限）。
-// 読み込み時にここで、layout が欠けている子だけを唯一の placement で補完する。
+// 古いデータや外部インポートで layout が欠けている子だけを、共通 placement で補完する。
 // 親 → 子の順（top-down）で巡回し、親の layout が決まってから子を配置する。
 function fillMissingChildLayouts(nextDoc) {
   const nodes = Array.isArray(nextDoc?.nodes) ? nextDoc.nodes : [];
@@ -870,15 +869,15 @@ function restoreViewportBeforeInterior() {
 }
 
 function setViewportForInteriorWorld(parent) {
-  focusViewportOnRect(
-    {
-      x: INTERIOR_STAGE.x,
-      y: INTERIOR_STAGE.y,
-      width: INTERIOR_STAGE.width,
-      height: INTERIOR_STAGE.height,
-    },
-    64,
-  );
+  const worldArea = typeof powanPlacement !== "undefined"
+    ? powanPlacement.parentWorldArea(parent)
+    : {
+        x: powanWorkspace.origin.x - INTERIOR_STAGE.width / 2,
+        y: powanWorkspace.origin.y - INTERIOR_STAGE.height / 2,
+        width: INTERIOR_STAGE.width,
+        height: INTERIOR_STAGE.height,
+      };
+  focusViewportOnRect(worldArea, 64);
 }
 
 function currentWorldParent() {
@@ -886,11 +885,9 @@ function currentWorldParent() {
 }
 
 function currentWorldOrigin() {
-  const parent = currentWorldParent();
-  const layout = parent?.layout || {};
   return {
-    x: Number(layout.x || 0),
-    y: Number(layout.y || 0),
+    x: 0,
+    y: 0,
   };
 }
 
