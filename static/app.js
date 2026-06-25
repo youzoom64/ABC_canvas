@@ -1,4 +1,4 @@
-const ABC_CANVAS_SCRIPT_VERSION = "conversation-tabs-1";
+const ABC_CANVAS_SCRIPT_VERSION = "conversation-tabs-2";
 const ABC_CANVAS_SCRIPTS = [
   "/static/js/workspace.js",
   "/static/js/state.js",

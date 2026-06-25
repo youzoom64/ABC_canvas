@@ -678,7 +678,7 @@ body.resizing-tree {
 
 .conversation-panel.collapsed {
   bottom: 0;
-  grid-template-rows: 18px 0 0;
+  grid-template-rows: 18px 0 0 0;
   height: 18px;
   min-height: 18px;
   max-height: 18px;
@@ -738,6 +738,8 @@ body.resizing-conversation {
 }
 
 .conversation-tab-bar {
+  position: relative;
+  z-index: 3;
   min-height: 32px;
   display: flex;
   align-items: end;
@@ -814,13 +816,37 @@ body.resizing-conversation {
   opacity: 1;
 }
 
+.conversation-tab-add {
+  flex: 0 0 auto;
+  width: 30px;
+  height: 28px;
+  padding: 0;
+  border: 1px solid rgba(82, 142, 169, 0.24);
+  border-bottom: 0;
+  border-radius: 8px 8px 0 0;
+  background: rgba(238, 249, 253, 0.72);
+  color: #294c5b;
+  font-size: 18px;
+  font-weight: 750;
+  line-height: 1;
+  box-shadow: none;
+}
+
+.conversation-tab-add:hover {
+  background: rgba(251, 254, 255, 0.94);
+  box-shadow: none;
+}
+
 .conversation-head {
+  position: relative;
+  z-index: 2;
   display: flex;
   align-items: center;
   justify-content: space-between;
   gap: 12px;
   padding: 10px 12px 8px;
   border-bottom: 1px solid rgba(95, 157, 185, 0.18);
+  background: rgba(251, 254, 255, 0.96);
 }
 
 .conversation-label {
@@ -910,6 +936,8 @@ body.resizing-conversation {
 }
 
 .conversation-log {
+  position: relative;
+  z-index: 1;
   min-height: 0;
   display: grid;
   align-content: start;

@@ -161,17 +161,22 @@ var powanExplorer = {
       conversationNodeId = null;
       conversationTabs = [];
       conversationTabStates.clear();
+      activeConversationTabId = null;
       viewportBeforeInterior = null;
     } else if (preserveView) {
       openParentId = nodeById(previousOpenParentId) ? previousOpenParentId : null;
       childEditParentId = nodeById(previousChildEditParentId) ? previousChildEditParentId : null;
       codePanelNodeId = nodeById(previousCodePanelNodeId) ? previousCodePanelNodeId : null;
       conversationNodeId = nodeById(previousConversationNodeId) ? previousConversationNodeId : null;
-      conversationTabs = conversationTabs.filter((tab) => nodeById(tab.nodeId));
-      for (const nodeId of [...conversationTabStates.keys()]) {
-        if (!nodeById(nodeId)) {
-          conversationTabStates.delete(nodeId);
+      conversationTabs = conversationTabs.filter((tab) => !tab.nodeId || nodeById(tab.nodeId));
+      const tabIds = new Set(conversationTabs.map((tab) => tab.id));
+      for (const tabId of [...conversationTabStates.keys()]) {
+        if (!tabIds.has(tabId)) {
+          conversationTabStates.delete(tabId);
         }
+      }
+      if (activeConversationTabId && !tabIds.has(activeConversationTabId)) {
+        activeConversationTabId = conversationTabs[0]?.id || null;
       }
       previousCollapsedIds.forEach((id) => {
         if (nodeById(id)) {
@@ -383,6 +388,16 @@ var powanExplorer = {
     this.select(node.id);
     openConversationPanel(node.id);
     logEvent("debug", "talk-powan-requested", { nodeId: node.id, name: meaningName(node) });
+  },
+  talkToPowanInNewTab(nodeId) {
+    const node = nodeById(nodeId);
+    if (!node) {
+      logEvent("warn", "talk-powan-new-tab-missing-node", { nodeId });
+      return;
+    }
+    this.select(node.id);
+    openConversationPanel(node.id, { tabMode: "new", reason: "talk-powan-new-tab-requested" });
+    logEvent("debug", "talk-powan-new-tab-requested", { nodeId: node.id, name: meaningName(node) });
   },
   toggleConversation(nodeId) {
     const node = nodeById(nodeId);
