@@ -1,0 +1,226 @@
+<!doctype html>
+<html lang="ja">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>ABC Canvas</title>
+    <link rel="icon" href="data:," />
+    <link rel="stylesheet" href="/static/style.css?v=multi-selection-1" />
+  </head>
+  <body>
+    <header class="topbar">
+      <div class="brand">
+        <span class="brand-mark"></span>
+        <span>ABC Canvas</span>
+      </div>
+      <div class="filebar">
+        <span id="projectBadge" class="project-badge"></span>
+        <select id="fileSelect" aria-label="Powan file"></select>
+        <input id="fileInput" class="file-input" type="file" accept=".powan,application/json" />
+        <input id="subtreeImportInput" class="file-input" type="file" accept=".powan,application/json" />
+        <button id="loadButton" type="button">Reload</button>
+        <button id="undoButton" type="button" disabled>Undo</button>
+        <button id="redoButton" type="button" disabled>Redo</button>
+        <button id="newFileButton" type="button">New</button>
+        <button id="saveButton" type="button">Save</button>
+        <button id="saveAsButton" type="button">Save As</button>
+        <button id="settingsButton" type="button">Settings</button>
+        <button id="shutdownButton" class="shutdown-button" type="button">Exit</button>
+        <span id="saveState" class="save-state">ready</span>
+      </div>
+    </header>
+
+    <main class="shell">
+      <aside class="tree-panel" aria-label="Meaning tree">
+        <button id="treePanelToggleButton" class="side-collapse-button tree-collapse-button" type="button" title="左ツリーをしまう" aria-label="左ツリーをしまう">‹</button>
+        <div class="tree-panel-head">意味ツリー</div>
+        <div class="tree-actions" aria-label="選択操作">
+          <button id="treeCopyButton" type="button" disabled>Copy</button>
+          <button id="treeDeleteButton" type="button" disabled>Delete</button>
+        </div>
+        <button id="rootWorldButton" class="root-world-button" type="button">最上位の世界</button>
+        <div id="treeList" class="tree-list"></div>
+        <div id="treeResizeHandle" class="tree-resize-handle" aria-hidden="true"></div>
+      </aside>
+
+      <section id="canvas" class="canvas" aria-label="Meaning canvas">
+        <div id="coordinateBadge" class="coordinate-badge" hidden></div>
+      </section>
+
+      <section id="conversationPanel" class="conversation-panel" hidden>
+        <div id="conversationResizeHandle" class="conversation-resize-handle" aria-hidden="true"></div>
+        <div class="conversation-head">
+          <div>
+            <div class="conversation-label">Talk</div>
+            <div id="conversationNodeName" class="conversation-node">名前のないポワン</div>
+          </div>
+          <div class="conversation-actions">
+            <select id="conversationSessionSelect" class="conversation-session-select" aria-label="会話履歴"></select>
+            <label class="conversation-auto-summary">
+              <input id="conversationAutoSummaryInput" type="checkbox" />
+              自動要約
+            </label>
+            <label class="conversation-tree-context">
+              <input id="conversationTreeContextInput" type="checkbox" />
+              全体像を見せる
+            </label>
+            <input
+              id="conversationAutoSummaryTurnsInput"
+              class="conversation-auto-summary-turns"
+              type="number"
+              min="2"
+              max="500"
+              step="1"
+              value="50"
+              aria-label="自動要約ターン数"
+            />
+            <div class="conversation-font-controls" aria-label="会話文字サイズ">
+              <button id="conversationFontDecreaseButton" class="conversation-font-button" type="button" title="会話文字を小さく">-</button>
+              <span id="conversationFontSizeValue" class="conversation-font-size-value">13</span>
+              <button id="conversationFontIncreaseButton" class="conversation-font-button" type="button" title="会話文字を大きく">+</button>
+            </div>
+            <button id="newConversationButton" class="conversation-head-button" type="button">新規</button>
+            <button id="summarizeConversationButton" class="conversation-head-button" type="button">要約</button>
+            <button id="closeConversationButton" class="conversation-head-button" type="button">Close</button>
+          </div>
+        </div>
+        <div id="conversationLog" class="conversation-log" aria-live="polite"></div>
+        <form id="conversationForm" class="conversation-form">
+          <div class="conversation-composer-main">
+            <div id="conversationAttachmentTray" class="conversation-attachment-tray" hidden></div>
+            <textarea id="conversationInput" rows="2" autocomplete="off" placeholder="ポワンに話しかける"></textarea>
+          </div>
+          <button id="cancelConversationButton" class="conversation-cancel-button" type="button" hidden>Cancel</button>
+          <button id="sendConversationButton" type="submit">Send</button>
+        </form>
+      </section>
+
+      <aside id="panel" class="panel">
+        <button id="panelToggleButton" class="side-collapse-button panel-collapse-button" type="button" title="右メニューをしまう" aria-label="右メニューをしまう">›</button>
+        <div id="panelResizeHandle" class="panel-resize-handle" aria-hidden="true"></div>
+        <div id="normalPanel" class="normal-panel">
+          <div class="panel-section world-status">
+            <div class="world-label">今いる世界</div>
+            <div id="worldName" class="world-name">外側の世界</div>
+            <div id="worldPath" class="world-path">外側</div>
+          </div>
+
+          <div class="panel-section">
+            <label>
+              Title
+              <input id="titleInput" type="text" />
+            </label>
+            <label>
+              Body
+              <textarea id="bodyInput" rows="6"></textarea>
+            </label>
+            <label>
+              種類
+              <select id="powanKindInput">
+                <option value="nerve">神経</option>
+                <option value="organ">臓器</option>
+              </select>
+            </label>
+          </div>
+
+          <div class="panel-section controls">
+            <button id="backButton" type="button" disabled>上の階層へ</button>
+            <button id="addNodeButton" type="button">Add Child</button>
+            <button id="addRootButton" type="button">Add Free Node</button>
+            <button id="deleteButton" type="button">Delete</button>
+          </div>
+
+          <div class="panel-section app-settings">
+            <div class="world-label">設定</div>
+            <label>
+              Shape
+              <select id="shapeInput">
+                <option value="cloud">Cloud</option>
+                <option value="bubble">Bubble</option>
+                <option value="burst">Burst</option>
+                <option value="round">Round</option>
+                <option value="card">Card</option>
+              </select>
+            </label>
+            <label>
+              Color
+              <input id="colorInput" type="color" />
+            </label>
+            <label>
+              Accent
+              <input id="accentInput" type="color" />
+            </label>
+            <div class="toggles">
+              <label><input id="glowInput" type="checkbox" /> Glow</label>
+              <label><input id="blurInput" type="checkbox" /> Soft edge</label>
+              <label><input id="motionInput" type="checkbox" /> Tiny motion</label>
+            </div>
+            <label class="setting-toggle"><input id="randomColorInput" type="checkbox" /> 新規ポワンをランダム色</label>
+            <label>
+              会話サウンド
+              <select id="conversationSoundSelect">
+                <option value="">なし</option>
+              </select>
+            </label>
+            <label class="setting-volume">
+              <span>会話音量 <span id="conversationVolumeValue">55%</span></span>
+              <input id="conversationVolumeInput" type="range" min="0" max="1" step="0.01" />
+            </label>
+            <label>
+              入力中サウンド
+              <select id="inputSoundSelect">
+                <option value="">なし</option>
+              </select>
+            </label>
+            <label class="setting-volume">
+              <span>入力中音量 <span id="inputVolumeValue">55%</span></span>
+              <input id="inputVolumeInput" type="range" min="0" max="1" step="0.01" />
+            </label>
+          </div>
+        </div>
+
+        <div id="codePanel" class="code-panel" hidden>
+          <div class="code-editor-head">
+            <div>
+              <div class="code-editor-label">Code</div>
+              <div id="codeEditorNodeName" class="code-editor-node">名前のないポワン</div>
+            </div>
+            <div class="code-editor-actions">
+              <select id="codeLanguageSelect" class="code-language-select" aria-label="Code language">
+                <option value="auto">Auto</option>
+                <option value="python">Python</option>
+                <option value="javascript">JavaScript</option>
+                <option value="html">HTML</option>
+                <option value="css">CSS</option>
+                <option value="json">JSON</option>
+              </select>
+              <button id="closeCodeButton" class="code-close-button" type="button">Close</button>
+            </div>
+          </div>
+          <div class="code-editor-shell">
+            <pre id="codeLineNumbers" class="code-line-numbers" aria-hidden="true">1</pre>
+            <textarea id="codeInput" class="code-input" spellcheck="false"></textarea>
+            <div id="codeEditorHost" class="code-editor-host"></div>
+          </div>
+        </div>
+      </aside>
+    </main>
+
+    <nav id="nodeContextMenu" class="node-context-menu" hidden>
+      <button id="editMeaningMenuButton" type="button">意味を入力</button>
+      <button id="talkToPowanButton" type="button">ポワンに話しかける</button>
+      <button id="openCodeMenuButton" type="button">コードを開く</button>
+      <button id="arrangePowanMenuButton" type="button">整列</button>
+      <button id="copySelectionMenuButton" type="button">選択をコピー</button>
+      <button id="deleteSelectionMenuButton" type="button">選択を削除</button>
+      <button id="exportPowanMenuButton" type="button">powanをエクスポート</button>
+      <button id="importPowanMenuButton" type="button">powanファイルをこのポワンの下に呼ぶ</button>
+    </nav>
+
+    <nav id="worldContextMenu" class="node-context-menu" hidden>
+      <button id="arrangeWorldMenuButton" type="button">この世界を整列</button>
+    </nav>
+
+    <script src="/static/app.js?v=shift-spread-1"></script>
+  </body>
+</html>

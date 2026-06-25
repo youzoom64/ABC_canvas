@@ -1,0 +1,131 @@
+<!doctype html>
+<html lang="ja">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>ABC Canvas Settings</title>
+    <link rel="icon" href="data:," />
+    <link rel="stylesheet" href="/static/style.css?v=arrange-settings-1" />
+  </head>
+  <body class="settings-page">
+    <header class="topbar">
+      <div class="brand">
+        <span class="brand-mark"></span>
+        <span>ABC Canvas Settings</span>
+      </div>
+      <div class="filebar">
+        <button id="settingsBackButton" type="button">Back</button>
+        <button id="settingsProjectButton" type="button">Projects</button>
+      </div>
+    </header>
+
+    <main class="settings-shell">
+      <section class="settings-board" aria-label="ABC Canvas settings">
+        <div class="settings-title">
+          <h1>設定</h1>
+          <p>会話で鳴らす音は、指定したサウンドフォルダの中から選ぶ。</p>
+        </div>
+
+        <section class="settings-section">
+          <div class="settings-section-head">
+            <h2>サウンドフォルダ</h2>
+            <span id="defaultSoundFolder" class="settings-muted"></span>
+          </div>
+          <div class="settings-folder-row">
+            <input id="soundFolderInput" type="text" autocomplete="off" spellcheck="false" />
+            <button id="browseSoundFolderButton" type="button">Browse...</button>
+            <button id="saveSoundFolderButton" type="button">Save Folder</button>
+            <button id="refreshSoundButton" type="button">Refresh</button>
+          </div>
+        </section>
+
+        <section class="settings-section">
+          <div class="settings-section-head">
+            <h2>会話サウンド</h2>
+            <span class="settings-muted">AIの返事が流れている間に鳴る音</span>
+          </div>
+          <div class="settings-sound-row">
+            <select id="settingsSoundSelect">
+              <option value="">なし</option>
+            </select>
+            <button id="saveConversationSoundButton" type="button">Save Sound</button>
+          </div>
+        </section>
+
+        <section class="settings-section">
+          <div class="settings-section-head">
+            <h2>音量</h2>
+            <span id="soundVolumeValue" class="settings-muted">55%</span>
+          </div>
+          <div class="settings-volume-row">
+            <input id="soundVolumeInput" type="range" min="0" max="1" step="0.01" />
+            <button id="saveSoundVolumeButton" type="button">Save Volume</button>
+          </div>
+        </section>
+
+        <section class="settings-section">
+          <div class="settings-section-head">
+            <h2>入力中サウンド</h2>
+            <span class="settings-muted">AIの返事を待っている間に鳴る音</span>
+          </div>
+          <div class="settings-sound-row">
+            <select id="settingsInputSoundSelect">
+              <option value="">なし</option>
+            </select>
+            <button id="saveInputSoundButton" type="button">Save Sound</button>
+          </div>
+        </section>
+
+        <section class="settings-section">
+          <div class="settings-section-head">
+            <h2>入力中音量</h2>
+            <span id="inputSoundVolumeValue" class="settings-muted">55%</span>
+          </div>
+          <div class="settings-volume-row">
+            <input id="inputSoundVolumeInput" type="range" min="0" max="1" step="0.01" />
+            <button id="saveInputSoundVolumeButton" type="button">Save Volume</button>
+          </div>
+        </section>
+
+        <section class="settings-section">
+          <div class="settings-section-head">
+            <h2>Codex権限</h2>
+            <span class="settings-muted">ポワンと話す時のCodex実行権限</span>
+          </div>
+          <div class="settings-sound-row">
+            <select id="codexSandboxSelect">
+              <option value="danger-full-access">フルアクセス</option>
+              <option value="workspace-write">ワークスペース書き込み</option>
+              <option value="read-only">読み取り専用</option>
+            </select>
+            <button id="saveCodexSandboxButton" type="button">Save Access</button>
+          </div>
+        </section>
+
+        <section class="settings-section">
+          <div class="settings-section-head">
+            <h2>整列</h2>
+            <span class="settings-muted">右クリックの整列で使う間隔と大きさ</span>
+          </div>
+          <div class="settings-range-row">
+            <span>間隔</span>
+            <input id="arrangeSpacingInput" type="range" min="0.7" max="1.4" step="0.05" />
+            <output id="arrangeSpacingValue">1.00</output>
+          </div>
+          <div class="settings-range-row">
+            <span>大きさ</span>
+            <input id="arrangeSizeInput" type="range" min="0.7" max="1.2" step="0.05" />
+            <output id="arrangeSizeValue">1.00</output>
+          </div>
+          <div class="settings-action-row">
+            <button id="saveArrangeButton" type="button">Save Arrange</button>
+          </div>
+        </section>
+
+        <div id="settingsStatus" class="settings-status">ready</div>
+      </section>
+    </main>
+
+    <script src="/static/settings.js?v=arrange-settings-1"></script>
+  </body>
+</html>

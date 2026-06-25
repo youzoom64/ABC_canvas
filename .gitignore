@@ -1,0 +1,30 @@
+# Runtime state
+logs/
+*.log
+*.db
+*.sqlite
+*.sqlite3
+
+# Python/cache
+__pycache__/
+*.py[cod]
+.pytest_cache/
+.ruff_cache/
+
+# Local browser/test state
+.playwright-mcp/
+tmp_*/
+static/experiments/
+powan_lab/
+
+# Local app data
+data/
+setting/settings.json
+setting/sound/*
+!setting/sound/.gitkeep
+
+# Powan workspaces: keep only the public sample nation powan
+powan_work/*
+!powan_work/APIから作ったプロジェクト_20260624_072755/
+powan_work/APIから作ったプロジェクト_20260624_072755/*
+!powan_work/APIから作ったプロジェクト_20260624_072755/project.powan

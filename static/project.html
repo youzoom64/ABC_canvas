@@ -1,0 +1,39 @@
+<!doctype html>
+<html lang="ja">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>ABC Canvas Projects</title>
+    <link rel="icon" href="data:," />
+    <link rel="stylesheet" href="/static/style.css?v=shared-powan-surface-4" />
+  </head>
+  <body class="project-page">
+    <main class="project-shell">
+      <section class="project-board" aria-label="Powan projects">
+        <div class="project-head">
+          <div class="project-brand">
+            <span class="brand-mark"></span>
+            <span>ABC Canvas</span>
+          </div>
+          <div class="project-actions">
+            <button id="projectSettingsButton" type="button">Settings</button>
+            <button id="projectShutdownButton" class="shutdown-button" type="button">Exit</button>
+          </div>
+        </div>
+
+        <form id="projectCreateForm" class="project-create">
+          <label>
+            Project
+            <input id="projectNameInput" type="text" autocomplete="off" />
+          </label>
+          <button type="submit">Create</button>
+        </form>
+
+        <div id="projectList" class="project-list"></div>
+        <div id="projectStatus" class="project-status">ready</div>
+      </section>
+    </main>
+
+    <script src="/static/project.js?v=shutdown-enable-1"></script>
+  </body>
+</html>

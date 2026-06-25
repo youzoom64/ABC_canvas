@@ -1,0 +1,1532 @@
+{
+  "version": 1,
+  "canvas": {
+    "background": "#e8f8ff",
+    "viewport": {
+      "x": -8399,
+      "y": -7905,
+      "scale": 1.7015,
+      "openParentId": null
+    },
+    "workspace": {
+      "version": 1,
+      "width": 10000,
+      "height": 10000,
+      "origin": {
+        "x": 5000,
+        "y": 5000
+      }
+    }
+  },
+  "nodes": [
+    {
+      "id": "node-7001a6d464",
+      "title": "国家",
+      "body": "人々・土地・ルール・権力・共同体がまとまって、社会を運営する大きな仕組み。上位の神経ポワンとして、国民・領土・政府・法律・経済などの子ポワンへ分解できる。",
+      "code": "from __future__ import annotations\n\nfrom dataclasses import dataclass\nfrom typing import Any\n\nPOWAN_TYPE = \"neural\"\nTITLE = \"国家\"\nMEANING = \"人々・土地・ルール・権力・共同体がまとまり、社会を運営する大きな仕組み\"\n\n\n@dataclass(frozen=True)\nclass ChildPowan:\n    key: str\n    title: str\n    role: str\n\n\nCHILDREN = (\n    ChildPowan(\"citizens\", \"国民\", \"権利を持ち、義務を負い、文化と社会を作る中心\"),\n    ChildPowan(\"territory\", \"領土\", \"土地、境界、資源、生活圏を支える土台\"),\n    ChildPowan(\"government\", \"政府\", \"決定し、実行し、調整する運営機構\"),\n    ChildPowan(\"law\", \"法律\", \"自由と制限の線引きを作る共通ルール\"),\n    ChildPowan(\"economy\", \"経済\", \"人・物・お金・仕事を巡らせる循環\"),\n)\n\n\ndef describe_nation() -> dict[str, Any]:\n    return {\n        \"title\": TITLE,\n        \"type\": POWAN_TYPE,\n        \"meaning\": MEANING,\n        \"children\": [f\"{child.title}: {child.role}\" for child in CHILDREN],\n    }\n\n\ndef read_nation_state(signals: dict[str, str] | None = None) -> dict[str, Any]:\n    signals = signals or {}\n    report = [\n        {\n            \"key\": child.key,\n            \"title\": child.title,\n            \"role\": child.role,\n            \"signal\": signals.get(child.key, \"unknown\"),\n        }\n        for child in CHILDREN\n    ]\n    weak_points = [\n        item[\"title\"]\n        for item in report\n        if item[\"signal\"] in {\"weak\", \"missing\"}\n    ]\n    return {\n        \"title\": TITLE,\n        \"stable\": not weak_points,\n        \"weak_points\": weak_points,\n        \"report\": report,\n    }\n\n\ndef route_to_child(intent: object) -> str:\n    text = str(intent or \"\")\n    routes = (\n        ((\"人\", \"権利\", \"義務\", \"文化\", \"社会\"), \"国民\"),\n        ((\"土地\", \"境界\", \"資源\", \"場所\", \"領土\"), \"領土\"),\n        ((\"運営\", \"決定\", \"実行\", \"行政\", \"政府\"), \"政府\"),\n        ((\"ルール\", \"自由\", \"制限\", \"法律\", \"違反\"), \"法律\"),\n        ((\"金\", \"仕事\", \"物\", \"市場\", \"経済\"), \"経済\"),\n    )\n    for keywords, child_title in routes:\n        if any(keyword in text for keyword in keywords):\n            return child_title\n    return TITLE\n",
+      "parent": null,
+      "children": [
+        "node-55cfe2f097",
+        "node-16f675f28a",
+        "node-77a5f3ded7",
+        "node-e558225bde",
+        "node-c3ee121c62"
+      ],
+      "style": {
+        "shape": "cloud",
+        "color": "#ffffff",
+        "accent": "#8ddcff",
+        "glow": true,
+        "blur": true,
+        "motion": "soft"
+      },
+      "layout": {
+        "x": 4796,
+        "y": 4652,
+        "width": 720,
+        "height": 620
+      },
+      "userSized": true,
+      "holdingCount": 6,
+      "codeLanguage": "python"
+    },
+    {
+      "id": "node-55cfe2f097",
+      "title": "国民",
+      "body": "国家を構成し、その中で暮らす人々。権利を持ち、義務を負い、文化や社会を作る中心。",
+      "code": "",
+      "parent": "node-7001a6d464",
+      "children": [
+        "node-54686dc174",
+        "node-bf7e3dc75d",
+        "node-f91323286d",
+        "node-e720fe495b",
+        "node-3d50fea7ad"
+      ],
+      "style": {
+        "shape": "cloud",
+        "color": "#ffffff",
+        "accent": "#8ddcff",
+        "glow": true,
+        "blur": true,
+        "motion": "soft"
+      },
+      "layout": {
+        "x": 5207,
+        "y": 4805,
+        "width": 357,
+        "height": 151
+      },
+      "codeLanguage": "auto",
+      "nestedLayoutByParent": {
+        "node-7001a6d464": {
+          "x": 321,
+          "y": 64,
+          "width": 195,
+          "height": 81
+        }
+      },
+      "holdingCount": 1,
+      "userSized": true
+    },
+    {
+      "id": "node-16f675f28a",
+      "title": "領土",
+      "body": "国家が立つ場所。土地、境界、資源、生活圏を持つ土台。",
+      "code": "",
+      "parent": "node-7001a6d464",
+      "children": [
+        "node-df8ecf1154",
+        "node-c256324ed4",
+        "node-d9fcec08d2",
+        "node-cb27589604"
+      ],
+      "style": {
+        "shape": "cloud",
+        "color": "#ffffff",
+        "accent": "#8ddcff",
+        "glow": true,
+        "blur": true,
+        "motion": "soft"
+      },
+      "layout": {
+        "x": 5003,
+        "y": 4834,
+        "width": 348,
+        "height": 189
+      },
+      "codeLanguage": "auto",
+      "nestedLayoutByParent": {
+        "node-7001a6d464": {
+          "x": 74,
+          "y": 138,
+          "width": 195,
+          "height": 81
+        }
+      },
+      "userSized": true
+    },
+    {
+      "id": "node-77a5f3ded7",
+      "title": "政府",
+      "body": "国家を運営する仕組み。決定し、実行し、調整する役目を持つ。",
+      "code": "",
+      "parent": "node-7001a6d464",
+      "children": [],
+      "style": {
+        "shape": "cloud",
+        "color": "#ffffff",
+        "accent": "#8ddcff",
+        "glow": true,
+        "blur": true,
+        "motion": "soft"
+      },
+      "layout": {
+        "x": 5423,
+        "y": 4914,
+        "width": 180,
+        "height": 104
+      },
+      "codeLanguage": "auto",
+      "nestedLayoutByParent": {
+        "node-7001a6d464": {
+          "x": 482,
+          "y": 202,
+          "width": 176,
+          "height": 73
+        }
+      }
+    },
+    {
+      "id": "node-e558225bde",
+      "title": "法律",
+      "body": "人々が同じ社会で動くためのルール。自由と制限の線引きを作る。",
+      "code": "",
+      "parent": "node-7001a6d464",
+      "children": [],
+      "style": {
+        "shape": "cloud",
+        "color": "#ffffff",
+        "accent": "#8ddcff",
+        "glow": true,
+        "blur": true,
+        "motion": "soft"
+      },
+      "layout": {
+        "x": 5064,
+        "y": 5022,
+        "width": 180,
+        "height": 104
+      },
+      "codeLanguage": "auto",
+      "nestedLayoutByParent": {
+        "node-7001a6d464": {
+          "x": 56,
+          "y": 371,
+          "width": 176,
+          "height": 73
+        }
+      }
+    },
+    {
+      "id": "node-c3ee121c62",
+      "title": "経済",
+      "body": "人・物・お金・仕事が巡る流れ。国家の活動を支える循環。",
+      "code": "",
+      "parent": "node-7001a6d464",
+      "children": [
+        "node-9901c3eaef",
+        "node-c221d8c84e",
+        "node-d02a8e517c",
+        "node-40e22be4c6",
+        "node-b2ab9a69b9",
+        "node-255c847627"
+      ],
+      "style": {
+        "shape": "cloud",
+        "color": "#ffffff",
+        "accent": "#8ddcff",
+        "glow": true,
+        "blur": true,
+        "motion": "soft"
+      },
+      "layout": {
+        "x": 5287,
+        "y": 5041,
+        "width": 292,
+        "height": 124
+      },
+      "codeLanguage": "auto",
+      "nestedLayoutByParent": {
+        "node-7001a6d464": {
+          "x": 381,
+          "y": 408,
+          "width": 188,
+          "height": 90
+        }
+      }
+    },
+    {
+      "id": "node-54686dc174",
+      "title": "権利を持つ人",
+      "body": "自由、平等、幸福を求める力を持つ。国家の中で守られるべきものを担当する。",
+      "code": "",
+      "parent": "node-55cfe2f097",
+      "children": [],
+      "style": {
+        "shape": "cloud",
+        "color": "#ffffff",
+        "accent": "#8ddcff",
+        "glow": true,
+        "blur": true,
+        "motion": "soft"
+      },
+      "layout": {
+        "x": 5586,
+        "y": 5032,
+        "width": 180,
+        "height": 112
+      },
+      "codeLanguage": "auto",
+      "nestedLayoutByParent": {
+        "node-55cfe2f097": {
+          "x": 79,
+          "y": 61,
+          "width": 72,
+          "height": 30
+        }
+      }
+    },
+    {
+      "id": "node-bf7e3dc75d",
+      "title": "義務を担う人",
+      "body": "税を納め、ルールを守り、社会を支える。国家を倒れないようにする柱。",
+      "code": "",
+      "parent": "node-55cfe2f097",
+      "children": [],
+      "style": {
+        "shape": "cloud",
+        "color": "#ffffff",
+        "accent": "#8ddcff",
+        "glow": true,
+        "blur": true,
+        "motion": "soft"
+      },
+      "layout": {
+        "x": 5837,
+        "y": 4884,
+        "width": 180,
+        "height": 112
+      },
+      "codeLanguage": "auto",
+      "nestedLayoutByParent": {
+        "node-55cfe2f097": {
+          "x": 214,
+          "y": 22,
+          "width": 72,
+          "height": 30
+        }
+      }
+    },
+    {
+      "id": "node-f91323286d",
+      "title": "共同体で暮らす人",
+      "body": "家族、地域、職場、学校などでつながって生きる。人を孤立させず社会を編む。",
+      "code": "",
+      "parent": "node-55cfe2f097",
+      "children": [],
+      "style": {
+        "shape": "cloud",
+        "color": "#ffffff",
+        "accent": "#8ddcff",
+        "glow": true,
+        "blur": true,
+        "motion": "soft"
+      },
+      "layout": {
+        "x": 5591,
+        "y": 4842,
+        "width": 180,
+        "height": 112
+      },
+      "codeLanguage": "auto",
+      "nestedLayoutByParent": {
+        "node-55cfe2f097": {
+          "x": 108,
+          "y": 14,
+          "width": 65,
+          "height": 28
+        }
+      }
+    },
+    {
+      "id": "node-e720fe495b",
+      "title": "政治に参加する人",
+      "body": "意見を持ち、選び、時には声を上げる。国家の進路を決める舵に触れる。",
+      "code": "",
+      "parent": "node-55cfe2f097",
+      "children": [],
+      "style": {
+        "shape": "cloud",
+        "color": "#ffffff",
+        "accent": "#8ddcff",
+        "glow": true,
+        "blur": true,
+        "motion": "soft"
+      },
+      "layout": {
+        "x": 5476,
+        "y": 5077,
+        "width": 180,
+        "height": 112
+      },
+      "codeLanguage": "auto",
+      "nestedLayoutByParent": {
+        "node-55cfe2f097": {
+          "x": 20,
+          "y": 73,
+          "width": 72,
+          "height": 30
+        }
+      }
+    },
+    {
+      "id": "node-3d50fea7ad",
+      "title": "文化を作る人",
+      "body": "言葉、習慣、芸術、暮らし方を育てる。国の空気や色を作る。",
+      "code": "",
+      "parent": "node-55cfe2f097",
+      "children": [],
+      "style": {
+        "shape": "cloud",
+        "color": "#ffffff",
+        "accent": "#8ddcff",
+        "glow": true,
+        "blur": true,
+        "motion": "soft"
+      },
+      "layout": {
+        "x": 5800,
+        "y": 5070,
+        "width": 180,
+        "height": 112
+      },
+      "codeLanguage": "auto",
+      "nestedLayoutByParent": {
+        "node-55cfe2f097": {
+          "x": 194,
+          "y": 71,
+          "width": 72,
+          "height": 30
+        }
+      }
+    },
+    {
+      "id": "node-df8ecf1154",
+      "title": "土地",
+      "body": "山、平野、島、川、森など、国家が実際に足を置く場所。領土の物理的な地面であり、国家が立つ土台。",
+      "code": "",
+      "parent": "node-16f675f28a",
+      "children": [
+        "node-302fd7b903",
+        "node-4a5b6a415b",
+        "node-936571e4e6",
+        "node-dac901589c"
+      ],
+      "style": {
+        "shape": "cloud",
+        "color": "#ffffff",
+        "accent": "#8ddcff",
+        "glow": true,
+        "blur": true,
+        "motion": "soft"
+      },
+      "layout": {
+        "x": 5165,
+        "y": 4917,
+        "width": 258,
+        "height": 140
+      },
+      "codeLanguage": "auto",
+      "nestedLayoutByParent": {
+        "node-16f675f28a": {
+          "x": 36,
+          "y": 23,
+          "width": 96,
+          "height": 38
+        }
+      }
+    },
+    {
+      "id": "node-c256324ed4",
+      "title": "境界",
+      "body": "ここからここまでがその国だと示す線。地図上の輪郭であり、外と内を分ける約束。",
+      "code": "",
+      "parent": "node-16f675f28a",
+      "children": [],
+      "style": {
+        "shape": "cloud",
+        "color": "#ffffff",
+        "accent": "#8ddcff",
+        "glow": true,
+        "blur": true,
+        "motion": "soft"
+      },
+      "layout": {
+        "x": 5441,
+        "y": 4883,
+        "width": 220,
+        "height": 132
+      },
+      "codeLanguage": "auto",
+      "nestedLayoutByParent": {
+        "node-16f675f28a": {
+          "x": 170,
+          "y": 5,
+          "width": 96,
+          "height": 38
+        }
+      }
+    },
+    {
+      "id": "node-d9fcec08d2",
+      "title": "資源",
+      "body": "水、鉱物、森林、農地、海産物など、暮らしや産業を支える領土の恵み。",
+      "code": "",
+      "parent": "node-16f675f28a",
+      "children": [],
+      "style": {
+        "shape": "cloud",
+        "color": "#ffffff",
+        "accent": "#8ddcff",
+        "glow": true,
+        "blur": true,
+        "motion": "soft"
+      },
+      "layout": {
+        "x": 5188,
+        "y": 5121,
+        "width": 220,
+        "height": 132
+      },
+      "codeLanguage": "auto",
+      "nestedLayoutByParent": {
+        "node-16f675f28a": {
+          "x": 38,
+          "y": 97,
+          "width": 96,
+          "height": 38
+        }
+      }
+    },
+    {
+      "id": "node-cb27589604",
+      "title": "生活圏",
+      "body": "人が住み、働き、移動し、文化を育てる場所。領土をただの地面から暮らしの舞台へ変える範囲。",
+      "code": "",
+      "parent": "node-16f675f28a",
+      "children": [],
+      "style": {
+        "shape": "cloud",
+        "color": "#ffffff",
+        "accent": "#8ddcff",
+        "glow": true,
+        "blur": true,
+        "motion": "soft"
+      },
+      "layout": {
+        "x": 5499,
+        "y": 5137,
+        "width": 220,
+        "height": 132
+      },
+      "codeLanguage": "auto",
+      "nestedLayoutByParent": {
+        "node-16f675f28a": {
+          "x": 200,
+          "y": 103,
+          "width": 96,
+          "height": 38
+        }
+      }
+    },
+    {
+      "id": "node-302fd7b903",
+      "title": "地形",
+      "body": "山、平野、丘、谷、島など、土地そのものの起伏や形。国家の足元にある凹凸と広がり。",
+      "code": "",
+      "parent": "node-df8ecf1154",
+      "children": [
+        "node-fc8625aed7",
+        "node-1fb5a8c431",
+        "node-d6e3e90df3",
+        "node-d258b44e52",
+        "node-f54f32e96b"
+      ],
+      "style": {
+        "shape": "cloud",
+        "color": "#ffffff",
+        "accent": "#8ddcff",
+        "glow": true,
+        "blur": true,
+        "motion": "soft"
+      },
+      "layout": {
+        "x": 5789,
+        "y": 4891,
+        "width": 292,
+        "height": 132
+      },
+      "codeLanguage": "auto",
+      "nestedLayoutByParent": {
+        "node-df8ecf1154": {
+          "x": 28,
+          "y": 28,
+          "width": 96,
+          "height": 38
+        }
+      }
+    },
+    {
+      "id": "node-4a5b6a415b",
+      "title": "水辺",
+      "body": "川、湖、海岸、湿地など、水と接している土地。生活、移動、境界、恵みの流れを作る場所。",
+      "code": "",
+      "parent": "node-df8ecf1154",
+      "children": [],
+      "style": {
+        "shape": "cloud",
+        "color": "#ffffff",
+        "accent": "#8ddcff",
+        "glow": true,
+        "blur": true,
+        "motion": "soft"
+      },
+      "layout": {
+        "x": 5825,
+        "y": 5043,
+        "width": 220,
+        "height": 132
+      },
+      "codeLanguage": "auto",
+      "nestedLayoutByParent": {
+        "node-df8ecf1154": {
+          "x": 134,
+          "y": 28,
+          "width": 96,
+          "height": 38
+        }
+      }
+    },
+    {
+      "id": "node-936571e4e6",
+      "title": "森林",
+      "body": "木々や草花が広がる土地。資源であり、生き物の住みかであり、土地の呼吸を支える場所。",
+      "code": "",
+      "parent": "node-df8ecf1154",
+      "children": [],
+      "style": {
+        "shape": "cloud",
+        "color": "#ffffff",
+        "accent": "#8ddcff",
+        "glow": true,
+        "blur": true,
+        "motion": "soft"
+      },
+      "layout": {
+        "x": 5825,
+        "y": 5195,
+        "width": 220,
+        "height": 132
+      },
+      "codeLanguage": "auto",
+      "nestedLayoutByParent": {
+        "node-df8ecf1154": {
+          "x": 28,
+          "y": 74,
+          "width": 96,
+          "height": 38
+        }
+      }
+    },
+    {
+      "id": "node-dac901589c",
+      "title": "居住可能地",
+      "body": "人が住み、道を作り、町や村を置ける土地。国家の暮らしが根を張る足場。",
+      "code": "",
+      "parent": "node-df8ecf1154",
+      "children": [],
+      "style": {
+        "shape": "cloud",
+        "color": "#ffffff",
+        "accent": "#8ddcff",
+        "glow": true,
+        "blur": true,
+        "motion": "soft"
+      },
+      "layout": {
+        "x": 5825,
+        "y": 5347,
+        "width": 220,
+        "height": 132
+      },
+      "codeLanguage": "auto",
+      "nestedLayoutByParent": {
+        "node-df8ecf1154": {
+          "x": 134,
+          "y": 74,
+          "width": 96,
+          "height": 38
+        }
+      }
+    },
+    {
+      "id": "node-fc8625aed7",
+      "title": "山地",
+      "body": "高く盛り上がった土地。国家の背骨のように、気候・移動・防衛・水の流れに影響する地形。",
+      "code": "",
+      "parent": "node-302fd7b903",
+      "children": [
+        "node-2382096a3d",
+        "node-3fabfcf438",
+        "node-5f440f97b7",
+        "node-8d7ecf85e5",
+        "node-888c4efc5b",
+        "node-5014e9d58d",
+        "node-c6c44d268f",
+        "node-6fc6dbf574",
+        "node-c521405234"
+      ],
+      "style": {
+        "shape": "cloud",
+        "color": "#ffffff",
+        "accent": "#8ddcff",
+        "glow": true,
+        "blur": true,
+        "motion": "soft"
+      },
+      "layout": {
+        "x": 6049,
+        "y": 5071,
+        "width": 292,
+        "height": 162
+      },
+      "codeLanguage": "auto",
+      "nestedLayoutByParent": {
+        "node-302fd7b903": {
+          "x": 28,
+          "y": 28,
+          "width": 72,
+          "height": 30
+        }
+      }
+    },
+    {
+      "id": "node-1fb5a8c431",
+      "title": "平野",
+      "body": "広くてなだらかな土地。人が住み、農業や都市が広がりやすい、国家の暮らしを受け止める足場。",
+      "code": "",
+      "parent": "node-302fd7b903",
+      "children": [],
+      "style": {
+        "shape": "cloud",
+        "color": "#ffffff",
+        "accent": "#8ddcff",
+        "glow": true,
+        "blur": true,
+        "motion": "soft"
+      },
+      "layout": {
+        "x": 6105,
+        "y": 5278,
+        "width": 180,
+        "height": 112
+      },
+      "codeLanguage": "auto",
+      "nestedLayoutByParent": {
+        "node-302fd7b903": {
+          "x": 110,
+          "y": 28,
+          "width": 72,
+          "height": 30
+        }
+      }
+    },
+    {
+      "id": "node-d6e3e90df3",
+      "title": "丘陵",
+      "body": "山ほど高くなく、平野ほど平らでもない、ゆるやかに波打つ土地。山地と平野のあいだをつなぐ起伏。",
+      "code": "",
+      "parent": "node-302fd7b903",
+      "children": [],
+      "style": {
+        "shape": "cloud",
+        "color": "#ffffff",
+        "accent": "#8ddcff",
+        "glow": true,
+        "blur": true,
+        "motion": "soft"
+      },
+      "layout": {
+        "x": 6105,
+        "y": 5460,
+        "width": 180,
+        "height": 112
+      },
+      "codeLanguage": "auto",
+      "nestedLayoutByParent": {
+        "node-302fd7b903": {
+          "x": 192,
+          "y": 28,
+          "width": 72,
+          "height": 30
+        }
+      }
+    },
+    {
+      "id": "node-d258b44e52",
+      "title": "谷",
+      "body": "土地が低く刻まれた場所。川や道が通りやすく、移動・水・集落の流れを作るくぼみ。",
+      "code": "",
+      "parent": "node-302fd7b903",
+      "children": [],
+      "style": {
+        "shape": "cloud",
+        "color": "#ffffff",
+        "accent": "#8ddcff",
+        "glow": true,
+        "blur": true,
+        "motion": "soft"
+      },
+      "layout": {
+        "x": 6105,
+        "y": 5642,
+        "width": 180,
+        "height": 112
+      },
+      "codeLanguage": "auto",
+      "nestedLayoutByParent": {
+        "node-302fd7b903": {
+          "x": 28,
+          "y": 66,
+          "width": 72,
+          "height": 30
+        }
+      }
+    },
+    {
+      "id": "node-f54f32e96b",
+      "title": "島",
+      "body": "水に囲まれた土地。交通、防衛、境界、独自の暮らし方に強い意味を持つ地形。",
+      "code": "",
+      "parent": "node-302fd7b903",
+      "children": [],
+      "style": {
+        "shape": "cloud",
+        "color": "#ffffff",
+        "accent": "#8ddcff",
+        "glow": true,
+        "blur": true,
+        "motion": "soft"
+      },
+      "layout": {
+        "x": 6105,
+        "y": 5824,
+        "width": 180,
+        "height": 112
+      },
+      "codeLanguage": "auto",
+      "nestedLayoutByParent": {
+        "node-302fd7b903": {
+          "x": 110,
+          "y": 66,
+          "width": 72,
+          "height": 30
+        }
+      }
+    },
+    {
+      "id": "node-2382096a3d",
+      "title": "高い稜線",
+      "body": "山地の芯になる高く連なる尾根。土地を大きく区切り、国土の骨格として境界や見通しを作る。",
+      "code": "",
+      "parent": "node-fc8625aed7",
+      "children": [],
+      "style": {
+        "shape": "cloud",
+        "color": "#ffffff",
+        "accent": "#8ddcff",
+        "glow": true,
+        "blur": true,
+        "motion": "soft"
+      },
+      "layout": {
+        "x": 6348,
+        "y": 5265,
+        "width": 180,
+        "height": 112
+      },
+      "codeLanguage": "auto",
+      "nestedLayoutByParent": {
+        "node-fc8625aed7": {
+          "x": 28,
+          "y": 28,
+          "width": 72,
+          "height": 30
+        }
+      }
+    },
+    {
+      "id": "node-3fabfcf438",
+      "title": "水源の山肌",
+      "body": "雨や雪を受け止め、川の始まりを生む斜面。水の流れを決め、下流の暮らしや農地を支える。",
+      "code": "",
+      "parent": "node-fc8625aed7",
+      "children": [],
+      "style": {
+        "shape": "cloud",
+        "color": "#ffffff",
+        "accent": "#8ddcff",
+        "glow": true,
+        "blur": true,
+        "motion": "soft"
+      },
+      "layout": {
+        "x": 6632,
+        "y": 5265,
+        "width": 180,
+        "height": 112
+      },
+      "codeLanguage": "auto",
+      "nestedLayoutByParent": {
+        "node-fc8625aed7": {
+          "x": 110,
+          "y": 28,
+          "width": 72,
+          "height": 30
+        }
+      }
+    },
+    {
+      "id": "node-5f440f97b7",
+      "title": "気候を分ける壁",
+      "body": "風や雲の通り道を変え、雨の多い側と乾いた側を作る山地の働き。地域ごとの気候差を生む。",
+      "code": "",
+      "parent": "node-fc8625aed7",
+      "children": [],
+      "style": {
+        "shape": "cloud",
+        "color": "#ffffff",
+        "accent": "#8ddcff",
+        "glow": true,
+        "blur": true,
+        "motion": "soft"
+      },
+      "layout": {
+        "x": 6348,
+        "y": 5425,
+        "width": 180,
+        "height": 112
+      },
+      "codeLanguage": "auto",
+      "nestedLayoutByParent": {
+        "node-fc8625aed7": {
+          "x": 192,
+          "y": 28,
+          "width": 72,
+          "height": 30
+        }
+      }
+    },
+    {
+      "id": "node-8d7ecf85e5",
+      "title": "越えにくい防壁",
+      "body": "移動や侵入を難しくする険しい地形。国境、防衛線、交通路の選び方に強く影響する。",
+      "code": "",
+      "parent": "node-fc8625aed7",
+      "children": [],
+      "style": {
+        "shape": "cloud",
+        "color": "#ffffff",
+        "accent": "#8ddcff",
+        "glow": true,
+        "blur": true,
+        "motion": "soft"
+      },
+      "layout": {
+        "x": 6632,
+        "y": 5425,
+        "width": 180,
+        "height": 112
+      },
+      "codeLanguage": "auto",
+      "nestedLayoutByParent": {
+        "node-fc8625aed7": {
+          "x": 28,
+          "y": 66,
+          "width": 72,
+          "height": 30
+        }
+      }
+    },
+    {
+      "id": "node-888c4efc5b",
+      "title": "峠と谷道",
+      "body": "山地を越えるための通り道。人、物資、文化が山をまたいで行き来する細い門になる。",
+      "code": "",
+      "parent": "node-fc8625aed7",
+      "children": [],
+      "style": {
+        "shape": "cloud",
+        "color": "#ffffff",
+        "accent": "#8ddcff",
+        "glow": true,
+        "blur": true,
+        "motion": "soft"
+      },
+      "layout": {
+        "x": 6348,
+        "y": 5585,
+        "width": 180,
+        "height": 112
+      },
+      "codeLanguage": "auto",
+      "nestedLayoutByParent": {
+        "node-fc8625aed7": {
+          "x": 110,
+          "y": 66,
+          "width": 72,
+          "height": 30
+        }
+      }
+    },
+    {
+      "id": "node-5014e9d58d",
+      "title": "水を生む背骨",
+      "body": "山地に降った雨や雪を受け止め、川の源流を作る子ポワン。国家の水脈を上から配る、巨大な貯水塔のような役目を持つ。",
+      "code": "",
+      "parent": "node-fc8625aed7",
+      "children": [],
+      "style": {
+        "shape": "cloud",
+        "color": "#ffffff",
+        "accent": "#8ddcff",
+        "glow": true,
+        "blur": true,
+        "motion": "soft"
+      },
+      "layout": {
+        "x": 6632,
+        "y": 5585,
+        "width": 180,
+        "height": 112
+      },
+      "codeLanguage": "auto",
+      "nestedLayoutByParent": {
+        "node-fc8625aed7": {
+          "x": 192,
+          "y": 66,
+          "width": 72,
+          "height": 30
+        }
+      }
+    },
+    {
+      "id": "node-c6c44d268f",
+      "title": "雲を止める壁",
+      "body": "風と雲を受け止め、雨・雪・乾燥の境目を作る子ポワン。山地が気候を左右する、空に立つ大きな仕切り板のような役目を持つ。",
+      "code": "",
+      "parent": "node-fc8625aed7",
+      "children": [],
+      "style": {
+        "shape": "cloud",
+        "color": "#ffffff",
+        "accent": "#8ddcff",
+        "glow": true,
+        "blur": true,
+        "motion": "soft"
+      },
+      "layout": {
+        "x": 6348,
+        "y": 5745,
+        "width": 180,
+        "height": 112
+      },
+      "codeLanguage": "auto",
+      "nestedLayoutByParent": {
+        "node-fc8625aed7": {
+          "x": 28,
+          "y": 104,
+          "width": 72,
+          "height": 30
+        }
+      }
+    },
+    {
+      "id": "node-6fc6dbf574",
+      "title": "越える道の試練",
+      "body": "人や軍、交易路が山地を越える時に生まれる難しさを表す子ポワン。峠・街道・隘路を通じて、移動の速度と国家のつながり方を決める。",
+      "code": "",
+      "parent": "node-fc8625aed7",
+      "children": [],
+      "style": {
+        "shape": "cloud",
+        "color": "#ffffff",
+        "accent": "#8ddcff",
+        "glow": true,
+        "blur": true,
+        "motion": "soft"
+      },
+      "layout": {
+        "x": 6632,
+        "y": 5745,
+        "width": 180,
+        "height": 112
+      },
+      "codeLanguage": "auto",
+      "nestedLayoutByParent": {
+        "node-fc8625aed7": {
+          "x": 110,
+          "y": 104,
+          "width": 72,
+          "height": 30
+        }
+      }
+    },
+    {
+      "id": "node-c521405234",
+      "title": "守りの高み",
+      "body": "山地が天然の城壁となり、防衛線や国境感覚を作る子ポワン。攻める側には障害、守る側には見張り台になる。",
+      "code": "",
+      "parent": "node-fc8625aed7",
+      "children": [
+        "node-bbc8901fab",
+        "node-2b273e2fa1",
+        "node-44f82026c4",
+        "node-0724d2f3d7"
+      ],
+      "style": {
+        "shape": "cloud",
+        "color": "#ffffff",
+        "accent": "#8ddcff",
+        "glow": true,
+        "blur": true,
+        "motion": "soft"
+      },
+      "layout": {
+        "x": 6309,
+        "y": 5891,
+        "width": 258,
+        "height": 140
+      },
+      "codeLanguage": "auto",
+      "nestedLayoutByParent": {
+        "node-fc8625aed7": {
+          "x": 192,
+          "y": 104,
+          "width": 72,
+          "height": 30
+        }
+      }
+    },
+    {
+      "id": "node-bbc8901fab",
+      "title": "遠くを見る尾根",
+      "body": "高い尾根や山頂から周囲を見渡し、敵や人の動きを早く見つける子ポワン。守る側にとって、山が巨大な見張り台になる働き。",
+      "code": "",
+      "parent": "node-c521405234",
+      "children": [
+        "node-94796388b7",
+        "node-1630a346a1",
+        "node-11022db84c",
+        "node-f97a6fbaff"
+      ],
+      "style": {
+        "shape": "cloud",
+        "color": "#ffffff",
+        "accent": "#8ddcff",
+        "glow": true,
+        "blur": true,
+        "motion": "soft"
+      },
+      "layout": {
+        "x": 6569,
+        "y": 6071,
+        "width": 258,
+        "height": 140
+      },
+      "codeLanguage": "auto",
+      "nestedLayoutByParent": {
+        "node-c521405234": {
+          "x": 28,
+          "y": 28,
+          "width": 96,
+          "height": 38
+        }
+      }
+    },
+    {
+      "id": "node-2b273e2fa1",
+      "title": "進みにくい斜面",
+      "body": "急な斜面、岩場、深い谷が進軍や移動を遅らせる子ポワン。攻める側の勢いを削り、守る側に時間を与える天然の障害。",
+      "code": "",
+      "parent": "node-c521405234",
+      "children": [],
+      "style": {
+        "shape": "cloud",
+        "color": "#ffffff",
+        "accent": "#8ddcff",
+        "glow": true,
+        "blur": true,
+        "motion": "soft"
+      },
+      "layout": {
+        "x": 6872,
+        "y": 6075,
+        "width": 220,
+        "height": 132
+      },
+      "codeLanguage": "auto",
+      "nestedLayoutByParent": {
+        "node-c521405234": {
+          "x": 134,
+          "y": 28,
+          "width": 96,
+          "height": 38
+        }
+      }
+    },
+    {
+      "id": "node-44f82026c4",
+      "title": "境になる稜線",
+      "body": "山の連なりや稜線が、ここから向こうは別の領域だという感覚を作る子ポワン。国境や勢力圏の線を、人の心にも地図にも刻む働き。",
+      "code": "",
+      "parent": "node-c521405234",
+      "children": [],
+      "style": {
+        "shape": "cloud",
+        "color": "#ffffff",
+        "accent": "#8ddcff",
+        "glow": true,
+        "blur": true,
+        "motion": "soft"
+      },
+      "layout": {
+        "x": 6588,
+        "y": 6235,
+        "width": 220,
+        "height": 132
+      },
+      "codeLanguage": "auto",
+      "nestedLayoutByParent": {
+        "node-c521405234": {
+          "x": 28,
+          "y": 74,
+          "width": 96,
+          "height": 38
+        }
+      }
+    },
+    {
+      "id": "node-0724d2f3d7",
+      "title": "守備の要所",
+      "body": "峠、砦、山城のように、限られた通り道を押さえて守る子ポワン。少ない力でも大きな侵入路を止められる、防衛の急所になる。",
+      "code": "",
+      "parent": "node-c521405234",
+      "children": [],
+      "style": {
+        "shape": "cloud",
+        "color": "#ffffff",
+        "accent": "#8ddcff",
+        "glow": true,
+        "blur": true,
+        "motion": "soft"
+      },
+      "layout": {
+        "x": 6872,
+        "y": 6235,
+        "width": 220,
+        "height": 132
+      },
+      "codeLanguage": "auto",
+      "nestedLayoutByParent": {
+        "node-c521405234": {
+          "x": 134,
+          "y": 74,
+          "width": 96,
+          "height": 38
+        }
+      }
+    },
+    {
+      "id": "node-94796388b7",
+      "title": "視界が開ける高さ",
+      "body": "高い尾根や山頂にいることで、遠くの道・谷・集落の動きまで見渡せる子ポワン。守る側に、早く気づくための広い視野を与える。",
+      "code": "",
+      "parent": "node-bbc8901fab",
+      "children": [],
+      "style": {
+        "shape": "cloud",
+        "color": "#efe3ff",
+        "accent": "#9b72df",
+        "glow": true,
+        "blur": true,
+        "motion": "soft"
+      },
+      "layout": {
+        "x": 7529,
+        "y": 6179,
+        "width": 220,
+        "height": 132
+      },
+      "nestedLayoutByParent": {
+        "node-bbc8901fab": {
+          "x": 28,
+          "y": 28,
+          "width": 96,
+          "height": 38
+        }
+      },
+      "codeLanguage": "auto"
+    },
+    {
+      "id": "node-1630a346a1",
+      "title": "近づく動きの発見",
+      "body": "敵や人の移動、煙、隊列、道の変化など、領土へ近づく気配を早めに見つける子ポワン。見えない危険を、見える変化に変える働き。",
+      "code": "",
+      "parent": "node-bbc8901fab",
+      "children": [],
+      "style": {
+        "shape": "cloud",
+        "color": "#fff1b8",
+        "accent": "#d8b500",
+        "glow": true,
+        "blur": true,
+        "motion": "soft"
+      },
+      "layout": {
+        "x": 7775,
+        "y": 6179,
+        "width": 220,
+        "height": 132
+      },
+      "nestedLayoutByParent": {
+        "node-bbc8901fab": {
+          "x": 134,
+          "y": 28,
+          "width": 96,
+          "height": 38
+        }
+      },
+      "codeLanguage": "auto"
+    },
+    {
+      "id": "node-11022db84c",
+      "title": "知らせを送る位置",
+      "body": "見つけた異変を、狼煙・鐘・伝令のような合図として後方へ伝えやすい子ポワン。尾根が、発見を守りの行動へつなぐ中継点になる。",
+      "code": "",
+      "parent": "node-bbc8901fab",
+      "children": [],
+      "style": {
+        "shape": "cloud",
+        "color": "#dff7ec",
+        "accent": "#42b883",
+        "glow": true,
+        "blur": true,
+        "motion": "soft"
+      },
+      "layout": {
+        "x": 7529,
+        "y": 6331,
+        "width": 220,
+        "height": 132
+      },
+      "nestedLayoutByParent": {
+        "node-bbc8901fab": {
+          "x": 28,
+          "y": 74,
+          "width": 96,
+          "height": 38
+        }
+      },
+      "codeLanguage": "auto"
+    },
+    {
+      "id": "node-f97a6fbaff",
+      "title": "守る側の安心感",
+      "body": "遠くを見られることで、村や拠点が準備する時間を得られる子ポワン。見張りの存在が、守る側にまだ備えられるという心理的な余裕を生む。",
+      "code": "",
+      "parent": "node-bbc8901fab",
+      "children": [],
+      "style": {
+        "shape": "cloud",
+        "color": "#fff1b8",
+        "accent": "#d8b500",
+        "glow": true,
+        "blur": true,
+        "motion": "soft"
+      },
+      "layout": {
+        "x": 7775,
+        "y": 6331,
+        "width": 220,
+        "height": 132
+      },
+      "nestedLayoutByParent": {
+        "node-bbc8901fab": {
+          "x": 134,
+          "y": 74,
+          "width": 96,
+          "height": 38
+        }
+      },
+      "codeLanguage": "auto"
+    },
+    {
+      "id": "node-9901c3eaef",
+      "title": "生産",
+      "body": "資源・知識・労働を使って、社会に必要な物やサービスを生み出す流れ。経済の入口であり、価値が形になる場所。",
+      "code": "",
+      "parent": "node-c3ee121c62",
+      "children": [],
+      "style": {
+        "shape": "cloud",
+        "color": "#ffffff",
+        "accent": "#8ddcff",
+        "glow": true,
+        "blur": true,
+        "motion": "soft"
+      },
+      "layout": {
+        "x": 5468,
+        "y": 5187,
+        "width": 180,
+        "height": 112
+      },
+      "nestedLayoutByParent": {
+        "node-c3ee121c62": {
+          "x": 28,
+          "y": 28,
+          "width": 72,
+          "height": 30
+        }
+      },
+      "codeLanguage": "auto"
+    },
+    {
+      "id": "node-c221d8c84e",
+      "title": "消費",
+      "body": "人々や組織が物やサービスを使い、生活・満足・活動へ変える流れ。需要として生産へ合図を返す。",
+      "code": "",
+      "parent": "node-c3ee121c62",
+      "children": [],
+      "style": {
+        "shape": "cloud",
+        "color": "#ffffff",
+        "accent": "#8ddcff",
+        "glow": true,
+        "blur": true,
+        "motion": "soft"
+      },
+      "layout": {
+        "x": 5658,
+        "y": 5187,
+        "width": 180,
+        "height": 112
+      },
+      "nestedLayoutByParent": {
+        "node-c3ee121c62": {
+          "x": 108,
+          "y": 28,
+          "width": 72,
+          "height": 30
+        }
+      },
+      "codeLanguage": "auto"
+    },
+    {
+      "id": "node-d02a8e517c",
+      "title": "労働",
+      "body": "人が時間・技能・体力・判断を提供し、報酬を受け取る流れ。暮らしと生産をつなぐ力。",
+      "code": "",
+      "parent": "node-c3ee121c62",
+      "children": [],
+      "style": {
+        "shape": "cloud",
+        "color": "#ffffff",
+        "accent": "#8ddcff",
+        "glow": true,
+        "blur": true,
+        "motion": "soft"
+      },
+      "layout": {
+        "x": 5781,
+        "y": 5199,
+        "width": 180,
+        "height": 112
+      },
+      "nestedLayoutByParent": {
+        "node-c3ee121c62": {
+          "x": 153,
+          "y": 28,
+          "width": 72,
+          "height": 30
+        }
+      },
+      "codeLanguage": "auto"
+    },
+    {
+      "id": "node-40e22be4c6",
+      "title": "市場",
+      "body": "売りたい側と買いたい側が出会い、価格・量・交換条件が決まる場。経済の信号機のように流れを調整する。",
+      "code": "",
+      "parent": "node-c3ee121c62",
+      "children": [],
+      "style": {
+        "shape": "cloud",
+        "color": "#ffffff",
+        "accent": "#8ddcff",
+        "glow": true,
+        "blur": true,
+        "motion": "soft"
+      },
+      "layout": {
+        "x": 5476,
+        "y": 5314,
+        "width": 180,
+        "height": 112
+      },
+      "nestedLayoutByParent": {
+        "node-c3ee121c62": {
+          "x": 31,
+          "y": 52,
+          "width": 72,
+          "height": 30
+        }
+      },
+      "codeLanguage": "auto"
+    },
+    {
+      "id": "node-b2ab9a69b9",
+      "title": "金融",
+      "body": "貯蓄・融資・投資・決済を通じて、お金を必要な場所へ運ぶ仕組み。未来の活動へ燃料を送る管。",
+      "code": "",
+      "parent": "node-c3ee121c62",
+      "children": [],
+      "style": {
+        "shape": "cloud",
+        "color": "#ffffff",
+        "accent": "#8ddcff",
+        "glow": true,
+        "blur": true,
+        "motion": "soft"
+      },
+      "layout": {
+        "x": 5637,
+        "y": 5389,
+        "width": 180,
+        "height": 112
+      },
+      "nestedLayoutByParent": {
+        "node-c3ee121c62": {
+          "x": 99,
+          "y": 66,
+          "width": 72,
+          "height": 30
+        }
+      },
+      "codeLanguage": "auto"
+    },
+    {
+      "id": "node-255c847627",
+      "title": "税と再分配",
+      "body": "国家が税を集め、公共サービス・保障・投資として社会へ戻す流れ。経済の偏りをならし、土台を保つ循環。",
+      "code": "",
+      "parent": "node-c3ee121c62",
+      "children": [],
+      "style": {
+        "shape": "cloud",
+        "color": "#ffffff",
+        "accent": "#8ddcff",
+        "glow": true,
+        "blur": true,
+        "motion": "soft"
+      },
+      "layout": {
+        "x": 5819,
+        "y": 5385,
+        "width": 180,
+        "height": 112
+      },
+      "nestedLayoutByParent": {
+        "node-c3ee121c62": {
+          "x": 169,
+          "y": 63,
+          "width": 72,
+          "height": 30
+        }
+      },
+      "codeLanguage": "auto"
+    }
+  ]
+}
