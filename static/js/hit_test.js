@@ -119,14 +119,15 @@ var powanHitTest = {
     const onEdge = dragHitTarget || (distance >= this.edgeInnerRadius && distance <= this.edgeOuterRadius);
     const textTarget = this.isTextTarget(event.target);
     const ownNestedSurface = !closestNested || closestNested === element;
-    const canDrag = insideEllipse && onEdge && ownNestedSurface && !textTarget;
+    const easyPreviewDrag = element.classList?.contains("nested-preview-simple");
+    const canDrag = insideEllipse && (onEdge || easyPreviewDrag) && ownNestedSurface && !textTarget;
     return {
       canDrag,
       reason: canDrag
         ? "accepted"
         : !insideEllipse
           ? "outside-ellipse"
-          : !onEdge
+          : !onEdge && !easyPreviewDrag
             ? "not-edge"
             : !ownNestedSurface
               ? "nested-target"

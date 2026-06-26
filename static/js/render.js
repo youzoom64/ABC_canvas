@@ -117,17 +117,29 @@ function powanFaceMetrics(layout) {
   const width = Number(layout?.width || 240);
   const height = Number(layout?.height || 140);
   const base = Math.max(5, Math.min(48, Math.min(width, height) * 0.08125));
+  const bodyBase = Math.max(6, Math.min(34, Math.min(width, height) * 0.092));
   return {
     faceSize: Math.round(base),
+    bodySize: Math.round(bodyBase),
     codeSize: Math.round(Math.max(4, Math.min(28, base * 0.76))),
   };
 }
 
-function applyPowanVisualMetrics(element, layout, { kind = "node", depth = 0 } = {}) {
+function applyPowanVisualMetrics(element, layout, { kind = "node", depth = 0, softBody = true, staticSkin = false } = {}) {
   const metrics = powanFaceMetrics(layout);
   const isNested = kind === "nested";
   const isPreview = kind === "preview";
-  element.style.setProperty("--powan-face-size", `${metrics.faceSize}px`);
+  const shortSide = Math.min(Number(layout?.width || 240), Number(layout?.height || 140));
+  const faceSize = isPreview
+    ? Math.max(3, Math.min(16, shortSide * 0.16))
+    : isNested
+      ? Math.max(4, Math.min(28, shortSide * 0.16))
+      : metrics.faceSize;
+  const bodySize = isPreview
+    ? Math.max(2, Math.min(18, Number(layout?.width || 0) * 0.16))
+    : metrics.bodySize;
+  element.style.setProperty("--powan-face-size", `${Math.round(faceSize)}px`);
+  element.style.setProperty("--powan-body-size", `${Math.round(bodySize)}px`);
   element.style.setProperty("--powan-code-label-size", `${metrics.codeSize}px`);
   element.style.setProperty("--powan-morph-duration", `${isPreview ? 8.4 + depth * 0.35 : isNested ? 7.8 : 7}s`);
   element.style.setProperty("--powan-breathe-duration", `${isPreview ? 5.2 + depth * 0.24 : isNested ? 4.8 : 4.5}s`);
@@ -135,8 +147,10 @@ function applyPowanVisualMetrics(element, layout, { kind = "node", depth = 0 } =
   element.style.setProperty("--powan-breathe-scale-mid", isNested || isPreview ? "1.03 0.97" : "1 1");
   element.style.setProperty("--powan-breathe-filter-start", isNested || isPreview ? "none" : "drop-shadow(0 6px 10px rgba(62, 129, 158, 0.1))");
   element.style.setProperty("--powan-breathe-filter-mid", isNested || isPreview ? "none" : "drop-shadow(0 12px 18px rgba(62, 129, 158, 0.18))");
-  if (typeof powanSoftBodyView !== "undefined") {
+  if (softBody && typeof powanSoftBodyView !== "undefined") {
     powanSoftBodyView.attach(element, layout);
+  } else if (staticSkin && typeof powanSoftBodyView !== "undefined") {
+    powanSoftBodyView.attachStatic(element, layout);
   }
 }
 
@@ -303,7 +317,7 @@ function createPowanDragHitFrame() {
   return frame;
 }
 
-function createPowanSurface(node, layout, { mode = "world", depth = 0 } = {}) {
+function createPowanSurface(node, layout, { mode = "world", depth = 0, softBody = true, staticSkin = false } = {}) {
   const element = document.createElement("article");
   const style = node.style || {};
   const baseClass = mode === "world" ? "node" : mode === "preview" ? "nested-preview-meaning" : "nested-meaning";
@@ -319,7 +333,7 @@ function createPowanSurface(node, layout, { mode = "world", depth = 0 } = {}) {
   if (mode === "preview") {
     element.style.setProperty("--preview-depth", String(depth));
   }
-  applyPowanVisualMetrics(element, layout, { kind, depth });
+  applyPowanVisualMetrics(element, layout, { kind, depth, softBody, staticSkin });
   element.classList.toggle("glow", Boolean(style.glow));
   element.classList.toggle("blur", Boolean(style.blur));
   element.classList.toggle("motion", style.motion === "soft");
@@ -334,6 +348,14 @@ function createPowanSurface(node, layout, { mode = "world", depth = 0 } = {}) {
     element.append(attachmentView);
   }
   return element;
+}
+
+function createPowanSurfaceWithoutSoftBody(node, layout, options = {}) {
+  return createPowanSurface(node, layout, {
+    ...options,
+    softBody: false,
+    staticSkin: true,
+  });
 }
 
 function createPowanBody(node, { mode = "world" } = {}) {
@@ -449,11 +471,17 @@ function hideMeaningDisplay(nodeId) {
 }
 
 function visualElementById(nodeId) {
-  return (
-    nodeElementById(nodeId) ||
-    getWorldLayer().querySelector(`.nested-meaning[data-id="${nodeId}"]`) ||
-    getWorldLayer().querySelector(`.nested-preview-meaning[data-id="${nodeId}"]`)
+  const escapedId = CSS.escape(nodeId);
+  const visibleCandidate = (selector) => (
+    [...getWorldLayer().querySelectorAll(selector)]
+      .find((element) => {
+        const rect = element.getBoundingClientRect();
+        return rect.width > 0 && rect.height > 0 && !element.classList.contains("hidden-meaning");
+      }) || null
   );
+  return visibleCandidate(`.nested-meaning[data-id="${escapedId}"]`) ||
+    visibleCandidate(`.nested-preview-meaning[data-id="${escapedId}"]`) ||
+    visibleCandidate(`.node[data-id="${escapedId}"]`);
 }
 
 function rectSnapshot(rect) {
@@ -849,35 +877,21 @@ function renderNestedMeaning(node, placement) {
     event.stopPropagation();
     powanExplorer.enterWorld(node.id, chip);
   });
-  const body = createPowanBody(node, { mode: "nested" });
-  body.readOnly = nestedNameEditNodeId !== node.id;
+  const body = document.createElement("div");
+  body.className = "node-body nested-body-label";
+  body.textContent = meaningSurfaceText(node) || EMPTY_MEANING_PLACEHOLDER;
   body.addEventListener("pointerdown", (event) => {
     resetPowanFaceClock(node.id, "nested-body-pointerdown");
     logNestedPointerDebug("nested-body-pointerdown-stop", event, node, chip, {
-      reason: "body-stop-propagation-during-nested-edit",
+      reason: "nested-body-display-only",
     });
+    event.preventDefault();
     event.stopPropagation();
   });
-  body.addEventListener("dblclick", (event) => event.stopPropagation());
-  body.addEventListener("input", () => {
-    powanExplorer.updateMeaning(node.id, { title: body.value }, {
-      reason: "nested-name-input",
-    });
-    titleInput.value = node.title;
-    chip.classList.toggle("has-name", hasMeaningText(node));
-    updatePowanFaceButton(chip, node);
+  body.addEventListener("dblclick", (event) => {
+    event.preventDefault();
+    event.stopPropagation();
   });
-  body.addEventListener("keydown", (event) => {
-    if (event.key === "Enter") {
-      event.preventDefault();
-      finishNestedNameEdit(node.id, chip);
-    }
-    if (event.key === "Escape") {
-      event.preventDefault();
-      finishNestedNameEdit(node.id, chip);
-    }
-  });
-  body.addEventListener("blur", () => finishNestedNameEdit(node.id, chip));
   chip.append(body);
   appendNestedMeaningPreview(chip, node, placement);
   return chip;

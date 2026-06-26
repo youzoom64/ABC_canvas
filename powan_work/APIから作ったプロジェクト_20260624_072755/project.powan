@@ -3,9 +3,9 @@
   "canvas": {
     "background": "#e8f8ff",
     "viewport": {
-      "x": -8399,
-      "y": -7905,
-      "scale": 1.7015,
+      "x": -3494,
+      "y": -3317,
+      "scale": 0.7959,
       "openParentId": null
     },
     "workspace": {
@@ -41,10 +41,10 @@
         "motion": "soft"
       },
       "layout": {
-        "x": 4796,
-        "y": 4652,
-        "width": 720,
-        "height": 620
+        "x": 4791,
+        "y": 4639,
+        "width": 418,
+        "height": 251
       },
       "userSized": true,
       "holdingCount": 6,
@@ -72,18 +72,18 @@
         "motion": "soft"
       },
       "layout": {
-        "x": 5207,
-        "y": 4805,
-        "width": 357,
-        "height": 151
+        "x": 4792,
+        "y": 4658,
+        "width": 416,
+        "height": 213
       },
       "codeLanguage": "auto",
       "nestedLayoutByParent": {
         "node-7001a6d464": {
-          "x": 321,
-          "y": 64,
-          "width": 195,
-          "height": 81
+          "x": 127,
+          "y": 19,
+          "width": 137,
+          "height": 57
         }
       },
       "holdingCount": 1,
@@ -110,18 +110,18 @@
         "motion": "soft"
       },
       "layout": {
-        "x": 5003,
-        "y": 4834,
-        "width": 348,
-        "height": 189
+        "x": 5177,
+        "y": 4821,
+        "width": 342,
+        "height": 213
       },
       "codeLanguage": "auto",
       "nestedLayoutByParent": {
         "node-7001a6d464": {
-          "x": 74,
-          "y": 138,
-          "width": 195,
-          "height": 81
+          "x": 234,
+          "y": 63,
+          "width": 137,
+          "height": 57
         }
       },
       "userSized": true
@@ -148,20 +148,21 @@
         "motion": "soft"
       },
       "layout": {
-        "x": 5423,
-        "y": 4914,
-        "width": 180,
-        "height": 104
+        "x": 5044,
+        "y": 5084,
+        "width": 342,
+        "height": 213
       },
       "codeLanguage": "auto",
       "nestedLayoutByParent": {
         "node-7001a6d464": {
-          "x": 482,
-          "y": 202,
-          "width": 176,
-          "height": 73
+          "x": 193,
+          "y": 135,
+          "width": 137,
+          "height": 57
         }
-      }
+      },
+      "userSized": true
     },
     {
       "id": "node-e558225bde",
@@ -188,20 +189,21 @@
         "motion": "soft"
       },
       "layout": {
-        "x": 5064,
-        "y": 5022,
-        "width": 180,
-        "height": 104
+        "x": 4614,
+        "y": 5084,
+        "width": 342,
+        "height": 213
       },
       "codeLanguage": "auto",
       "nestedLayoutByParent": {
         "node-7001a6d464": {
-          "x": 56,
-          "y": 371,
-          "width": 176,
-          "height": 73
+          "x": 60,
+          "y": 135,
+          "width": 137,
+          "height": 57
         }
-      }
+      },
+      "userSized": true
     },
     {
       "id": "node-c3ee121c62",
@@ -226,20 +228,21 @@
         "motion": "soft"
       },
       "layout": {
-        "x": 5287,
-        "y": 5041,
-        "width": 292,
-        "height": 124
+        "x": 4481,
+        "y": 4821,
+        "width": 342,
+        "height": 213
       },
       "codeLanguage": "auto",
       "nestedLayoutByParent": {
         "node-7001a6d464": {
-          "x": 381,
-          "y": 408,
-          "width": 188,
-          "height": 90
+          "x": 19,
+          "y": 63,
+          "width": 137,
+          "height": 57
         }
-      }
+      },
+      "userSized": true
     },
     {
       "id": "node-54686dc174",
@@ -257,20 +260,21 @@
         "motion": "soft"
       },
       "layout": {
-        "x": 5586,
-        "y": 5032,
-        "width": 180,
-        "height": 112
+        "x": 4829,
+        "y": 4658,
+        "width": 342,
+        "height": 213
       },
       "codeLanguage": "auto",
       "nestedLayoutByParent": {
         "node-55cfe2f097": {
-          "x": 79,
-          "y": 61,
-          "width": 72,
-          "height": 30
+          "x": 138,
+          "y": 16,
+          "width": 112,
+          "height": 47
         }
-      }
+      },
+      "userSized": true
     },
     {
       "id": "node-bf7e3dc75d",
@@ -288,20 +292,21 @@
         "motion": "soft"
       },
       "layout": {
-        "x": 5837,
-        "y": 4884,
-        "width": 180,
-        "height": 112
+        "x": 5177,
+        "y": 4821,
+        "width": 342,
+        "height": 213
       },
       "codeLanguage": "auto",
       "nestedLayoutByParent": {
         "node-55cfe2f097": {
-          "x": 214,
-          "y": 22,
-          "width": 72,
-          "height": 30
+          "x": 245,
+          "y": 52,
+          "width": 112,
+          "height": 47
         }
-      }
+      },
+      "userSized": true
     },
     {
       "id": "node-f91323286d",
@@ -319,20 +324,21 @@
         "motion": "soft"
       },
       "layout": {
-        "x": 5591,
-        "y": 4842,
-        "width": 180,
-        "height": 112
+        "x": 5044,
+        "y": 5084,
+        "width": 342,
+        "height": 213
       },
       "codeLanguage": "auto",
       "nestedLayoutByParent": {
         "node-55cfe2f097": {
-          "x": 108,
-          "y": 14,
-          "width": 65,
-          "height": 28
+          "x": 204,
+          "y": 112,
+          "width": 112,
+          "height": 47
         }
-      }
+      },
+      "userSized": true
     },
     {
       "id": "node-e720fe495b",
@@ -350,20 +356,21 @@
         "motion": "soft"
       },
       "layout": {
-        "x": 5476,
-        "y": 5077,
-        "width": 180,
-        "height": 112
+        "x": 4614,
+        "y": 5084,
+        "width": 342,
+        "height": 213
       },
       "codeLanguage": "auto",
       "nestedLayoutByParent": {
         "node-55cfe2f097": {
-          "x": 20,
-          "y": 73,
-          "width": 72,
-          "height": 30
+          "x": 72,
+          "y": 112,
+          "width": 112,
+          "height": 47
         }
-      }
+      },
+      "userSized": true
     },
     {
       "id": "node-3d50fea7ad",
@@ -371,7 +378,13 @@
       "body": "言葉、習慣、芸術、暮らし方を育てる。国の空気や色を作る。",
       "code": "",
       "parent": "node-55cfe2f097",
-      "children": [],
+      "children": [
+        "node-1d1f924548",
+        "node-493ea4c5cc",
+        "node-e6b7043ce1",
+        "node-359bb3d257",
+        "node-4436182ed9"
+      ],
       "style": {
         "shape": "cloud",
         "color": "#ffffff",
@@ -381,20 +394,21 @@
         "motion": "soft"
       },
       "layout": {
-        "x": 5800,
-        "y": 5070,
-        "width": 180,
-        "height": 112
+        "x": 4481,
+        "y": 4821,
+        "width": 342,
+        "height": 213
       },
       "codeLanguage": "auto",
       "nestedLayoutByParent": {
         "node-55cfe2f097": {
-          "x": 194,
-          "y": 71,
-          "width": 72,
-          "height": 30
+          "x": 31,
+          "y": 52,
+          "width": 112,
+          "height": 47
         }
-      }
+      },
+      "userSized": true
     },
     {
       "id": "node-df8ecf1154",
@@ -417,20 +431,21 @@
         "motion": "soft"
       },
       "layout": {
-        "x": 5165,
-        "y": 4917,
-        "width": 258,
-        "height": 140
+        "x": 4899,
+        "y": 4806,
+        "width": 202,
+        "height": 120
       },
       "codeLanguage": "auto",
       "nestedLayoutByParent": {
         "node-16f675f28a": {
-          "x": 36,
-          "y": 23,
-          "width": 96,
-          "height": 38
+          "x": 66,
+          "y": 9,
+          "width": 182,
+          "height": 72
         }
-      }
+      },
+      "userSized": true
     },
     {
       "id": "node-c256324ed4",
@@ -448,20 +463,21 @@
         "motion": "soft"
       },
       "layout": {
-        "x": 5441,
-        "y": 4883,
-        "width": 220,
-        "height": 132
+        "x": 5126,
+        "y": 4954,
+        "width": 154,
+        "height": 92
       },
       "codeLanguage": "auto",
       "nestedLayoutByParent": {
         "node-16f675f28a": {
-          "x": 170,
-          "y": 5,
-          "width": 96,
-          "height": 38
+          "x": 132,
+          "y": 57,
+          "width": 182,
+          "height": 72
         }
-      }
+      },
+      "userSized": true
     },
     {
       "id": "node-d9fcec08d2",
@@ -479,20 +495,21 @@
         "motion": "soft"
       },
       "layout": {
-        "x": 5188,
-        "y": 5121,
-        "width": 220,
-        "height": 132
+        "x": 4923,
+        "y": 5088,
+        "width": 154,
+        "height": 92
       },
       "codeLanguage": "auto",
       "nestedLayoutByParent": {
         "node-16f675f28a": {
-          "x": 38,
-          "y": 97,
-          "width": 96,
-          "height": 38
+          "x": 66,
+          "y": 104,
+          "width": 182,
+          "height": 72
         }
-      }
+      },
+      "userSized": true
     },
     {
       "id": "node-cb27589604",
@@ -500,7 +517,14 @@
       "body": "人が住み、働き、移動し、文化を育てる場所。領土をただの地面から暮らしの舞台へ変える範囲。",
       "code": "",
       "parent": "node-16f675f28a",
-      "children": [],
+      "children": [
+        "node-340adef148",
+        "node-ccbbbdde95",
+        "node-aff5cdca6e",
+        "node-284e49917b",
+        "node-4f70af2af2",
+        "node-e05d9b8628"
+      ],
       "style": {
         "shape": "cloud",
         "color": "#ffffff",
@@ -510,20 +534,21 @@
         "motion": "soft"
       },
       "layout": {
-        "x": 5499,
-        "y": 5137,
-        "width": 220,
-        "height": 132
+        "x": 4720,
+        "y": 4954,
+        "width": 154,
+        "height": 92
       },
       "codeLanguage": "auto",
       "nestedLayoutByParent": {
         "node-16f675f28a": {
-          "x": 200,
-          "y": 103,
-          "width": 96,
-          "height": 38
+          "x": 0,
+          "y": 57,
+          "width": 182,
+          "height": 72
         }
-      }
+      },
+      "userSized": true
     },
     {
       "id": "node-302fd7b903",
@@ -547,20 +572,21 @@
         "motion": "soft"
       },
       "layout": {
-        "x": 5789,
-        "y": 4891,
-        "width": 292,
-        "height": 132
+        "x": 4885,
+        "y": 4812,
+        "width": 230,
+        "height": 108
       },
       "codeLanguage": "auto",
       "nestedLayoutByParent": {
         "node-df8ecf1154": {
-          "x": 28,
+          "x": 68,
           "y": 28,
-          "width": 96,
-          "height": 38
+          "width": 67,
+          "height": 27
         }
-      }
+      },
+      "userSized": true
     },
     {
       "id": "node-4a5b6a415b",
@@ -578,20 +604,21 @@
         "motion": "soft"
       },
       "layout": {
-        "x": 5825,
-        "y": 5043,
-        "width": 220,
-        "height": 132
+        "x": 5126,
+        "y": 4954,
+        "width": 154,
+        "height": 92
       },
       "codeLanguage": "auto",
       "nestedLayoutByParent": {
         "node-df8ecf1154": {
-          "x": 134,
-          "y": 28,
-          "width": 96,
-          "height": 38
+          "x": 107,
+          "y": 47,
+          "width": 67,
+          "height": 27
         }
-      }
+      },
+      "userSized": true
     },
     {
       "id": "node-936571e4e6",
@@ -609,20 +636,21 @@
         "motion": "soft"
       },
       "layout": {
-        "x": 5825,
-        "y": 5195,
-        "width": 220,
-        "height": 132
+        "x": 4923,
+        "y": 5088,
+        "width": 154,
+        "height": 92
       },
       "codeLanguage": "auto",
       "nestedLayoutByParent": {
         "node-df8ecf1154": {
-          "x": 28,
-          "y": 74,
-          "width": 96,
-          "height": 38
+          "x": 68,
+          "y": 65,
+          "width": 67,
+          "height": 27
         }
-      }
+      },
+      "userSized": true
     },
     {
       "id": "node-dac901589c",
@@ -640,20 +668,21 @@
         "motion": "soft"
       },
       "layout": {
-        "x": 5825,
-        "y": 5347,
-        "width": 220,
-        "height": 132
+        "x": 4720,
+        "y": 4954,
+        "width": 154,
+        "height": 92
       },
       "codeLanguage": "auto",
       "nestedLayoutByParent": {
         "node-df8ecf1154": {
-          "x": 134,
-          "y": 74,
-          "width": 96,
-          "height": 38
+          "x": 28,
+          "y": 47,
+          "width": 67,
+          "height": 27
         }
-      }
+      },
+      "userSized": true
     },
     {
       "id": "node-fc8625aed7",
@@ -681,20 +710,21 @@
         "motion": "soft"
       },
       "layout": {
-        "x": 6049,
-        "y": 5071,
-        "width": 292,
-        "height": 162
+        "x": 4885,
+        "y": 4790,
+        "width": 230,
+        "height": 139
       },
       "codeLanguage": "auto",
       "nestedLayoutByParent": {
         "node-302fd7b903": {
-          "x": 28,
+          "x": 90,
           "y": 28,
-          "width": 72,
-          "height": 30
+          "width": 50,
+          "height": 21
         }
-      }
+      },
+      "userSized": true
     },
     {
       "id": "node-1fb5a8c431",
@@ -712,20 +742,21 @@
         "motion": "soft"
       },
       "layout": {
-        "x": 6105,
-        "y": 5278,
-        "width": 180,
-        "height": 112
+        "x": 5154,
+        "y": 4908,
+        "width": 126,
+        "height": 78
       },
       "codeLanguage": "auto",
       "nestedLayoutByParent": {
         "node-302fd7b903": {
-          "x": 110,
-          "y": 28,
-          "width": 72,
-          "height": 30
+          "x": 152,
+          "y": 36,
+          "width": 50,
+          "height": 21
         }
-      }
+      },
+      "userSized": true
     },
     {
       "id": "node-d6e3e90df3",
@@ -743,20 +774,21 @@
         "motion": "soft"
       },
       "layout": {
-        "x": 6105,
-        "y": 5460,
-        "width": 180,
-        "height": 112
+        "x": 5095,
+        "y": 5101,
+        "width": 126,
+        "height": 78
       },
       "codeLanguage": "auto",
       "nestedLayoutByParent": {
         "node-302fd7b903": {
-          "x": 192,
-          "y": 28,
-          "width": 72,
-          "height": 30
+          "x": 139,
+          "y": 59,
+          "width": 50,
+          "height": 21
         }
-      }
+      },
+      "userSized": true
     },
     {
       "id": "node-d258b44e52",
@@ -774,20 +806,21 @@
         "motion": "soft"
       },
       "layout": {
-        "x": 6105,
-        "y": 5642,
-        "width": 180,
-        "height": 112
+        "x": 4779,
+        "y": 5101,
+        "width": 126,
+        "height": 78
       },
       "codeLanguage": "auto",
       "nestedLayoutByParent": {
         "node-302fd7b903": {
-          "x": 28,
-          "y": 66,
-          "width": 72,
-          "height": 30
+          "x": 41,
+          "y": 59,
+          "width": 50,
+          "height": 21
         }
-      }
+      },
+      "userSized": true
     },
     {
       "id": "node-f54f32e96b",
@@ -805,20 +838,21 @@
         "motion": "soft"
       },
       "layout": {
-        "x": 6105,
-        "y": 5824,
-        "width": 180,
-        "height": 112
+        "x": 4720,
+        "y": 4908,
+        "width": 126,
+        "height": 78
       },
       "codeLanguage": "auto",
       "nestedLayoutByParent": {
         "node-302fd7b903": {
-          "x": 110,
-          "y": 66,
-          "width": 72,
-          "height": 30
+          "x": 28,
+          "y": 36,
+          "width": 50,
+          "height": 21
         }
-      }
+      },
+      "userSized": true
     },
     {
       "id": "node-2382096a3d",
@@ -836,20 +870,21 @@
         "motion": "soft"
       },
       "layout": {
-        "x": 6348,
-        "y": 5265,
-        "width": 180,
-        "height": 112
+        "x": 4937,
+        "y": 4820,
+        "width": 126,
+        "height": 78
       },
       "codeLanguage": "auto",
       "nestedLayoutByParent": {
         "node-fc8625aed7": {
-          "x": 28,
+          "x": 90,
           "y": 28,
-          "width": 72,
-          "height": 30
+          "width": 50,
+          "height": 21
         }
-      }
+      },
+      "userSized": true
     },
     {
       "id": "node-3fabfcf438",
@@ -867,20 +902,21 @@
         "motion": "soft"
       },
       "layout": {
-        "x": 6632,
-        "y": 5265,
-        "width": 180,
-        "height": 112
+        "x": 5110,
+        "y": 4829,
+        "width": 126,
+        "height": 78
       },
       "codeLanguage": "auto",
       "nestedLayoutByParent": {
         "node-fc8625aed7": {
-          "x": 110,
+          "x": 144,
           "y": 28,
-          "width": 72,
-          "height": 30
+          "width": 50,
+          "height": 21
         }
-      }
+      },
+      "userSized": true
     },
     {
       "id": "node-5f440f97b7",
@@ -898,20 +934,21 @@
         "motion": "soft"
       },
       "layout": {
-        "x": 6348,
-        "y": 5425,
-        "width": 180,
-        "height": 112
+        "x": 5154,
+        "y": 4931,
+        "width": 126,
+        "height": 78
       },
       "codeLanguage": "auto",
       "nestedLayoutByParent": {
         "node-fc8625aed7": {
-          "x": 192,
-          "y": 28,
-          "width": 72,
-          "height": 30
+          "x": 152,
+          "y": 52,
+          "width": 50,
+          "height": 21
         }
-      }
+      },
+      "userSized": true
     },
     {
       "id": "node-8d7ecf85e5",
@@ -929,20 +966,21 @@
         "motion": "soft"
       },
       "layout": {
-        "x": 6632,
-        "y": 5425,
-        "width": 180,
-        "height": 112
+        "x": 5154,
+        "y": 5047,
+        "width": 126,
+        "height": 78
       },
       "codeLanguage": "auto",
       "nestedLayoutByParent": {
         "node-fc8625aed7": {
-          "x": 28,
-          "y": 66,
-          "width": 72,
-          "height": 30
+          "x": 152,
+          "y": 79,
+          "width": 50,
+          "height": 21
         }
-      }
+      },
+      "userSized": true
     },
     {
       "id": "node-888c4efc5b",
@@ -960,20 +998,21 @@
         "motion": "soft"
       },
       "layout": {
-        "x": 6348,
-        "y": 5585,
-        "width": 180,
-        "height": 112
+        "x": 5029,
+        "y": 5102,
+        "width": 126,
+        "height": 78
       },
       "codeLanguage": "auto",
       "nestedLayoutByParent": {
         "node-fc8625aed7": {
-          "x": 110,
-          "y": 66,
-          "width": 72,
-          "height": 30
+          "x": 119,
+          "y": 90,
+          "width": 50,
+          "height": 21
         }
-      }
+      },
+      "userSized": true
     },
     {
       "id": "node-5014e9d58d",
@@ -991,20 +1030,21 @@
         "motion": "soft"
       },
       "layout": {
-        "x": 6632,
-        "y": 5585,
-        "width": 180,
-        "height": 112
+        "x": 4845,
+        "y": 5102,
+        "width": 126,
+        "height": 78
       },
       "codeLanguage": "auto",
       "nestedLayoutByParent": {
         "node-fc8625aed7": {
-          "x": 192,
-          "y": 66,
-          "width": 72,
-          "height": 30
+          "x": 61,
+          "y": 90,
+          "width": 50,
+          "height": 21
         }
-      }
+      },
+      "userSized": true
     },
     {
       "id": "node-c6c44d268f",
@@ -1022,20 +1062,21 @@
         "motion": "soft"
       },
       "layout": {
-        "x": 6348,
-        "y": 5745,
-        "width": 180,
-        "height": 112
+        "x": 4720,
+        "y": 5047,
+        "width": 126,
+        "height": 78
       },
       "codeLanguage": "auto",
       "nestedLayoutByParent": {
         "node-fc8625aed7": {
           "x": 28,
-          "y": 104,
-          "width": 72,
-          "height": 30
+          "y": 79,
+          "width": 50,
+          "height": 21
         }
-      }
+      },
+      "userSized": true
     },
     {
       "id": "node-6fc6dbf574",
@@ -1053,20 +1094,21 @@
         "motion": "soft"
       },
       "layout": {
-        "x": 6632,
-        "y": 5745,
-        "width": 180,
-        "height": 112
+        "x": 4720,
+        "y": 4931,
+        "width": 126,
+        "height": 78
       },
       "codeLanguage": "auto",
       "nestedLayoutByParent": {
         "node-fc8625aed7": {
-          "x": 110,
-          "y": 104,
-          "width": 72,
-          "height": 30
+          "x": 28,
+          "y": 52,
+          "width": 50,
+          "height": 21
         }
-      }
+      },
+      "userSized": true
     },
     {
       "id": "node-c521405234",
@@ -1089,20 +1131,21 @@
         "motion": "soft"
       },
       "layout": {
-        "x": 6309,
-        "y": 5891,
-        "width": 258,
-        "height": 140
+        "x": 4726,
+        "y": 4808,
+        "width": 202,
+        "height": 120
       },
       "codeLanguage": "auto",
       "nestedLayoutByParent": {
         "node-fc8625aed7": {
-          "x": 192,
-          "y": 104,
-          "width": 72,
-          "height": 30
+          "x": 36,
+          "y": 29,
+          "width": 50,
+          "height": 21
         }
-      }
+      },
+      "userSized": true
     },
     {
       "id": "node-bbc8901fab",
@@ -1125,20 +1168,21 @@
         "motion": "soft"
       },
       "layout": {
-        "x": 6569,
-        "y": 6071,
-        "width": 258,
-        "height": 140
+        "x": 4899,
+        "y": 4806,
+        "width": 202,
+        "height": 120
       },
       "codeLanguage": "auto",
       "nestedLayoutByParent": {
         "node-c521405234": {
-          "x": 28,
+          "x": 68,
           "y": 28,
-          "width": 96,
-          "height": 38
+          "width": 67,
+          "height": 27
         }
-      }
+      },
+      "userSized": true
     },
     {
       "id": "node-2b273e2fa1",
@@ -1156,20 +1200,21 @@
         "motion": "soft"
       },
       "layout": {
-        "x": 6872,
-        "y": 6075,
-        "width": 220,
-        "height": 132
+        "x": 5126,
+        "y": 4954,
+        "width": 154,
+        "height": 92
       },
       "codeLanguage": "auto",
       "nestedLayoutByParent": {
         "node-c521405234": {
-          "x": 134,
-          "y": 28,
-          "width": 96,
-          "height": 38
+          "x": 107,
+          "y": 47,
+          "width": 67,
+          "height": 27
         }
-      }
+      },
+      "userSized": true
     },
     {
       "id": "node-44f82026c4",
@@ -1187,20 +1232,21 @@
         "motion": "soft"
       },
       "layout": {
-        "x": 6588,
-        "y": 6235,
-        "width": 220,
-        "height": 132
+        "x": 4923,
+        "y": 5088,
+        "width": 154,
+        "height": 92
       },
       "codeLanguage": "auto",
       "nestedLayoutByParent": {
         "node-c521405234": {
-          "x": 28,
-          "y": 74,
-          "width": 96,
-          "height": 38
+          "x": 68,
+          "y": 65,
+          "width": 67,
+          "height": 27
         }
-      }
+      },
+      "userSized": true
     },
     {
       "id": "node-0724d2f3d7",
@@ -1218,20 +1264,21 @@
         "motion": "soft"
       },
       "layout": {
-        "x": 6872,
-        "y": 6235,
-        "width": 220,
-        "height": 132
+        "x": 4720,
+        "y": 4954,
+        "width": 154,
+        "height": 92
       },
       "codeLanguage": "auto",
       "nestedLayoutByParent": {
         "node-c521405234": {
-          "x": 134,
-          "y": 74,
-          "width": 96,
-          "height": 38
+          "x": 28,
+          "y": 47,
+          "width": 67,
+          "height": 27
         }
-      }
+      },
+      "userSized": true
     },
     {
       "id": "node-94796388b7",
@@ -1239,7 +1286,12 @@
       "body": "高い尾根や山頂にいることで、遠くの道・谷・集落の動きまで見渡せる子ポワン。守る側に、早く気づくための広い視野を与える。",
       "code": "",
       "parent": "node-bbc8901fab",
-      "children": [],
+      "children": [
+        "node-9737c36c1a",
+        "node-41ceb48147",
+        "node-adf777d28c",
+        "node-63b87b89d3"
+      ],
       "style": {
         "shape": "cloud",
         "color": "#efe3ff",
@@ -1249,20 +1301,21 @@
         "motion": "soft"
       },
       "layout": {
-        "x": 7529,
-        "y": 6179,
-        "width": 220,
-        "height": 132
+        "x": 4899,
+        "y": 4806,
+        "width": 202,
+        "height": 120
       },
       "nestedLayoutByParent": {
         "node-bbc8901fab": {
-          "x": 28,
+          "x": 68,
           "y": 28,
-          "width": 96,
-          "height": 38
+          "width": 67,
+          "height": 27
         }
       },
-      "codeLanguage": "auto"
+      "codeLanguage": "auto",
+      "userSized": true
     },
     {
       "id": "node-1630a346a1",
@@ -1280,20 +1333,21 @@
         "motion": "soft"
       },
       "layout": {
-        "x": 7775,
-        "y": 6179,
-        "width": 220,
-        "height": 132
+        "x": 5126,
+        "y": 4954,
+        "width": 154,
+        "height": 92
       },
       "nestedLayoutByParent": {
         "node-bbc8901fab": {
-          "x": 134,
-          "y": 28,
-          "width": 96,
-          "height": 38
+          "x": 107,
+          "y": 47,
+          "width": 67,
+          "height": 27
         }
       },
-      "codeLanguage": "auto"
+      "codeLanguage": "auto",
+      "userSized": true
     },
     {
       "id": "node-11022db84c",
@@ -1311,20 +1365,21 @@
         "motion": "soft"
       },
       "layout": {
-        "x": 7529,
-        "y": 6331,
-        "width": 220,
-        "height": 132
+        "x": 4923,
+        "y": 5088,
+        "width": 154,
+        "height": 92
       },
       "nestedLayoutByParent": {
         "node-bbc8901fab": {
-          "x": 28,
-          "y": 74,
-          "width": 96,
-          "height": 38
+          "x": 68,
+          "y": 65,
+          "width": 67,
+          "height": 27
         }
       },
-      "codeLanguage": "auto"
+      "codeLanguage": "auto",
+      "userSized": true
     },
     {
       "id": "node-f97a6fbaff",
@@ -1342,20 +1397,21 @@
         "motion": "soft"
       },
       "layout": {
-        "x": 7775,
-        "y": 6331,
-        "width": 220,
-        "height": 132
+        "x": 4720,
+        "y": 4954,
+        "width": 154,
+        "height": 92
       },
       "nestedLayoutByParent": {
         "node-bbc8901fab": {
-          "x": 134,
-          "y": 74,
-          "width": 96,
-          "height": 38
+          "x": 28,
+          "y": 47,
+          "width": 67,
+          "height": 27
         }
       },
-      "codeLanguage": "auto"
+      "codeLanguage": "auto",
+      "userSized": true
     },
     {
       "id": "node-9901c3eaef",
@@ -1373,20 +1429,22 @@
         "motion": "soft"
       },
       "layout": {
-        "x": 5468,
-        "y": 5187,
-        "width": 180,
-        "height": 112
+        "x": 4829,
+        "y": 4658,
+        "width": 342,
+        "height": 213
       },
       "nestedLayoutByParent": {
         "node-c3ee121c62": {
-          "x": 28,
-          "y": 28,
-          "width": 72,
-          "height": 30
+          "x": 89,
+          "y": 11,
+          "width": 137,
+          "height": 57
         }
       },
-      "codeLanguage": "auto"
+      "codeLanguage": "auto",
+      "userSized": true,
+      "holdingCount": 1
     },
     {
       "id": "node-c221d8c84e",
@@ -1404,20 +1462,21 @@
         "motion": "soft"
       },
       "layout": {
-        "x": 5658,
-        "y": 5187,
-        "width": 180,
-        "height": 112
+        "x": 5146,
+        "y": 4776,
+        "width": 342,
+        "height": 213
       },
       "nestedLayoutByParent": {
         "node-c3ee121c62": {
-          "x": 108,
-          "y": 28,
-          "width": 72,
-          "height": 30
+          "x": 167,
+          "y": 37,
+          "width": 137,
+          "height": 57
         }
       },
-      "codeLanguage": "auto"
+      "codeLanguage": "auto",
+      "userSized": true
     },
     {
       "id": "node-d02a8e517c",
@@ -1435,20 +1494,21 @@
         "motion": "soft"
       },
       "layout": {
-        "x": 5781,
-        "y": 5199,
-        "width": 180,
-        "height": 112
+        "x": 5146,
+        "y": 5011,
+        "width": 342,
+        "height": 213
       },
       "nestedLayoutByParent": {
         "node-c3ee121c62": {
-          "x": 153,
-          "y": 28,
-          "width": 72,
-          "height": 30
+          "x": 167,
+          "y": 91,
+          "width": 137,
+          "height": 57
         }
       },
-      "codeLanguage": "auto"
+      "codeLanguage": "auto",
+      "userSized": true
     },
     {
       "id": "node-40e22be4c6",
@@ -1466,20 +1526,21 @@
         "motion": "soft"
       },
       "layout": {
-        "x": 5476,
-        "y": 5314,
-        "width": 180,
-        "height": 112
+        "x": 4829,
+        "y": 5129,
+        "width": 342,
+        "height": 213
       },
       "nestedLayoutByParent": {
         "node-c3ee121c62": {
-          "x": 31,
-          "y": 52,
-          "width": 72,
-          "height": 30
+          "x": 89,
+          "y": 117,
+          "width": 137,
+          "height": 57
         }
       },
-      "codeLanguage": "auto"
+      "codeLanguage": "auto",
+      "userSized": true
     },
     {
       "id": "node-b2ab9a69b9",
@@ -1497,20 +1558,21 @@
         "motion": "soft"
       },
       "layout": {
-        "x": 5637,
-        "y": 5389,
-        "width": 180,
-        "height": 112
+        "x": 4512,
+        "y": 5011,
+        "width": 342,
+        "height": 213
       },
       "nestedLayoutByParent": {
         "node-c3ee121c62": {
-          "x": 99,
-          "y": 66,
-          "width": 72,
-          "height": 30
+          "x": 10,
+          "y": 91,
+          "width": 137,
+          "height": 57
         }
       },
-      "codeLanguage": "auto"
+      "codeLanguage": "auto",
+      "userSized": true
     },
     {
       "id": "node-255c847627",
@@ -1518,7 +1580,14 @@
       "body": "国家が税を集め、公共サービス・保障・投資として社会へ戻す流れ。経済の偏りをならし、土台を保つ循環。",
       "code": "",
       "parent": "node-c3ee121c62",
-      "children": [],
+      "children": [
+        "node-6be6ce5b9f",
+        "node-eb40b15d86",
+        "node-2c20857bd4",
+        "node-f3e47dce7b",
+        "node-0fc197f6b4",
+        "node-ffe6e5698f"
+      ],
       "style": {
         "shape": "cloud",
         "color": "#ffffff",
@@ -1528,20 +1597,21 @@
         "motion": "soft"
       },
       "layout": {
-        "x": 5819,
-        "y": 5385,
-        "width": 180,
-        "height": 112
+        "x": 4471,
+        "y": 4776,
+        "width": 425,
+        "height": 213
       },
       "nestedLayoutByParent": {
         "node-c3ee121c62": {
-          "x": 169,
-          "y": 63,
-          "width": 72,
-          "height": 30
+          "x": 10,
+          "y": 37,
+          "width": 137,
+          "height": 57
         }
       },
-      "codeLanguage": "auto"
+      "codeLanguage": "auto",
+      "userSized": true
     },
     {
       "id": "node-f9b63ddfd3",
@@ -1562,7 +1632,22 @@
         "glow": true,
         "blur": true,
         "motion": "soft"
-      }
+      },
+      "layout": {
+        "x": 4899,
+        "y": 4799,
+        "width": 202,
+        "height": 120
+      },
+      "nestedLayoutByParent": {
+        "node-77a5f3ded7": {
+          "x": 89,
+          "y": 11,
+          "width": 137,
+          "height": 57
+        }
+      },
+      "userSized": true
     },
     {
       "id": "node-7197b4333a",
@@ -1579,7 +1664,22 @@
         "glow": true,
         "blur": true,
         "motion": "soft"
-      }
+      },
+      "layout": {
+        "x": 4923,
+        "y": 4820,
+        "width": 154,
+        "height": 92
+      },
+      "nestedLayoutByParent": {
+        "node-f9b63ddfd3": {
+          "x": 68,
+          "y": 28,
+          "width": 67,
+          "height": 27
+        }
+      },
+      "userSized": true
     },
     {
       "id": "node-6969a3200b",
@@ -1596,7 +1696,22 @@
         "glow": true,
         "blur": true,
         "motion": "soft"
-      }
+      },
+      "layout": {
+        "x": 5126,
+        "y": 5040,
+        "width": 154,
+        "height": 92
+      },
+      "nestedLayoutByParent": {
+        "node-f9b63ddfd3": {
+          "x": 107,
+          "y": 62,
+          "width": 67,
+          "height": 27
+        }
+      },
+      "userSized": true
     },
     {
       "id": "node-54092edb64",
@@ -1613,7 +1728,22 @@
         "glow": true,
         "blur": true,
         "motion": "soft"
-      }
+      },
+      "layout": {
+        "x": 4720,
+        "y": 5040,
+        "width": 154,
+        "height": 92
+      },
+      "nestedLayoutByParent": {
+        "node-f9b63ddfd3": {
+          "x": 28,
+          "y": 62,
+          "width": 67,
+          "height": 27
+        }
+      },
+      "userSized": true
     },
     {
       "id": "node-1a5a4f413a",
@@ -1634,7 +1764,22 @@
         "glow": true,
         "blur": true,
         "motion": "soft"
-      }
+      },
+      "layout": {
+        "x": 5116,
+        "y": 4887,
+        "width": 202,
+        "height": 120
+      },
+      "nestedLayoutByParent": {
+        "node-77a5f3ded7": {
+          "x": 175,
+          "y": 47,
+          "width": 137,
+          "height": 57
+        }
+      },
+      "userSized": true
     },
     {
       "id": "node-189e68dde3",
@@ -1651,7 +1796,22 @@
         "glow": true,
         "blur": true,
         "motion": "soft"
-      }
+      },
+      "layout": {
+        "x": 4923,
+        "y": 4820,
+        "width": 154,
+        "height": 92
+      },
+      "nestedLayoutByParent": {
+        "node-1a5a4f413a": {
+          "x": 68,
+          "y": 28,
+          "width": 67,
+          "height": 27
+        }
+      },
+      "userSized": true
     },
     {
       "id": "node-0bbccc6e96",
@@ -1668,7 +1828,22 @@
         "glow": true,
         "blur": true,
         "motion": "soft"
-      }
+      },
+      "layout": {
+        "x": 5126,
+        "y": 5040,
+        "width": 154,
+        "height": 92
+      },
+      "nestedLayoutByParent": {
+        "node-1a5a4f413a": {
+          "x": 107,
+          "y": 62,
+          "width": 67,
+          "height": 27
+        }
+      },
+      "userSized": true
     },
     {
       "id": "node-bcb6e374d1",
@@ -1685,7 +1860,22 @@
         "glow": true,
         "blur": true,
         "motion": "soft"
-      }
+      },
+      "layout": {
+        "x": 4720,
+        "y": 5040,
+        "width": 154,
+        "height": 92
+      },
+      "nestedLayoutByParent": {
+        "node-1a5a4f413a": {
+          "x": 28,
+          "y": 62,
+          "width": 67,
+          "height": 27
+        }
+      },
+      "userSized": true
     },
     {
       "id": "node-82a1a6059d",
@@ -1706,7 +1896,22 @@
         "glow": true,
         "blur": true,
         "motion": "soft"
-      }
+      },
+      "layout": {
+        "x": 5057,
+        "y": 5080,
+        "width": 202,
+        "height": 120
+      },
+      "nestedLayoutByParent": {
+        "node-77a5f3ded7": {
+          "x": 142,
+          "y": 107,
+          "width": 137,
+          "height": 57
+        }
+      },
+      "userSized": true
     },
     {
       "id": "node-b8c157b3b9",
@@ -1723,7 +1928,22 @@
         "glow": true,
         "blur": true,
         "motion": "soft"
-      }
+      },
+      "layout": {
+        "x": 4923,
+        "y": 4820,
+        "width": 154,
+        "height": 92
+      },
+      "nestedLayoutByParent": {
+        "node-82a1a6059d": {
+          "x": 68,
+          "y": 28,
+          "width": 67,
+          "height": 27
+        }
+      },
+      "userSized": true
     },
     {
       "id": "node-c710856542",
@@ -1740,7 +1960,22 @@
         "glow": true,
         "blur": true,
         "motion": "soft"
-      }
+      },
+      "layout": {
+        "x": 5126,
+        "y": 5040,
+        "width": 154,
+        "height": 92
+      },
+      "nestedLayoutByParent": {
+        "node-82a1a6059d": {
+          "x": 107,
+          "y": 62,
+          "width": 67,
+          "height": 27
+        }
+      },
+      "userSized": true
     },
     {
       "id": "node-a6448174c5",
@@ -1757,7 +1992,22 @@
         "glow": true,
         "blur": true,
         "motion": "soft"
-      }
+      },
+      "layout": {
+        "x": 4720,
+        "y": 5040,
+        "width": 154,
+        "height": 92
+      },
+      "nestedLayoutByParent": {
+        "node-82a1a6059d": {
+          "x": 28,
+          "y": 62,
+          "width": 67,
+          "height": 27
+        }
+      },
+      "userSized": true
     },
     {
       "id": "node-856e964b62",
@@ -1778,7 +2028,22 @@
         "glow": true,
         "blur": true,
         "motion": "soft"
-      }
+      },
+      "layout": {
+        "x": 4741,
+        "y": 5080,
+        "width": 202,
+        "height": 120
+      },
+      "nestedLayoutByParent": {
+        "node-77a5f3ded7": {
+          "x": 35,
+          "y": 107,
+          "width": 137,
+          "height": 57
+        }
+      },
+      "userSized": true
     },
     {
       "id": "node-43b512a63e",
@@ -1795,7 +2060,22 @@
         "glow": true,
         "blur": true,
         "motion": "soft"
-      }
+      },
+      "layout": {
+        "x": 4923,
+        "y": 4820,
+        "width": 154,
+        "height": 92
+      },
+      "nestedLayoutByParent": {
+        "node-856e964b62": {
+          "x": 68,
+          "y": 28,
+          "width": 67,
+          "height": 27
+        }
+      },
+      "userSized": true
     },
     {
       "id": "node-4116b9c8c9",
@@ -1812,7 +2092,22 @@
         "glow": true,
         "blur": true,
         "motion": "soft"
-      }
+      },
+      "layout": {
+        "x": 5126,
+        "y": 5040,
+        "width": 154,
+        "height": 92
+      },
+      "nestedLayoutByParent": {
+        "node-856e964b62": {
+          "x": 107,
+          "y": 62,
+          "width": 67,
+          "height": 27
+        }
+      },
+      "userSized": true
     },
     {
       "id": "node-ddc86e1245",
@@ -1829,7 +2124,22 @@
         "glow": true,
         "blur": true,
         "motion": "soft"
-      }
+      },
+      "layout": {
+        "x": 4720,
+        "y": 5040,
+        "width": 154,
+        "height": 92
+      },
+      "nestedLayoutByParent": {
+        "node-856e964b62": {
+          "x": 28,
+          "y": 62,
+          "width": 67,
+          "height": 27
+        }
+      },
+      "userSized": true
     },
     {
       "id": "node-8b3922622f",
@@ -1850,7 +2160,22 @@
         "glow": true,
         "blur": true,
         "motion": "soft"
-      }
+      },
+      "layout": {
+        "x": 4682,
+        "y": 4887,
+        "width": 202,
+        "height": 120
+      },
+      "nestedLayoutByParent": {
+        "node-77a5f3ded7": {
+          "x": 2,
+          "y": 47,
+          "width": 137,
+          "height": 57
+        }
+      },
+      "userSized": true
     },
     {
       "id": "node-d816b2e8af",
@@ -1867,7 +2192,22 @@
         "glow": true,
         "blur": true,
         "motion": "soft"
-      }
+      },
+      "layout": {
+        "x": 4923,
+        "y": 4820,
+        "width": 154,
+        "height": 92
+      },
+      "nestedLayoutByParent": {
+        "node-8b3922622f": {
+          "x": 68,
+          "y": 28,
+          "width": 67,
+          "height": 27
+        }
+      },
+      "userSized": true
     },
     {
       "id": "node-385cb2fa60",
@@ -1884,7 +2224,22 @@
         "glow": true,
         "blur": true,
         "motion": "soft"
-      }
+      },
+      "layout": {
+        "x": 5126,
+        "y": 5040,
+        "width": 154,
+        "height": 92
+      },
+      "nestedLayoutByParent": {
+        "node-8b3922622f": {
+          "x": 107,
+          "y": 62,
+          "width": 67,
+          "height": 27
+        }
+      },
+      "userSized": true
     },
     {
       "id": "node-7231b8b696",
@@ -1901,7 +2256,22 @@
         "glow": true,
         "blur": true,
         "motion": "soft"
-      }
+      },
+      "layout": {
+        "x": 4720,
+        "y": 5040,
+        "width": 154,
+        "height": 92
+      },
+      "nestedLayoutByParent": {
+        "node-8b3922622f": {
+          "x": 28,
+          "y": 62,
+          "width": 67,
+          "height": 27
+        }
+      },
+      "userSized": true
     },
     {
       "id": "node-36f87cb703",
@@ -1922,7 +2292,22 @@
         "glow": true,
         "blur": true,
         "motion": "soft"
-      }
+      },
+      "layout": {
+        "x": 4899,
+        "y": 4799,
+        "width": 202,
+        "height": 120
+      },
+      "nestedLayoutByParent": {
+        "node-e558225bde": {
+          "x": 89,
+          "y": 11,
+          "width": 137,
+          "height": 57
+        }
+      },
+      "userSized": true
     },
     {
       "id": "node-3b6ece033b",
@@ -1939,7 +2324,22 @@
         "glow": true,
         "blur": true,
         "motion": "soft"
-      }
+      },
+      "layout": {
+        "x": 4923,
+        "y": 4820,
+        "width": 154,
+        "height": 92
+      },
+      "nestedLayoutByParent": {
+        "node-36f87cb703": {
+          "x": 68,
+          "y": 28,
+          "width": 67,
+          "height": 27
+        }
+      },
+      "userSized": true
     },
     {
       "id": "node-3f47bc65a2",
@@ -1956,7 +2356,22 @@
         "glow": true,
         "blur": true,
         "motion": "soft"
-      }
+      },
+      "layout": {
+        "x": 5126,
+        "y": 5040,
+        "width": 154,
+        "height": 92
+      },
+      "nestedLayoutByParent": {
+        "node-36f87cb703": {
+          "x": 107,
+          "y": 62,
+          "width": 67,
+          "height": 27
+        }
+      },
+      "userSized": true
     },
     {
       "id": "node-10772f150d",
@@ -1973,7 +2388,22 @@
         "glow": true,
         "blur": true,
         "motion": "soft"
-      }
+      },
+      "layout": {
+        "x": 4720,
+        "y": 5040,
+        "width": 154,
+        "height": 92
+      },
+      "nestedLayoutByParent": {
+        "node-36f87cb703": {
+          "x": 28,
+          "y": 62,
+          "width": 67,
+          "height": 27
+        }
+      },
+      "userSized": true
     },
     {
       "id": "node-08893e3b0f",
@@ -1994,7 +2424,22 @@
         "glow": true,
         "blur": true,
         "motion": "soft"
-      }
+      },
+      "layout": {
+        "x": 5089,
+        "y": 4818,
+        "width": 202,
+        "height": 120
+      },
+      "nestedLayoutByParent": {
+        "node-e558225bde": {
+          "x": 153,
+          "y": 26,
+          "width": 137,
+          "height": 57
+        }
+      },
+      "userSized": true
     },
     {
       "id": "node-8a0f470761",
@@ -2011,7 +2456,22 @@
         "glow": true,
         "blur": true,
         "motion": "soft"
-      }
+      },
+      "layout": {
+        "x": 4923,
+        "y": 4820,
+        "width": 154,
+        "height": 92
+      },
+      "nestedLayoutByParent": {
+        "node-08893e3b0f": {
+          "x": 68,
+          "y": 28,
+          "width": 67,
+          "height": 27
+        }
+      },
+      "userSized": true
     },
     {
       "id": "node-4657d5c8f8",
@@ -2028,7 +2488,22 @@
         "glow": true,
         "blur": true,
         "motion": "soft"
-      }
+      },
+      "layout": {
+        "x": 5126,
+        "y": 5040,
+        "width": 154,
+        "height": 92
+      },
+      "nestedLayoutByParent": {
+        "node-08893e3b0f": {
+          "x": 107,
+          "y": 62,
+          "width": 67,
+          "height": 27
+        }
+      },
+      "userSized": true
     },
     {
       "id": "node-3a377783f4",
@@ -2045,7 +2520,22 @@
         "glow": true,
         "blur": true,
         "motion": "soft"
-      }
+      },
+      "layout": {
+        "x": 4720,
+        "y": 5040,
+        "width": 154,
+        "height": 92
+      },
+      "nestedLayoutByParent": {
+        "node-08893e3b0f": {
+          "x": 28,
+          "y": 62,
+          "width": 67,
+          "height": 27
+        }
+      },
+      "userSized": true
     },
     {
       "id": "node-a9e125766c",
@@ -2066,7 +2556,22 @@
         "glow": true,
         "blur": true,
         "motion": "soft"
-      }
+      },
+      "layout": {
+        "x": 5116,
+        "y": 4940,
+        "width": 202,
+        "height": 120
+      },
+      "nestedLayoutByParent": {
+        "node-e558225bde": {
+          "x": 177,
+          "y": 64,
+          "width": 137,
+          "height": 57
+        }
+      },
+      "userSized": true
     },
     {
       "id": "node-aae035f1ea",
@@ -2083,7 +2588,22 @@
         "glow": true,
         "blur": true,
         "motion": "soft"
-      }
+      },
+      "layout": {
+        "x": 4923,
+        "y": 4820,
+        "width": 154,
+        "height": 92
+      },
+      "nestedLayoutByParent": {
+        "node-a9e125766c": {
+          "x": 68,
+          "y": 28,
+          "width": 67,
+          "height": 27
+        }
+      },
+      "userSized": true
     },
     {
       "id": "node-db321f2a33",
@@ -2100,7 +2620,22 @@
         "glow": true,
         "blur": true,
         "motion": "soft"
-      }
+      },
+      "layout": {
+        "x": 5126,
+        "y": 5040,
+        "width": 154,
+        "height": 92
+      },
+      "nestedLayoutByParent": {
+        "node-a9e125766c": {
+          "x": 107,
+          "y": 62,
+          "width": 67,
+          "height": 27
+        }
+      },
+      "userSized": true
     },
     {
       "id": "node-ff7cccf19c",
@@ -2117,7 +2652,22 @@
         "glow": true,
         "blur": true,
         "motion": "soft"
-      }
+      },
+      "layout": {
+        "x": 4720,
+        "y": 5040,
+        "width": 154,
+        "height": 92
+      },
+      "nestedLayoutByParent": {
+        "node-a9e125766c": {
+          "x": 28,
+          "y": 62,
+          "width": 67,
+          "height": 27
+        }
+      },
+      "userSized": true
     },
     {
       "id": "node-2176c88cee",
@@ -2138,7 +2688,22 @@
         "glow": true,
         "blur": true,
         "motion": "soft"
-      }
+      },
+      "layout": {
+        "x": 5089,
+        "y": 5062,
+        "width": 202,
+        "height": 120
+      },
+      "nestedLayoutByParent": {
+        "node-e558225bde": {
+          "x": 153,
+          "y": 102,
+          "width": 137,
+          "height": 57
+        }
+      },
+      "userSized": true
     },
     {
       "id": "node-f92e68e633",
@@ -2155,7 +2720,22 @@
         "glow": true,
         "blur": true,
         "motion": "soft"
-      }
+      },
+      "layout": {
+        "x": 4923,
+        "y": 4820,
+        "width": 154,
+        "height": 92
+      },
+      "nestedLayoutByParent": {
+        "node-2176c88cee": {
+          "x": 68,
+          "y": 28,
+          "width": 67,
+          "height": 27
+        }
+      },
+      "userSized": true
     },
     {
       "id": "node-3c7ae62fb1",
@@ -2172,7 +2752,22 @@
         "glow": true,
         "blur": true,
         "motion": "soft"
-      }
+      },
+      "layout": {
+        "x": 5126,
+        "y": 5040,
+        "width": 154,
+        "height": 92
+      },
+      "nestedLayoutByParent": {
+        "node-2176c88cee": {
+          "x": 107,
+          "y": 62,
+          "width": 67,
+          "height": 27
+        }
+      },
+      "userSized": true
     },
     {
       "id": "node-a5b95ab06a",
@@ -2189,7 +2784,22 @@
         "glow": true,
         "blur": true,
         "motion": "soft"
-      }
+      },
+      "layout": {
+        "x": 4720,
+        "y": 5040,
+        "width": 154,
+        "height": 92
+      },
+      "nestedLayoutByParent": {
+        "node-2176c88cee": {
+          "x": 28,
+          "y": 62,
+          "width": 67,
+          "height": 27
+        }
+      },
+      "userSized": true
     },
     {
       "id": "node-96ed8a649f",
@@ -2210,7 +2820,22 @@
         "glow": true,
         "blur": true,
         "motion": "soft"
-      }
+      },
+      "layout": {
+        "x": 4899,
+        "y": 5081,
+        "width": 202,
+        "height": 120
+      },
+      "nestedLayoutByParent": {
+        "node-e558225bde": {
+          "x": 89,
+          "y": 117,
+          "width": 137,
+          "height": 57
+        }
+      },
+      "userSized": true
     },
     {
       "id": "node-8e40744d61",
@@ -2227,7 +2852,22 @@
         "glow": true,
         "blur": true,
         "motion": "soft"
-      }
+      },
+      "layout": {
+        "x": 4923,
+        "y": 4820,
+        "width": 154,
+        "height": 92
+      },
+      "nestedLayoutByParent": {
+        "node-96ed8a649f": {
+          "x": 68,
+          "y": 28,
+          "width": 67,
+          "height": 27
+        }
+      },
+      "userSized": true
     },
     {
       "id": "node-0b73fea39d",
@@ -2244,7 +2884,22 @@
         "glow": true,
         "blur": true,
         "motion": "soft"
-      }
+      },
+      "layout": {
+        "x": 5126,
+        "y": 5040,
+        "width": 154,
+        "height": 92
+      },
+      "nestedLayoutByParent": {
+        "node-96ed8a649f": {
+          "x": 107,
+          "y": 62,
+          "width": 67,
+          "height": 27
+        }
+      },
+      "userSized": true
     },
     {
       "id": "node-7729a814ad",
@@ -2261,7 +2916,22 @@
         "glow": true,
         "blur": true,
         "motion": "soft"
-      }
+      },
+      "layout": {
+        "x": 4720,
+        "y": 5040,
+        "width": 154,
+        "height": 92
+      },
+      "nestedLayoutByParent": {
+        "node-96ed8a649f": {
+          "x": 28,
+          "y": 62,
+          "width": 67,
+          "height": 27
+        }
+      },
+      "userSized": true
     },
     {
       "id": "node-3971b8d3d7",
@@ -2282,7 +2952,22 @@
         "glow": true,
         "blur": true,
         "motion": "soft"
-      }
+      },
+      "layout": {
+        "x": 4709,
+        "y": 5062,
+        "width": 202,
+        "height": 120
+      },
+      "nestedLayoutByParent": {
+        "node-e558225bde": {
+          "x": 24,
+          "y": 102,
+          "width": 137,
+          "height": 57
+        }
+      },
+      "userSized": true
     },
     {
       "id": "node-c1216e7298",
@@ -2299,7 +2984,22 @@
         "glow": true,
         "blur": true,
         "motion": "soft"
-      }
+      },
+      "layout": {
+        "x": 4923,
+        "y": 4820,
+        "width": 154,
+        "height": 92
+      },
+      "nestedLayoutByParent": {
+        "node-3971b8d3d7": {
+          "x": 68,
+          "y": 28,
+          "width": 67,
+          "height": 27
+        }
+      },
+      "userSized": true
     },
     {
       "id": "node-10f51762ed",
@@ -2316,7 +3016,22 @@
         "glow": true,
         "blur": true,
         "motion": "soft"
-      }
+      },
+      "layout": {
+        "x": 5126,
+        "y": 5040,
+        "width": 154,
+        "height": 92
+      },
+      "nestedLayoutByParent": {
+        "node-3971b8d3d7": {
+          "x": 107,
+          "y": 62,
+          "width": 67,
+          "height": 27
+        }
+      },
+      "userSized": true
     },
     {
       "id": "node-dbbe97f52a",
@@ -2333,7 +3048,22 @@
         "glow": true,
         "blur": true,
         "motion": "soft"
-      }
+      },
+      "layout": {
+        "x": 4720,
+        "y": 5040,
+        "width": 154,
+        "height": 92
+      },
+      "nestedLayoutByParent": {
+        "node-3971b8d3d7": {
+          "x": 28,
+          "y": 62,
+          "width": 67,
+          "height": 27
+        }
+      },
+      "userSized": true
     },
     {
       "id": "node-41df68a02b",
@@ -2354,7 +3084,22 @@
         "glow": true,
         "blur": true,
         "motion": "soft"
-      }
+      },
+      "layout": {
+        "x": 4682,
+        "y": 4940,
+        "width": 202,
+        "height": 120
+      },
+      "nestedLayoutByParent": {
+        "node-e558225bde": {
+          "x": 0,
+          "y": 64,
+          "width": 137,
+          "height": 57
+        }
+      },
+      "userSized": true
     },
     {
       "id": "node-12562d79c5",
@@ -2371,7 +3116,22 @@
         "glow": true,
         "blur": true,
         "motion": "soft"
-      }
+      },
+      "layout": {
+        "x": 4923,
+        "y": 4820,
+        "width": 154,
+        "height": 92
+      },
+      "nestedLayoutByParent": {
+        "node-41df68a02b": {
+          "x": 68,
+          "y": 28,
+          "width": 67,
+          "height": 27
+        }
+      },
+      "userSized": true
     },
     {
       "id": "node-417c7c24f9",
@@ -2388,7 +3148,22 @@
         "glow": true,
         "blur": true,
         "motion": "soft"
-      }
+      },
+      "layout": {
+        "x": 5126,
+        "y": 5040,
+        "width": 154,
+        "height": 92
+      },
+      "nestedLayoutByParent": {
+        "node-41df68a02b": {
+          "x": 107,
+          "y": 62,
+          "width": 67,
+          "height": 27
+        }
+      },
+      "userSized": true
     },
     {
       "id": "node-86fec2a5d8",
@@ -2405,7 +3180,22 @@
         "glow": true,
         "blur": true,
         "motion": "soft"
-      }
+      },
+      "layout": {
+        "x": 4720,
+        "y": 5040,
+        "width": 154,
+        "height": 92
+      },
+      "nestedLayoutByParent": {
+        "node-41df68a02b": {
+          "x": 28,
+          "y": 62,
+          "width": 67,
+          "height": 27
+        }
+      },
+      "userSized": true
     },
     {
       "id": "node-179f48f2a8",
@@ -2426,7 +3216,22 @@
         "glow": true,
         "blur": true,
         "motion": "soft"
-      }
+      },
+      "layout": {
+        "x": 4709,
+        "y": 4818,
+        "width": 202,
+        "height": 120
+      },
+      "nestedLayoutByParent": {
+        "node-e558225bde": {
+          "x": 24,
+          "y": 26,
+          "width": 137,
+          "height": 57
+        }
+      },
+      "userSized": true
     },
     {
       "id": "node-e7a4e837bd",
@@ -2443,7 +3248,22 @@
         "glow": true,
         "blur": true,
         "motion": "soft"
-      }
+      },
+      "layout": {
+        "x": 4923,
+        "y": 4820,
+        "width": 154,
+        "height": 92
+      },
+      "nestedLayoutByParent": {
+        "node-179f48f2a8": {
+          "x": 68,
+          "y": 28,
+          "width": 67,
+          "height": 27
+        }
+      },
+      "userSized": true
     },
     {
       "id": "node-dae79f531b",
@@ -2460,7 +3280,22 @@
         "glow": true,
         "blur": true,
         "motion": "soft"
-      }
+      },
+      "layout": {
+        "x": 5126,
+        "y": 5040,
+        "width": 154,
+        "height": 92
+      },
+      "nestedLayoutByParent": {
+        "node-179f48f2a8": {
+          "x": 107,
+          "y": 62,
+          "width": 67,
+          "height": 27
+        }
+      },
+      "userSized": true
     },
     {
       "id": "node-62715ebf5a",
@@ -2477,7 +3312,990 @@
         "glow": true,
         "blur": true,
         "motion": "soft"
+      },
+      "layout": {
+        "x": 4720,
+        "y": 5040,
+        "width": 154,
+        "height": 92
+      },
+      "nestedLayoutByParent": {
+        "node-179f48f2a8": {
+          "x": 28,
+          "y": 62,
+          "width": 67,
+          "height": 27
+        }
+      },
+      "userSized": true
+    },
+    {
+      "id": "node-9737c36c1a",
+      "title": "道筋を読む視線",
+      "body": "尾根の高さから、遠くへ伸びる道や峠道の曲がり方を見渡す子ポワン。人や荷の流れがどこから来てどこへ向かうかを早くつかむ。",
+      "powanKind": "nerve",
+      "code": "",
+      "parent": "node-94796388b7",
+      "children": [],
+      "style": {
+        "shape": "cloud",
+        "color": "#dff7ec",
+        "accent": "#42b883",
+        "glow": true,
+        "blur": true,
+        "motion": "soft"
+      },
+      "codeLanguage": "auto",
+      "layout": {
+        "x": 4923,
+        "y": 4820,
+        "width": 154,
+        "height": 92
+      },
+      "nestedLayoutByParent": {
+        "node-94796388b7": {
+          "x": 68,
+          "y": 28,
+          "width": 67,
+          "height": 27
+        }
+      },
+      "userSized": true
+    },
+    {
+      "id": "node-41ceb48147",
+      "title": "谷底をのぞく目",
+      "body": "高い場所から谷底や沢沿いの動きを見つける子ポワン。低い場所に隠れた移動や集まりを、上から静かに拾い上げる。",
+      "powanKind": "nerve",
+      "code": "",
+      "parent": "node-94796388b7",
+      "children": [],
+      "style": {
+        "shape": "cloud",
+        "color": "#ffe7c7",
+        "accent": "#ef9a3c",
+        "glow": true,
+        "blur": true,
+        "motion": "soft"
+      },
+      "codeLanguage": "auto",
+      "layout": {
+        "x": 5126,
+        "y": 4954,
+        "width": 154,
+        "height": 92
+      },
+      "nestedLayoutByParent": {
+        "node-94796388b7": {
+          "x": 107,
+          "y": 47,
+          "width": 67,
+          "height": 27
+        }
+      },
+      "userSized": true
+    },
+    {
+      "id": "node-adf777d28c",
+      "title": "集落の気配を見る高さ",
+      "body": "山頂や尾根から、遠くの集落の煙・灯り・人の出入りを見渡す子ポワン。暮らしの変化や危険の兆しを広い範囲から感じ取る。",
+      "powanKind": "nerve",
+      "code": "",
+      "parent": "node-94796388b7",
+      "children": [],
+      "style": {
+        "shape": "cloud",
+        "color": "#ffe7c7",
+        "accent": "#ef9a3c",
+        "glow": true,
+        "blur": true,
+        "motion": "soft"
+      },
+      "codeLanguage": "auto",
+      "layout": {
+        "x": 4923,
+        "y": 5088,
+        "width": 154,
+        "height": 92
+      },
+      "nestedLayoutByParent": {
+        "node-94796388b7": {
+          "x": 68,
+          "y": 65,
+          "width": 67,
+          "height": 27
+        }
+      },
+      "userSized": true
+    },
+    {
+      "id": "node-63b87b89d3",
+      "title": "小さな異変を早く拾う目",
+      "body": "広い視界の中で、普段と違う動きや音のない違和感を早く見つける子ポワン。守る側が動き出す前の一瞬を逃さない。",
+      "powanKind": "nerve",
+      "code": "",
+      "parent": "node-94796388b7",
+      "children": [],
+      "style": {
+        "shape": "cloud",
+        "color": "#ffe1ef",
+        "accent": "#ef6ea8",
+        "glow": true,
+        "blur": true,
+        "motion": "soft"
+      },
+      "codeLanguage": "auto",
+      "layout": {
+        "x": 4720,
+        "y": 4954,
+        "width": 154,
+        "height": 92
+      },
+      "nestedLayoutByParent": {
+        "node-94796388b7": {
+          "x": 28,
+          "y": 47,
+          "width": 67,
+          "height": 27
+        }
+      },
+      "userSized": true
+    },
+    {
+      "id": "node-1d1f924548",
+      "title": "言葉を育てる人",
+      "body": "方言、物語、歌詞、翻訳、日常の言い回しを作ったり残したりして、人々が世界をどう呼ぶかを育てる。",
+      "powanKind": "nerve",
+      "code": "",
+      "parent": "node-3d50fea7ad",
+      "children": [],
+      "style": {
+        "shape": "cloud",
+        "color": "#ffffff",
+        "accent": "#8ddcff",
+        "glow": true,
+        "blur": true,
+        "motion": "soft"
+      },
+      "codeLanguage": "auto",
+      "layout": {
+        "x": 4850,
+        "y": 4846,
+        "width": 126,
+        "height": 78
+      },
+      "nestedLayoutByParent": {
+        "node-3d50fea7ad": {
+          "x": 89,
+          "y": 11,
+          "width": 137,
+          "height": 57
+        }
+      },
+      "userSized": true
+    },
+    {
+      "id": "node-493ea4c5cc",
+      "title": "芸術を生み出す人",
+      "body": "音楽、絵、演劇、映画、漫画、ゲーム、デザインなどで感性を形にし、国や時代の表情を作る。",
+      "powanKind": "nerve",
+      "code": "",
+      "parent": "node-3d50fea7ad",
+      "children": [],
+      "style": {
+        "shape": "cloud",
+        "color": "#ffffff",
+        "accent": "#8ddcff",
+        "glow": true,
+        "blur": true,
+        "motion": "soft"
+      },
+      "codeLanguage": "auto",
+      "layout": {
+        "x": 5092,
+        "y": 4928,
+        "width": 126,
+        "height": 78
+      },
+      "nestedLayoutByParent": {
+        "node-3d50fea7ad": {
+          "x": 175,
+          "y": 47,
+          "width": 137,
+          "height": 57
+        }
+      },
+      "userSized": true
+    },
+    {
+      "id": "node-e6b7043ce1",
+      "title": "暮らし方を作る人",
+      "body": "食べ方、住まい方、服装、働き方、遊び方など、毎日の生活の型を育てて広げる。",
+      "powanKind": "nerve",
+      "code": "",
+      "parent": "node-3d50fea7ad",
+      "children": [],
+      "style": {
+        "shape": "cloud",
+        "color": "#ffffff",
+        "accent": "#8ddcff",
+        "glow": true,
+        "blur": true,
+        "motion": "soft"
+      },
+      "codeLanguage": "auto",
+      "layout": {
+        "x": 5033,
+        "y": 5046,
+        "width": 126,
+        "height": 78
+      },
+      "nestedLayoutByParent": {
+        "node-3d50fea7ad": {
+          "x": 142,
+          "y": 107,
+          "width": 137,
+          "height": 57
+        }
+      },
+      "userSized": true
+    },
+    {
+      "id": "node-359bb3d257",
+      "title": "習慣や行事を受け継ぐ人",
+      "body": "祭り、礼儀、年中行事、地域のしきたりを守り、次の世代へ渡していく。",
+      "powanKind": "nerve",
+      "code": "",
+      "parent": "node-3d50fea7ad",
+      "children": [],
+      "style": {
+        "shape": "cloud",
+        "color": "#ffffff",
+        "accent": "#8ddcff",
+        "glow": true,
+        "blur": true,
+        "motion": "soft"
+      },
+      "codeLanguage": "auto",
+      "layout": {
+        "x": 4841,
+        "y": 5046,
+        "width": 126,
+        "height": 78
+      },
+      "nestedLayoutByParent": {
+        "node-3d50fea7ad": {
+          "x": 35,
+          "y": 107,
+          "width": 137,
+          "height": 57
+        }
+      },
+      "userSized": true
+    },
+    {
+      "id": "node-4436182ed9",
+      "title": "新しい文化を広げる人",
+      "body": "ネット文化、若者文化、流行、コミュニティのノリを生み出し、人々の間へ広げていく。",
+      "powanKind": "nerve",
+      "code": "",
+      "parent": "node-3d50fea7ad",
+      "children": [],
+      "style": {
+        "shape": "cloud",
+        "color": "#ffffff",
+        "accent": "#8ddcff",
+        "glow": true,
+        "blur": true,
+        "motion": "soft"
+      },
+      "codeLanguage": "auto",
+      "layout": {
+        "x": 4777,
+        "y": 5000,
+        "width": 126,
+        "height": 78
+      },
+      "nestedLayoutByParent": {
+        "node-3d50fea7ad": {
+          "x": 2,
+          "y": 47,
+          "width": 137,
+          "height": 57
+        }
+      },
+      "userSized": true
+    },
+    {
+      "id": "node-340adef148",
+      "title": "居住圏",
+      "body": "人が住み、眠り、家族や個人の安心を置く場所。生活圏の中で日々の拠点になる範囲。",
+      "powanKind": "nerve",
+      "code": "",
+      "parent": "node-cb27589604",
+      "children": [],
+      "style": {
+        "shape": "cloud",
+        "color": "#dff7ec",
+        "accent": "#42b883",
+        "glow": true,
+        "blur": true,
+        "motion": "soft"
+      },
+      "layout": {
+        "x": 4910,
+        "y": 4820,
+        "width": 180,
+        "height": 112
+      },
+      "nestedLayoutByParent": {
+        "node-cb27589604": {
+          "x": 41,
+          "y": 28,
+          "width": 72,
+          "height": 30
+        }
       }
+    },
+    {
+      "id": "node-ccbbbdde95",
+      "title": "労働圏",
+      "body": "人が働き、技能を使い、ものやサービスを生み出して生活の糧を得る場所。",
+      "powanKind": "nerve",
+      "code": "",
+      "parent": "node-cb27589604",
+      "children": [],
+      "style": {
+        "shape": "cloud",
+        "color": "#ffe7c7",
+        "accent": "#ef9a3c",
+        "glow": true,
+        "blur": true,
+        "motion": "soft"
+      },
+      "layout": {
+        "x": 5094,
+        "y": 4876,
+        "width": 180,
+        "height": 112
+      },
+      "nestedLayoutByParent": {
+        "node-cb27589604": {
+          "x": 54,
+          "y": 28,
+          "width": 72,
+          "height": 30
+        }
+      }
+    },
+    {
+      "id": "node-aff5cdca6e",
+      "title": "移動圏",
+      "body": "道路、鉄道、港、空港、徒歩の道など、人や物が行き来して生活圏をつなぐ流れ。",
+      "powanKind": "nerve",
+      "code": "",
+      "parent": "node-cb27589604",
+      "children": [],
+      "style": {
+        "shape": "cloud",
+        "color": "#e5f8c8",
+        "accent": "#7db83f",
+        "glow": true,
+        "blur": true,
+        "motion": "soft"
+      },
+      "layout": {
+        "x": 5094,
+        "y": 5012,
+        "width": 180,
+        "height": 112
+      },
+      "nestedLayoutByParent": {
+        "node-cb27589604": {
+          "x": 54,
+          "y": 38,
+          "width": 72,
+          "height": 30
+        }
+      }
+    },
+    {
+      "id": "node-284e49917b",
+      "title": "商業圏",
+      "body": "店、市場、物流、取引が集まり、暮らしに必要なものや価値が巡る場所。",
+      "powanKind": "nerve",
+      "code": "",
+      "parent": "node-cb27589604",
+      "children": [],
+      "style": {
+        "shape": "cloud",
+        "color": "#e2ecff",
+        "accent": "#5f8fe8",
+        "glow": true,
+        "blur": true,
+        "motion": "soft"
+      },
+      "layout": {
+        "x": 4910,
+        "y": 5068,
+        "width": 180,
+        "height": 112
+      },
+      "nestedLayoutByParent": {
+        "node-cb27589604": {
+          "x": 41,
+          "y": 38,
+          "width": 72,
+          "height": 30
+        }
+      }
+    },
+    {
+      "id": "node-4f70af2af2",
+      "title": "文化圏",
+      "body": "言葉、学び、祭り、信仰、芸術、習慣が育ち、人々が同じ暮らしの意味を共有する場所。",
+      "powanKind": "nerve",
+      "code": "",
+      "parent": "node-cb27589604",
+      "children": [],
+      "style": {
+        "shape": "cloud",
+        "color": "#ffe1ef",
+        "accent": "#ef6ea8",
+        "glow": true,
+        "blur": true,
+        "motion": "soft"
+      },
+      "layout": {
+        "x": 4726,
+        "y": 5012,
+        "width": 180,
+        "height": 112
+      },
+      "nestedLayoutByParent": {
+        "node-cb27589604": {
+          "x": 28,
+          "y": 38,
+          "width": 72,
+          "height": 30
+        }
+      }
+    },
+    {
+      "id": "node-e05d9b8628",
+      "title": "公共圏",
+      "body": "役所、学校、病院、公園、防災拠点など、共同生活の安全と秩序を支える場所。",
+      "powanKind": "nerve",
+      "code": "",
+      "parent": "node-cb27589604",
+      "children": [],
+      "style": {
+        "shape": "cloud",
+        "color": "#dcf7ff",
+        "accent": "#34a6cf",
+        "glow": true,
+        "blur": true,
+        "motion": "soft"
+      },
+      "layout": {
+        "x": 4726,
+        "y": 4876,
+        "width": 180,
+        "height": 112
+      },
+      "nestedLayoutByParent": {
+        "node-cb27589604": {
+          "x": 28,
+          "y": 28,
+          "width": 72,
+          "height": 30
+        }
+      }
+    },
+    {
+      "id": "node-6be6ce5b9f",
+      "title": "税を集める入口",
+      "body": "所得税・消費税・法人税・社会保険料など、社会から国家へ資金が入ってくる入口。誰から、どの活動から、どの形で集めるかを扱い、税目ごとの金額や比率を受け取って、再分配の流れで使える形に整える臓器。",
+      "powanKind": "organ",
+      "code": "",
+      "parent": "node-255c847627",
+      "children": [
+        "node-68fb0ccd1f",
+        "node-fbf4be8483",
+        "node-4654aa5cf1",
+        "node-9aa12228b6"
+      ],
+      "style": {
+        "shape": "cloud",
+        "color": "#ffffff",
+        "accent": "#8ddcff",
+        "glow": true,
+        "blur": true,
+        "motion": "soft"
+      },
+      "layout": {
+        "x": 4815,
+        "y": 4765,
+        "width": 370,
+        "height": 188
+      },
+      "nestedLayoutByParent": {
+        "node-255c847627": {
+          "x": 143,
+          "y": 0,
+          "width": 112,
+          "height": 47
+        }
+      },
+      "userSized": true
+    },
+    {
+      "id": "node-7952d1a078",
+      "title": "税収入力の整理",
+      "body": "税目ごとの金額や比率を受け取り、税と再分配の流れで使える形に整える臓器。",
+      "powanKind": "organ",
+      "code": "",
+      "parent": null,
+      "children": [],
+      "style": {
+        "shape": "cloud",
+        "color": "#ffffff",
+        "accent": "#8ddcff",
+        "glow": true,
+        "blur": true,
+        "motion": "soft"
+      },
+      "codeLanguage": "auto",
+      "archived": true,
+      "archivedAt": "2026-06-25T20:45:39+00:00",
+      "archivedParent": "node-6be6ce5b9f"
+    },
+    {
+      "id": "node-eb40b15d86",
+      "title": "負担の偏りをならす判断",
+      "body": "所得や資産、生活状況に応じて負担の重さを調整する考え方。累進課税、控除、減免などで過度な偏りをならし、所得階層や扶養・生活条件を見て負担を重くするか軽くするかを判定する臓器。",
+      "powanKind": "organ",
+      "code": "",
+      "parent": "node-255c847627",
+      "children": [],
+      "style": {
+        "shape": "cloud",
+        "color": "#ffffff",
+        "accent": "#8ddcff",
+        "glow": true,
+        "blur": true,
+        "motion": "soft"
+      },
+      "layout": {
+        "x": 5129,
+        "y": 4891,
+        "width": 122,
+        "height": 76
+      },
+      "nestedLayoutByParent": {
+        "node-255c847627": {
+          "x": 278,
+          "y": 33,
+          "width": 112,
+          "height": 47
+        }
+      },
+      "userSized": true
+    },
+    {
+      "id": "node-bfa2a2623f",
+      "title": "負担調整の判定",
+      "body": "所得階層や扶養・生活条件を見て、負担を重くするか軽くするかを判定する臓器。",
+      "powanKind": "organ",
+      "code": "",
+      "parent": null,
+      "children": [],
+      "style": {
+        "shape": "cloud",
+        "color": "#ffffff",
+        "accent": "#8ddcff",
+        "glow": true,
+        "blur": true,
+        "motion": "soft"
+      },
+      "codeLanguage": "auto",
+      "archived": true,
+      "archivedAt": "2026-06-25T20:45:39+00:00",
+      "archivedParent": "node-eb40b15d86"
+    },
+    {
+      "id": "node-2c20857bd4",
+      "title": "公共サービスへ戻す流れ",
+      "body": "集めた税を教育・医療・道路・防災・行政など、みんなが使う社会の基盤へ戻す流れ。",
+      "powanKind": "nerve",
+      "code": "",
+      "parent": "node-255c847627",
+      "children": [],
+      "style": {
+        "shape": "cloud",
+        "color": "#ffffff",
+        "accent": "#8ddcff",
+        "glow": true,
+        "blur": true,
+        "motion": "soft"
+      },
+      "layout": {
+        "x": 5129,
+        "y": 5033,
+        "width": 122,
+        "height": 76
+      },
+      "nestedLayoutByParent": {
+        "node-255c847627": {
+          "x": 278,
+          "y": 105,
+          "width": 112,
+          "height": 47
+        }
+      },
+      "userSized": true
+    },
+    {
+      "id": "node-f3e47dce7b",
+      "title": "保障として支える流れ",
+      "body": "年金・失業給付・生活保護・子育て支援など、困った時に生活の底が抜けないよう支える流れ。収入、世帯、年齢、失業、疾病などの条件から、どの支援が必要かを判定する臓器。",
+      "powanKind": "organ",
+      "code": "",
+      "parent": "node-255c847627",
+      "children": [],
+      "style": {
+        "shape": "cloud",
+        "color": "#ffffff",
+        "accent": "#8ddcff",
+        "glow": true,
+        "blur": true,
+        "motion": "soft"
+      },
+      "layout": {
+        "x": 4939,
+        "y": 5103,
+        "width": 122,
+        "height": 76
+      },
+      "nestedLayoutByParent": {
+        "node-255c847627": {
+          "x": 143,
+          "y": 138,
+          "width": 112,
+          "height": 47
+        }
+      },
+      "userSized": true
+    },
+    {
+      "id": "node-35d586041f",
+      "title": "必要度の判定",
+      "body": "収入、世帯、年齢、失業、疾病などの条件から、どの支援が必要かを判定する臓器。",
+      "powanKind": "organ",
+      "code": "",
+      "parent": null,
+      "children": [],
+      "style": {
+        "shape": "cloud",
+        "color": "#ffffff",
+        "accent": "#8ddcff",
+        "glow": true,
+        "blur": true,
+        "motion": "soft"
+      },
+      "codeLanguage": "auto",
+      "archived": true,
+      "archivedAt": "2026-06-25T20:45:39+00:00",
+      "archivedParent": "node-f3e47dce7b"
+    },
+    {
+      "id": "node-0fc197f6b4",
+      "title": "未来への投資",
+      "body": "研究、インフラ、人材育成、産業支援など、今の税を未来の社会の力へ変える流れ。",
+      "powanKind": "nerve",
+      "code": "",
+      "parent": "node-255c847627",
+      "children": [],
+      "style": {
+        "shape": "cloud",
+        "color": "#ffffff",
+        "accent": "#8ddcff",
+        "glow": true,
+        "blur": true,
+        "motion": "soft"
+      },
+      "layout": {
+        "x": 4749,
+        "y": 5033,
+        "width": 122,
+        "height": 76
+      },
+      "nestedLayoutByParent": {
+        "node-255c847627": {
+          "x": 7,
+          "y": 105,
+          "width": 112,
+          "height": 47
+        }
+      },
+      "userSized": true
+    },
+    {
+      "id": "node-ffe6e5698f",
+      "title": "再分配の結果を見る目",
+      "body": "格差が縮んだか、必要な人に届いたか、公共の土台が保たれたかを確かめ、次の配分へ返す目。税と給付の前後で、所得差や支援到達度がどう変わったかを測る臓器。",
+      "powanKind": "organ",
+      "code": "",
+      "parent": "node-255c847627",
+      "children": [],
+      "style": {
+        "shape": "cloud",
+        "color": "#ffffff",
+        "accent": "#8ddcff",
+        "glow": true,
+        "blur": true,
+        "motion": "soft"
+      },
+      "layout": {
+        "x": 4749,
+        "y": 4891,
+        "width": 122,
+        "height": 76
+      },
+      "nestedLayoutByParent": {
+        "node-255c847627": {
+          "x": 7,
+          "y": 33,
+          "width": 112,
+          "height": 47
+        }
+      },
+      "userSized": true
+    },
+    {
+      "id": "node-9225f4c5d6",
+      "title": "再分配効果の測定",
+      "body": "税と給付の前後で、所得差や支援到達度がどう変わったかを測る臓器。",
+      "powanKind": "organ",
+      "code": "",
+      "parent": null,
+      "children": [],
+      "style": {
+        "shape": "cloud",
+        "color": "#ffffff",
+        "accent": "#8ddcff",
+        "glow": true,
+        "blur": true,
+        "motion": "soft"
+      },
+      "codeLanguage": "auto",
+      "archived": true,
+      "archivedAt": "2026-06-25T20:45:40+00:00",
+      "archivedParent": "node-ffe6e5698f"
+    },
+    {
+      "id": "node-68fb0ccd1f",
+      "title": "税目ごとの金額を受け取る器",
+      "body": "所得税・消費税・法人税・社会保険料など、税目ごとの金額入力を受け取り、欠けや形式の違いを整える臓器。社会から入ってきた資金を、まず数としてこぼさず持つ。",
+      "powanKind": "organ",
+      "code": "",
+      "parent": "node-6be6ce5b9f",
+      "children": [],
+      "style": {
+        "shape": "cloud",
+        "color": "#ffffff",
+        "accent": "#8ddcff",
+        "glow": true,
+        "blur": true,
+        "motion": "soft"
+      },
+      "codeLanguage": "auto",
+      "layout": {
+        "x": 4925,
+        "y": 4828,
+        "width": 150,
+        "height": 90
+      },
+      "nestedLayoutByParent": {
+        "node-6be6ce5b9f": {
+          "x": 97,
+          "y": 0,
+          "width": 149,
+          "height": 59
+        }
+      },
+      "userSized": true
+    },
+    {
+      "id": "node-fbf4be8483",
+      "title": "負担元を見分ける目",
+      "body": "誰から、どの活動から集めた税なのかを、個人・消費・企業・労働・資産などの入口に分類する臓器。税収の背後にある社会の動きを見える形にする。",
+      "powanKind": "organ",
+      "code": "",
+      "parent": "node-6be6ce5b9f",
+      "children": [],
+      "style": {
+        "shape": "cloud",
+        "color": "#ffffff",
+        "accent": "#8ddcff",
+        "glow": true,
+        "blur": true,
+        "motion": "soft"
+      },
+      "codeLanguage": "auto",
+      "layout": {
+        "x": 5122,
+        "y": 4955,
+        "width": 150,
+        "height": 90
+      },
+      "nestedLayoutByParent": {
+        "node-6be6ce5b9f": {
+          "x": 193,
+          "y": 51,
+          "width": 149,
+          "height": 59
+        }
+      },
+      "userSized": true
+    },
+    {
+      "id": "node-4654aa5cf1",
+      "title": "税収比率をそろえる秤",
+      "body": "税目ごとの金額を合計し、全体に対する比率や構成割合を計算して、再分配側が読みやすい重みへ変える臓器。",
+      "powanKind": "organ",
+      "code": "",
+      "parent": "node-6be6ce5b9f",
+      "children": [],
+      "style": {
+        "shape": "cloud",
+        "color": "#ffffff",
+        "accent": "#8ddcff",
+        "glow": true,
+        "blur": true,
+        "motion": "soft"
+      },
+      "codeLanguage": "auto",
+      "layout": {
+        "x": 4925,
+        "y": 5082,
+        "width": 150,
+        "height": 90
+      },
+      "nestedLayoutByParent": {
+        "node-6be6ce5b9f": {
+          "x": 97,
+          "y": 101,
+          "width": 149,
+          "height": 59
+        }
+      },
+      "userSized": true
+    },
+    {
+      "id": "node-9aa12228b6",
+      "title": "再分配へ渡す包み",
+      "body": "集めた税収データを、公共サービス・保障・投資へ渡せる共通形式にまとめる臓器。金額、比率、負担元、注意点をひとつの流れとして送り出す。",
+      "powanKind": "organ",
+      "code": "",
+      "parent": "node-6be6ce5b9f",
+      "children": [],
+      "style": {
+        "shape": "cloud",
+        "color": "#ffffff",
+        "accent": "#8ddcff",
+        "glow": true,
+        "blur": true,
+        "motion": "soft"
+      },
+      "codeLanguage": "auto",
+      "layout": {
+        "x": 4728,
+        "y": 4955,
+        "width": 150,
+        "height": 90
+      },
+      "nestedLayoutByParent": {
+        "node-6be6ce5b9f": {
+          "x": 0,
+          "y": 51,
+          "width": 149,
+          "height": 59
+        }
+      },
+      "userSized": true
+    },
+    {
+      "id": "node-597d6bb8c5",
+      "title": "",
+      "body": "",
+      "powanKind": "nerve",
+      "code": "",
+      "parent": null,
+      "children": [],
+      "style": {
+        "shape": "cloud",
+        "color": "#ffffff",
+        "accent": "#8ddcff",
+        "glow": true,
+        "blur": true,
+        "motion": "soft"
+      },
+      "layout": {
+        "x": 5157,
+        "y": 4875,
+        "width": 418,
+        "height": 251
+      },
+      "userSized": true
+    },
+    {
+      "id": "node-a666ab619d",
+      "title": "",
+      "body": "",
+      "powanKind": "nerve",
+      "code": "",
+      "parent": null,
+      "children": [],
+      "style": {
+        "shape": "cloud",
+        "color": "#ffffff",
+        "accent": "#8ddcff",
+        "glow": true,
+        "blur": true,
+        "motion": "soft"
+      },
+      "layout": {
+        "x": 4791,
+        "y": 5110,
+        "width": 418,
+        "height": 251
+      },
+      "userSized": true
+    },
+    {
+      "id": "node-ad6f89bb15",
+      "title": "",
+      "body": "",
+      "powanKind": "nerve",
+      "code": "",
+      "parent": null,
+      "children": [],
+      "style": {
+        "shape": "cloud",
+        "color": "#ffffff",
+        "accent": "#8ddcff",
+        "glow": true,
+        "blur": true,
+        "motion": "soft"
+      },
+      "layout": {
+        "x": 4425,
+        "y": 4875,
+        "width": 418,
+        "height": 251
+      },
+      "userSized": true
     }
   ]
 }

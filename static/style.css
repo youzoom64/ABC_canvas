@@ -285,6 +285,19 @@ textarea {
   font-size: 13px;
 }
 
+.settings-help {
+  margin: 0;
+  color: #426270;
+  font-size: 13px;
+  line-height: 1.5;
+}
+
+.settings-inline-help {
+  color: #63818d;
+  font-size: 12px;
+  font-weight: 500;
+}
+
 .settings-section {
   display: grid;
   gap: 10px;
@@ -310,6 +323,7 @@ textarea {
 .settings-sound-row,
 .settings-volume-row,
 .settings-range-row,
+.settings-check-row,
 .settings-action-row {
   display: grid;
   grid-template-columns: minmax(0, 1fr) auto auto;
@@ -327,6 +341,17 @@ textarea {
 
 .settings-range-row {
   grid-template-columns: 64px minmax(0, 1fr) 56px;
+  align-items: center;
+}
+
+.settings-check-row {
+  grid-template-columns: repeat(auto-fit, minmax(82px, 1fr));
+  align-items: center;
+}
+
+.settings-check-row label {
+  display: inline-flex;
+  gap: 6px;
   align-items: center;
 }
 
@@ -1519,6 +1544,12 @@ body.panel-collapsed .panel.code-mode {
   gap: 10px;
 }
 
+.panel-setting-group {
+  display: grid;
+  gap: 8px;
+  padding-top: 4px;
+}
+
 .setting-toggle {
   display: flex;
   align-items: center;
@@ -1527,6 +1558,12 @@ body.panel-collapsed .panel.code-mode {
   color: #244f62;
   font-size: 13px;
   font-weight: 700;
+}
+
+.panel label.setting-toggle {
+  display: flex;
+  align-items: center;
+  grid-template-columns: none;
 }
 
 .setting-toggle input {
@@ -2020,63 +2057,6 @@ body.panel-collapsed .panel.code-mode {
   right: -12px;
 }
 
-.nested-meaning .powan-drag-hit-top,
-.nested-meaning .powan-drag-hit-bottom {
-  left: 22%;
-  right: 22%;
-  height: 7px;
-}
-
-.nested-meaning .powan-drag-hit-top {
-  top: -7px;
-}
-
-.nested-meaning .powan-drag-hit-bottom {
-  bottom: -7px;
-}
-
-.nested-meaning .powan-drag-hit-left,
-.nested-meaning .powan-drag-hit-right {
-  top: 24%;
-  bottom: 24%;
-  width: 7px;
-}
-
-.nested-meaning .powan-drag-hit-left {
-  left: -7px;
-}
-
-.nested-meaning .powan-drag-hit-right {
-  right: -7px;
-}
-
-.nested-preview-meaning .powan-drag-hit-top,
-.nested-preview-meaning .powan-drag-hit-bottom {
-  height: 5px;
-  top: auto;
-}
-
-.nested-preview-meaning .powan-drag-hit-top {
-  top: -5px;
-}
-
-.nested-preview-meaning .powan-drag-hit-bottom {
-  bottom: -5px;
-}
-
-.nested-preview-meaning .powan-drag-hit-left,
-.nested-preview-meaning .powan-drag-hit-right {
-  width: 5px;
-}
-
-.nested-preview-meaning .powan-drag-hit-left {
-  left: -5px;
-}
-
-.nested-preview-meaning .powan-drag-hit-right {
-  right: -5px;
-}
-
 /* 常時soft-body: 箱の背景/縁/影を消し、SVG輪郭(.softbody-skin)を本体として見せる */
 .node.softbody-visual:not(.meaning-enter-pop):not(.meaning-release-pop):not(.meaning-shared-ghost),
 .nested-meaning.softbody-visual:not(.meaning-enter-pop):not(.meaning-release-pop):not(.meaning-shared-ghost),
@@ -2319,7 +2299,7 @@ body.panel-collapsed .panel.code-mode {
   opacity: 0.78;
   position: relative;
   z-index: 6;
-  pointer-events: auto;
+  pointer-events: none;
 }
 
 .node.open-parent {
@@ -2337,6 +2317,7 @@ body.panel-collapsed .panel.code-mode {
   position: absolute;
   display: grid;
   place-items: center;
+  pointer-events: auto;
   padding: 4px 9px;
   border: 1.5px solid color-mix(in srgb, var(--accent) 72%, #ffffff);
   background: var(--node-color);
@@ -2395,6 +2376,29 @@ body.panel-collapsed .panel.code-mode {
   pointer-events: auto;
   text-align: center;
   cursor: default;
+}
+
+.nested-preview-simple {
+  padding: 1px 4px;
+  border-width: 1px;
+  box-shadow: 0 0 7px color-mix(in srgb, var(--accent) 26%, transparent);
+  opacity: 0.78;
+}
+
+.nested-preview-simple.softbody-visual,
+.nested-preview-simple.drag-softbody {
+  background: var(--node-color);
+  border: 1px solid color-mix(in srgb, var(--accent) 72%, #ffffff);
+  box-shadow: 0 0 7px color-mix(in srgb, var(--accent) 26%, transparent);
+}
+
+.nested-preview-label {
+  color: rgba(35, 66, 78, 0.72);
+  font-size: clamp(3px, calc(var(--powan-face-size, 5px) * 0.5), 6px);
+  font-weight: 700;
+  line-height: 1.1;
+  text-overflow: clip;
+  white-space: normal;
 }
 
 .nested-preview-meaning.dragging {
@@ -2499,7 +2503,7 @@ body.panel-collapsed .panel.code-mode {
   overflow-wrap: anywhere;
   word-break: break-word;
   text-align: center;
-  font-size: 13px;
+  font-size: var(--powan-body-size, 13px);
   line-height: 1.45;
   overflow: hidden;
   cursor: text;
@@ -2636,10 +2640,10 @@ body.panel-collapsed .panel.code-mode {
 .nested-meaning > .node-body,
 .nested-preview-meaning > .node-body {
   width: 100%;
-  min-height: 2em;
-  height: 2em;
+  min-height: 2.8em;
+  height: 2.8em;
   color: rgba(35, 66, 78, 0.84);
-  font-size: clamp(5px, calc(var(--powan-face-size, 8px) * 0.72), 12px);
+  font-size: clamp(6px, calc(var(--powan-body-size, 8px) * 0.92), 22px);
   font-weight: 700;
   line-height: 1.25;
   pointer-events: none;
@@ -2655,12 +2659,22 @@ body.panel-collapsed .panel.code-mode {
 }
 
 .nested-preview-meaning > .node-body {
-  height: 1.35em;
-  min-height: 1.35em;
+  height: 2.4em;
+  min-height: 2.4em;
   color: rgba(35, 66, 78, 0.72);
-  font-size: clamp(3px, calc(var(--powan-face-size, 5px) * 0.48), 5px);
+  font-size: clamp(4px, calc(var(--powan-body-size, 5px) * 0.58), 10px);
   line-height: 1.12;
-  white-space: nowrap;
+  white-space: normal;
+}
+
+.nested-preview-simple > .node-body {
+  font-size: clamp(2px, calc(var(--powan-body-size, 5px) * 0.52), 14px);
+  line-height: 1.08;
+}
+
+.nested-preview-simple .powan-face-button {
+  top: 2%;
+  right: 3%;
 }
 
 .nested-preview-meaning > .node-body::placeholder {
@@ -2813,6 +2827,7 @@ body.panel-collapsed .panel.code-mode {
   top: 18%;
   right: 10%;
   z-index: 18;
+  pointer-events: auto;
   width: 1.45em;
   height: 1.45em;
   padding: 0;

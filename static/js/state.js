@@ -14,7 +14,11 @@ var talkToPowanButton = document.querySelector("#talkToPowanButton");
 var talkToPowanNewTabButton = document.querySelector("#talkToPowanNewTabButton");
 var openCodeMenuButton = document.querySelector("#openCodeMenuButton");
 var arrangePowanMenuButton = document.querySelector("#arrangePowanMenuButton");
+var selectChildPowansMenuButton = document.querySelector("#selectChildPowansMenuButton");
 var arrangeWorldMenuButton = document.querySelector("#arrangeWorldMenuButton");
+var selectWorldParentsMenuButton = document.querySelector("#selectWorldParentsMenuButton");
+var pasteWorldMenuButton = document.querySelector("#pasteWorldMenuButton");
+var panelArrangeWorldButton = document.querySelector("#panelArrangeWorldButton");
 var exportPowanMenuButton = document.querySelector("#exportPowanMenuButton");
 var importPowanMenuButton = document.querySelector("#importPowanMenuButton");
 var copySelectionMenuButton = document.querySelector("#copySelectionMenuButton");
@@ -30,6 +34,18 @@ var saveButton = document.querySelector("#saveButton");
 var saveAsButton = document.querySelector("#saveAsButton");
 var newFileButton = document.querySelector("#newFileButton");
 var settingsButton = document.querySelector("#settingsButton");
+var panelArrangeResizeParentsInput = document.querySelector("#panelArrangeResizeParentsInput");
+var panelArrangeRecursiveInput = document.querySelector("#panelArrangeRecursiveInput");
+var panelArrangeChildSpacingInput = document.querySelector("#panelArrangeChildSpacingInput");
+var panelArrangeChildSpacingValue = document.querySelector("#panelArrangeChildSpacingValue");
+var panelArrangeChildSizeInput = document.querySelector("#panelArrangeChildSizeInput");
+var panelArrangeChildSizeValue = document.querySelector("#panelArrangeChildSizeValue");
+var panelArrangeNestedChildSizeInput = document.querySelector("#panelArrangeNestedChildSizeInput");
+var panelArrangeNestedChildSizeValue = document.querySelector("#panelArrangeNestedChildSizeValue");
+var panelArrangeWorldParentSpacingInput = document.querySelector("#panelArrangeWorldParentSpacingInput");
+var panelArrangeWorldParentSpacingValue = document.querySelector("#panelArrangeWorldParentSpacingValue");
+var panelArrangeWorldParentSizeInput = document.querySelector("#panelArrangeWorldParentSizeInput");
+var panelArrangeWorldParentSizeValue = document.querySelector("#panelArrangeWorldParentSizeValue");
 var shutdownButton = document.querySelector("#shutdownButton");
 var saveState = document.querySelector("#saveState");
 var panel = document.querySelector("#panel");
@@ -107,6 +123,7 @@ var childEditParentId = null;
 var codePanelNodeId = null;
 var nodeContextMenuNodeId = null;
 var worldContextMenuOpen = false;
+var worldContextMenuDropCenter = null;
 var conversationNodeId = null;
 var conversationTypingTimer = null;
 var conversationTypingNodeId = null;
@@ -165,6 +182,13 @@ var appSettings = {
   autoSummaryTurns: 50,
   arrangeSpacing: 1,
   arrangeSize: 1,
+  arrangeResizeParents: true,
+  arrangeRecursive: true,
+  arrangeChildSpacing: 1,
+  arrangeChildSize: 1,
+  arrangeNestedChildSize: 1,
+  arrangeWorldParentSpacing: 1,
+  arrangeWorldParentSize: 1,
 };
 var availableConversationSounds = [];
 var conversationChunkAudio = null;
@@ -194,6 +218,10 @@ var NESTED_NODE_LIMITS = {
   maxWidth: 420,
   maxHeight: 300,
 };
+var NESTED_PREVIEW_NODE_LIMITS = {
+  minWidth: 10,
+  minHeight: 6,
+};
 
 var DRAG_THRESHOLD_PX = 6;
 var EMPTY_MEANING_PLACEHOLDER = "ポワンに意味を与えてね";
@@ -208,11 +236,12 @@ var DEFAULT_CONVERSATION_FONT_SIZE = 13;
 var MIN_CONVERSATION_FONT_SIZE = 11;
 var MAX_CONVERSATION_FONT_SIZE = 22;
 var DEFAULT_ARRANGE_SPACING = 1;
-var MIN_ARRANGE_SPACING = 0.7;
-var MAX_ARRANGE_SPACING = 1.4;
+var MIN_ARRANGE_SPACING = 0.3;
+var MAX_ARRANGE_SPACING = 3.0;
 var DEFAULT_ARRANGE_SIZE = 1;
-var MIN_ARRANGE_SIZE = 0.7;
-var MAX_ARRANGE_SIZE = 1.2;
+var MIN_ARRANGE_SIZE = 0.3;
+var MAX_ARRANGE_SIZE = 2.5;
+var DEFAULT_ARRANGE_TOGGLE = true;
 var CONVERSATION_ALL_SESSIONS_VALUE = "all";
 var POWAN_FACE_CLOCK_INTERVAL_MS = 1000;
 var POWAN_FACE_CYCLE_MS = 30 * 1000;
@@ -462,13 +491,24 @@ function loadStoredSettings() {
   appSettings.inputSoundVolume = normalizeConversationSoundVolume(stored.inputSoundVolume);
   appSettings.autoSummaryEnabled = stored.autoSummaryEnabled !== false;
   appSettings.autoSummaryTurns = normalizeConversationAutoSummaryTurns(stored.autoSummaryTurns);
-  appSettings.arrangeSpacing = normalizeArrangeSpacing(stored.arrangeSpacing);
-  appSettings.arrangeSize = normalizeArrangeSize(stored.arrangeSize);
+  applyArrangeSettings(stored);
   syncSettingsInputs();
 }
 
 function saveStoredSettings() {
   localStorage.setItem(APP_SETTINGS_STORAGE_KEY, JSON.stringify(appSettings));
+}
+
+function applyArrangeSettings(data = {}) {
+  appSettings.arrangeSpacing = normalizeArrangeSpacing(data.arrangeSpacing);
+  appSettings.arrangeSize = normalizeArrangeSize(data.arrangeSize);
+  appSettings.arrangeResizeParents = data.arrangeResizeParents !== false;
+  appSettings.arrangeRecursive = data.arrangeRecursive !== false;
+  appSettings.arrangeChildSpacing = normalizeArrangeSpacing(data.arrangeChildSpacing ?? data.arrangeSpacing);
+  appSettings.arrangeChildSize = normalizeArrangeSize(data.arrangeChildSize ?? data.arrangeSize);
+  appSettings.arrangeNestedChildSize = normalizeArrangeSize(data.arrangeNestedChildSize ?? data.arrangeSize);
+  appSettings.arrangeWorldParentSpacing = normalizeArrangeSpacing(data.arrangeWorldParentSpacing ?? data.arrangeSpacing);
+  appSettings.arrangeWorldParentSize = normalizeArrangeSize(data.arrangeWorldParentSize ?? data.arrangeSize);
 }
 
 function syncSettingsInputs() {
@@ -499,6 +539,30 @@ function syncSettingsInputs() {
   if (conversationAutoSummaryTurnsInput) {
     conversationAutoSummaryTurnsInput.value = String(appSettings.autoSummaryTurns);
   }
+  syncArrangePanelInputs();
+}
+
+function setRangeControl(input, output, value) {
+  if (input) {
+    input.value = String(value);
+  }
+  if (output) {
+    output.textContent = Number(value).toFixed(2);
+  }
+}
+
+function syncArrangePanelInputs() {
+  if (panelArrangeResizeParentsInput) {
+    panelArrangeResizeParentsInput.checked = Boolean(appSettings.arrangeResizeParents);
+  }
+  if (panelArrangeRecursiveInput) {
+    panelArrangeRecursiveInput.checked = Boolean(appSettings.arrangeRecursive);
+  }
+  setRangeControl(panelArrangeChildSpacingInput, panelArrangeChildSpacingValue, appSettings.arrangeWorldParentSpacing);
+  setRangeControl(panelArrangeChildSizeInput, panelArrangeChildSizeValue, appSettings.arrangeWorldParentSize);
+  setRangeControl(panelArrangeNestedChildSizeInput, panelArrangeNestedChildSizeValue, appSettings.arrangeNestedChildSize);
+  setRangeControl(panelArrangeWorldParentSpacingInput, panelArrangeWorldParentSpacingValue, appSettings.arrangeChildSpacing);
+  setRangeControl(panelArrangeWorldParentSizeInput, panelArrangeWorldParentSizeValue, appSettings.arrangeChildSize);
 }
 
 function setRandomPowanColor(enabled, reason = "set-random-powan-color") {

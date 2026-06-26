@@ -461,11 +461,12 @@ class AiPowanExplorer:
             for index, child in enumerate(children)
         ]
 
-    def arrange_children(self, parent_id: str, reason: str) -> None:
+    def arrange_children(self, parent_id: str, reason: str) -> int:
+        # TODO: フロントの arrangeSubtree に一本化できることを確認できたら削除する予定。
         parent = self.node(parent_id)
         children = self.children_of(parent_id)
         if not children:
-            return
+            return 0
         for plan in self.plan_arranged_children(parent, children):
             child = plan["node"]
             child["layout"] = self.clamp_layout(plan["worldLayout"])
@@ -474,8 +475,24 @@ class AiPowanExplorer:
         self.workspace.log_event(
             "debug",
             reason,
-            {"project": self.project, "file": self.file, "parentId": parent_id, "childCount": len(children)},
+            {
+                "message": f"children arranged: {parent_id}, {len(children)} children",
+                "project": self.project,
+                "file": self.file,
+                "parentId": parent_id,
+                "childCount": len(children),
+            },
         )
+        return len(children)
+
+    def arrange_parent_groups(self, parent_ids: list[str], reason: str) -> dict[str, int]:
+        # TODO: フロントの arrangeSubtree に一本化できることを確認できたら削除する予定。
+        arranged: dict[str, int] = {}
+        for parent_id in dict.fromkeys(parent_ids):
+            count = self.arrange_children(parent_id, reason)
+            if count:
+                arranged[parent_id] = count
+        return arranged
 
     def default_layout(self, index: int | None = None) -> dict[str, int]:
         # ルートポワンの初期位置。子ポワンは create_node 後に arrange_children で並べる。
@@ -500,7 +517,14 @@ class AiPowanExplorer:
             "motion": "soft",
         }
 
-    def create_node(self, request: CreatePowanRequest, parent_id: str | None = None) -> dict[str, Any]:
+    def create_node(
+        self,
+        request: CreatePowanRequest,
+        parent_id: str | None = None,
+        *,
+        arrange_after: bool = True,
+        save_after: bool = True,
+    ) -> dict[str, Any]:
         if parent_id is not None:
             self.node(parent_id)
         node = {
@@ -526,9 +550,9 @@ class AiPowanExplorer:
             parent = self.node(parent_id)
             parent["children"] = list(dict.fromkeys([*(parent.get("children") or []), node["id"]]))
         self.normalize_children()
-        if parent_id:
-            self.arrange_children(parent_id, "ai-create-powan-arrange")
-        self.save("ai-create-powan", {"nodeId": node["id"], "parentId": parent_id})
+        # サーバ側の独自整列はフロントの arrangeSubtree と結果がズレるため呼ばない。
+        if save_after:
+            self.save("ai-create-powan", {"nodeId": node["id"], "parentId": parent_id})
         return node
 
     def create_split_children(self, node_id: str, request: SplitPowanRequest) -> list[dict[str, Any]]:
@@ -547,8 +571,16 @@ class AiPowanExplorer:
                 layout=child.layout,
                 style=child.style,
             )
-            created.append(self.create_node(create_request, parent_id=node_id))
-        self.save("ai-split-powan", {"nodeId": node_id, "created": [node.get("id") for node in created]})
+            created.append(self.create_node(create_request, parent_id=node_id, arrange_after=False, save_after=False))
+        self.save(
+            "ai-split-powan",
+            {
+                "message": f"split created: {node_id}, {len(created)} children",
+                "nodeId": node_id,
+                "createdCount": len(created),
+                "arrangedParentCount": 0,
+            },
+        )
         return created
 
     def create_tree_children(self, node_id: str, request: PowanTreeRequest) -> list[dict[str, Any]]:
@@ -568,7 +600,7 @@ class AiPowanExplorer:
                 layout=branch.layout,
                 style=branch.style,
             )
-            node = self.create_node(create_request, parent_id=parent_id)
+            node = self.create_node(create_request, parent_id=parent_id, arrange_after=False, save_after=False)
             created.append(node)
             for child in branch.children:
                 create_branch(str(node["id"]), child)
@@ -579,9 +611,11 @@ class AiPowanExplorer:
         self.save(
             "ai-create-powan-tree",
             {
+                "message": f"tree created: {node_id}, {len(created)} powans",
                 "nodeId": node_id,
-                "rootIds": [node.get("id") for node in roots],
-                "created": [node.get("id") for node in created],
+                "rootCount": len(roots),
+                "createdCount": len(created),
+                "arrangedParentCount": 0,
             },
         )
         return created

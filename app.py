@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import base64
 import binascii
+import hashlib
 import json
 import os
 import random
@@ -54,16 +55,18 @@ DEFAULT_CODEX_SANDBOX = "danger-full-access"
 CODEX_SANDBOXES = {"read-only", "workspace-write", "danger-full-access"}
 DEFAULT_ARRANGE_SPACING = 1.0
 DEFAULT_ARRANGE_SIZE = 1.0
-MIN_ARRANGE_SPACING = 0.7
-MAX_ARRANGE_SPACING = 1.4
-MIN_ARRANGE_SIZE = 0.7
-MAX_ARRANGE_SIZE = 1.2
+MIN_ARRANGE_SPACING = 0.3
+MAX_ARRANGE_SPACING = 3.0
+MIN_ARRANGE_SIZE = 0.3
+MAX_ARRANGE_SIZE = 2.5
 WORKSPACE_SIZE = 10000
 WORKSPACE_ORIGIN_X = 5000
 WORKSPACE_ORIGIN_Y = 5000
 DEFAULT_NODE_WIDTH = 280
 DEFAULT_NODE_HEIGHT = 160
 CONSOLE_TEXT_PREVIEW_CHARS = 30
+LOG_LEVEL_NAMES = ("trace", "debug", "info", "warn", "error", "fatal")
+DEFAULT_CONSOLE_LOG_LEVELS = ("info", "warn", "error")
 POWAN_WORK_EVENT_LIMIT = 500
 POWAN_COLOR_PALETTE = [
     {"color": "#fff1b8", "accent": "#d8b500"},
@@ -130,8 +133,26 @@ def console_preview_text(details: dict[str, Any] | None) -> str:
     return ""
 
 
+def normalize_console_log_levels(value: Any) -> list[str]:
+    if not isinstance(value, list):
+        return list(DEFAULT_CONSOLE_LOG_LEVELS)
+    values = {str(item).lower() for item in value}
+    levels = [level for level in LOG_LEVEL_NAMES if level in values]
+    return levels or list(DEFAULT_CONSOLE_LOG_LEVELS)
+
+
+def current_console_log_levels() -> list[str]:
+    if not SETTINGS_PATH.exists():
+        return list(DEFAULT_CONSOLE_LOG_LEVELS)
+    try:
+        data = json.loads(SETTINGS_PATH.read_text(encoding="utf-8"))
+    except (OSError, json.JSONDecodeError):
+        return list(DEFAULT_CONSOLE_LOG_LEVELS)
+    return normalize_console_log_levels(data.get("consoleLogLevels"))
+
+
 def should_print_server_event(level: str, details: dict[str, Any] | None) -> bool:
-    return bool(details and details.get("console") and level.lower() in {"info", "warn", "error"})
+    return level.lower() in set(current_console_log_levels())
 
 
 def print_server_event(level: str, action: str, details: dict[str, Any] | None) -> None:
@@ -228,6 +249,17 @@ class CodexSandboxRequest(BaseModel):
 class ArrangeSettingsRequest(BaseModel):
     arrangeSpacing: float
     arrangeSize: float
+    arrangeResizeParents: bool = True
+    arrangeRecursive: bool = True
+    arrangeChildSpacing: float | None = None
+    arrangeChildSize: float | None = None
+    arrangeNestedChildSize: float | None = None
+    arrangeWorldParentSpacing: float | None = None
+    arrangeWorldParentSize: float | None = None
+
+
+class ConsoleLogSettingsRequest(BaseModel):
+    consoleLogLevels: list[str] = Field(default_factory=list)
 
 
 class ConversationMessageRequest(BaseModel):
@@ -604,7 +636,8 @@ def stable_for_signature(value: Any) -> Any:
 
 
 def document_signature(document: dict[str, Any]) -> str:
-    return json.dumps(stable_for_signature(document), ensure_ascii=False, separators=(",", ":"))
+    stable_json = json.dumps(stable_for_signature(document), ensure_ascii=False, separators=(",", ":"))
+    return hashlib.sha256(stable_json.encode("utf-8")).hexdigest()
 
 
 def powershell_single_quoted(value: str) -> str:
@@ -776,6 +809,14 @@ def load_app_settings() -> dict[str, Any]:
         "codexSandbox": normalize_codex_sandbox(data.get("codexSandbox", DEFAULT_CODEX_SANDBOX)),
         "arrangeSpacing": clamp_arrange_spacing(data.get("arrangeSpacing", DEFAULT_ARRANGE_SPACING)),
         "arrangeSize": clamp_arrange_size(data.get("arrangeSize", DEFAULT_ARRANGE_SIZE)),
+        "arrangeResizeParents": bool(data.get("arrangeResizeParents", True)),
+        "arrangeRecursive": bool(data.get("arrangeRecursive", True)),
+        "arrangeChildSpacing": clamp_arrange_spacing(data.get("arrangeChildSpacing", data.get("arrangeSpacing", DEFAULT_ARRANGE_SPACING))),
+        "arrangeChildSize": clamp_arrange_size(data.get("arrangeChildSize", data.get("arrangeSize", DEFAULT_ARRANGE_SIZE))),
+        "arrangeNestedChildSize": clamp_arrange_size(data.get("arrangeNestedChildSize", data.get("arrangeSize", DEFAULT_ARRANGE_SIZE))),
+        "arrangeWorldParentSpacing": clamp_arrange_spacing(data.get("arrangeWorldParentSpacing", data.get("arrangeSpacing", DEFAULT_ARRANGE_SPACING))),
+        "arrangeWorldParentSize": clamp_arrange_size(data.get("arrangeWorldParentSize", data.get("arrangeSize", DEFAULT_ARRANGE_SIZE))),
+        "consoleLogLevels": normalize_console_log_levels(data.get("consoleLogLevels")),
     }
 
 
@@ -818,6 +859,14 @@ def setting_payload() -> dict[str, Any]:
         "codexSandbox": settings["codexSandbox"],
         "arrangeSpacing": settings["arrangeSpacing"],
         "arrangeSize": settings["arrangeSize"],
+        "arrangeResizeParents": settings["arrangeResizeParents"],
+        "arrangeRecursive": settings["arrangeRecursive"],
+        "arrangeChildSpacing": settings["arrangeChildSpacing"],
+        "arrangeChildSize": settings["arrangeChildSize"],
+        "arrangeNestedChildSize": settings["arrangeNestedChildSize"],
+        "arrangeWorldParentSpacing": settings["arrangeWorldParentSpacing"],
+        "arrangeWorldParentSize": settings["arrangeWorldParentSize"],
+        "consoleLogLevels": settings["consoleLogLevels"],
         "sounds": sounds,
     }
 
@@ -1073,11 +1122,46 @@ def save_arrange_settings(request: ArrangeSettingsRequest) -> dict[str, Any]:
     settings = load_app_settings()
     settings["arrangeSpacing"] = clamp_arrange_spacing(request.arrangeSpacing)
     settings["arrangeSize"] = clamp_arrange_size(request.arrangeSize)
+    settings["arrangeResizeParents"] = bool(request.arrangeResizeParents)
+    settings["arrangeRecursive"] = bool(request.arrangeRecursive)
+    settings["arrangeChildSpacing"] = clamp_arrange_spacing(request.arrangeChildSpacing if request.arrangeChildSpacing is not None else request.arrangeSpacing)
+    settings["arrangeChildSize"] = clamp_arrange_size(request.arrangeChildSize if request.arrangeChildSize is not None else request.arrangeSize)
+    settings["arrangeNestedChildSize"] = clamp_arrange_size(request.arrangeNestedChildSize if request.arrangeNestedChildSize is not None else request.arrangeSize)
+    settings["arrangeWorldParentSpacing"] = clamp_arrange_spacing(
+        request.arrangeWorldParentSpacing if request.arrangeWorldParentSpacing is not None else request.arrangeSpacing
+    )
+    settings["arrangeWorldParentSize"] = clamp_arrange_size(request.arrangeWorldParentSize if request.arrangeWorldParentSize is not None else request.arrangeSize)
     save_app_settings(settings)
     log_server_event(
         "info",
         "arrange-settings-updated",
-        {"arrangeSpacing": settings["arrangeSpacing"], "arrangeSize": settings["arrangeSize"]},
+        {
+            "resizeParents": settings["arrangeResizeParents"],
+            "recursive": settings["arrangeRecursive"],
+            "childSpacing": settings["arrangeChildSpacing"],
+            "childSize": settings["arrangeChildSize"],
+            "nestedSize": settings["arrangeNestedChildSize"],
+            "worldSpacing": settings["arrangeWorldParentSpacing"],
+            "worldSize": settings["arrangeWorldParentSize"],
+        },
+    )
+    return setting_payload()
+
+
+@app.post("/api/settings/console-log-levels")
+def save_console_log_levels(request: ConsoleLogSettingsRequest) -> dict[str, Any]:
+    settings = load_app_settings()
+    settings["consoleLogLevels"] = normalize_console_log_levels(request.consoleLogLevels)
+    save_app_settings(settings)
+    levels = ",".join(settings["consoleLogLevels"])
+    log_server_event(
+        "info",
+        "console-log-levels-updated",
+        {
+            "message": f"console log levels updated: {levels}",
+            "consoleLogLevels": settings["consoleLogLevels"],
+            "console": True,
+        },
     )
     return setting_payload()
 
@@ -1112,48 +1196,23 @@ def save_doc(
 ) -> dict[str, str]:
     document_name = STORE.safe_powan_name(name)
     client_snapshot = unquote(x_abc_document_snapshot) if x_abc_document_snapshot is not None else None
-    incoming_canvas = document.canvas or {}
-    incoming_viewport = incoming_canvas.get("viewport")
-    log_server_event(
-        "debug",
-        "save-document-request-received",
-        {
-            "project": STORE.safe_project_name(project),
-            "file": document_name,
-            "nodeCount": len(document.nodes),
-            "hasSnapshot": bool(client_snapshot),
-            "snapshotHeaderLength": len(x_abc_document_snapshot or ""),
-            "snapshotLength": len(client_snapshot or ""),
-            "viewport": incoming_viewport,
-            "canvasKeys": sorted(incoming_canvas.keys()),
-        },
-    )
     try:
         current_document = STORE.load_document(project, document_name)
     except HTTPException as exc:
         if exc.status_code != 404:
             raise
         current_document = None
-    if current_document is not None:
-        log_server_event(
-            "debug",
-            "save-document-current-loaded",
-            {
-                "project": STORE.safe_project_name(project),
-                "file": document_name,
-                "serverNodes": len(current_document.get("nodes") or []),
-                "serverViewport": (current_document.get("canvas") or {}).get("viewport"),
-            },
-        )
     if current_document is not None and not client_snapshot:
         log_server_event(
             "warn",
             "save-document-missing-snapshot-rejected",
             {
+                "message": f"save rejected: missing snapshot {document_name}",
                 "project": STORE.safe_project_name(project),
                 "file": document_name,
                 "clientNodes": len(document.nodes),
                 "serverNodes": len(current_document.get("nodes") or []),
+                "console": True,
             },
         )
         raise HTTPException(status_code=428, detail="Document snapshot is required")
@@ -1164,33 +1223,26 @@ def save_doc(
                 "warn",
                 "save-document-stale-rejected",
                 {
+                    "message": f"save rejected: stale snapshot {document_name}",
                     "project": STORE.safe_project_name(project),
                     "file": document_name,
                     "clientNodes": len(document.nodes),
                     "serverNodes": len(current_document.get("nodes") or []),
+                    "console": True,
                 },
             )
             raise HTTPException(status_code=409, detail="Document changed on server")
     payload = document.model_dump()
-    log_server_event(
-        "debug",
-        "save-document-persist-start",
-        {
-            "project": STORE.safe_project_name(project),
-            "file": document_name,
-            "nodeCount": len(payload.get("nodes") or []),
-            "viewport": (payload.get("canvas") or {}).get("viewport"),
-        },
-    )
     STORE.save_document(project, document_name, payload, write_export=True)
     log_server_event(
-        "debug",
+        "info",
         "save-document-persist-complete",
         {
+            "message": f"document persisted: {document_name}, {len(payload.get('nodes') or [])} nodes",
             "project": STORE.safe_project_name(project),
             "file": document_name,
             "nodeCount": len(payload.get("nodes") or []),
-            "viewport": (payload.get("canvas") or {}).get("viewport"),
+            "console": True,
         },
     )
     return {

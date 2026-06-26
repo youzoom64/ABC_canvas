@@ -20,6 +20,15 @@ var powanSoftBodyView = {
     return state;
   },
 
+  attachStatic(element, layout = {}) {
+    if (!element) {
+      return null;
+    }
+    const state = this.createState(element, layout);
+    element.classList.add("softbody-visual");
+    return state;
+  },
+
   acquire(element, layout = {}) {
     const state = this.attach(element, layout);
     if (!state) {

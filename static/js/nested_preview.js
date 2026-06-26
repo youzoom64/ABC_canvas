@@ -1,4 +1,4 @@
-var NESTED_PREVIEW_MAX_DEPTH = 3;
+var NESTED_PREVIEW_MAX_DEPTH = 1;
 
 function appendNestedMeaningPreview(container, parent, placement, depth = 1) {
   const children = meaningChildren(parent);
@@ -24,14 +24,13 @@ function appendNestedMeaningPreview(container, parent, placement, depth = 1) {
 }
 
 function nestedPreviewArea(width, height, depth) {
-  const sideInset = Math.max(4, width * 0.13);
-  const topInset = Math.max(8, height * (depth === 1 ? 0.48 : 0.42));
-  const bottomInset = Math.max(4, height * 0.1);
+  const sideInset = Math.max(4, width * 0.12);
+  const verticalInset = Math.max(4, height * (depth === 1 ? 0.18 : 0.16));
   return {
     x: sideInset,
-    y: topInset,
+    y: verticalInset,
     width: Math.max(8, width - sideInset * 2),
-    height: Math.max(8, height - topInset - bottomInset),
+    height: Math.max(8, height - verticalInset * 2),
   };
 }
 
@@ -66,15 +65,30 @@ function nestedPreviewPlacementFromLayout(parent, child, area, size) {
     return null;
   }
   const sourceArea = powanPlacement.parentNestedArea(parent);
-  const savedWidth = Number(nestedLayout?.width || size.width);
-  const savedHeight = Number(nestedLayout?.height || size.height);
+  const savedWidth = Math.max(8, Number(nestedLayout?.width || size.width));
+  const savedHeight = Math.max(6, Number(nestedLayout?.height || size.height));
   const sourceCenterX = savedX + savedWidth / 2;
   const sourceCenterY = savedY + savedHeight / 2;
   const anchor = {
-    x: powanPlacement.clamp((sourceCenterX - sourceArea.x) / Math.max(1, sourceArea.width), 0, 1),
-    y: powanPlacement.clamp((sourceCenterY - sourceArea.y) / Math.max(1, sourceArea.height), 0, 1),
+    x: (sourceCenterX - sourceArea.x) / Math.max(1, sourceArea.width),
+    y: (sourceCenterY - sourceArea.y) / Math.max(1, sourceArea.height),
   };
-  const placement = powanPlacement.rectAtAnchor(area, size, anchor);
+  const defaultStoredSize = powanPlacement.nestedChildSize(Math.max(1, meaningChildren(parent).length), 1);
+  const savedScale = powanPlacement.clamp(
+    ((savedWidth / Math.max(1, defaultStoredSize.width)) + (savedHeight / Math.max(1, defaultStoredSize.height))) / 2,
+    0.3,
+    2.5,
+  );
+  const displaySize = {
+    width: Math.min(Math.max(8, area.width), size.width * savedScale),
+    height: Math.min(Math.max(6, area.height), size.height * savedScale),
+  };
+  const placement = {
+    x: Math.round(area.x + area.width * anchor.x - displaySize.width / 2),
+    y: Math.round(area.y + area.height * anchor.y - displaySize.height / 2),
+    width: Math.round(displaySize.width),
+    height: Math.round(displaySize.height),
+  };
   return {
     node: child,
     ...placement,
@@ -83,13 +97,14 @@ function nestedPreviewPlacementFromLayout(parent, child, area, size) {
 
 function nestedPreviewChildSize(cellWidth, cellHeight, depth) {
   const depthScale = Math.max(0.52, 1 - depth * 0.14);
-  const width = Math.max(14, Math.min(54, cellWidth * 0.76 * depthScale));
-  const height = Math.max(8, Math.min(24, width * 0.42, cellHeight * 0.78));
+  const width = Math.max(8, Math.min(54, cellWidth * 0.76 * depthScale));
+  const height = Math.max(5, Math.min(24, width * 0.42, cellHeight * 0.78));
   return { width, height };
 }
 
 function renderNestedPreviewMeaning(node, placement, depth) {
-  const element = createPowanSurface(node, placement, { mode: "preview", depth });
+  const element = createPowanSurfaceWithoutSoftBody(node, placement, { mode: "preview", depth });
+  element.classList.add("nested-preview-simple");
   element.addEventListener("pointerdown", (event) => {
     logNestedPointerDebug("nested-preview-pointerdown-capture", event, node, element, { depth });
   }, true);
@@ -97,7 +112,23 @@ function renderNestedPreviewMeaning(node, placement, depth) {
   element.addEventListener("pointermove", (event) => powanHitTest.syncNodeCursor(event, element));
   element.addEventListener("pointerleave", () => powanHitTest.clearNodeCursor(element));
   element.addEventListener("contextmenu", (event) => openPowanContextMenu(event, node));
+  element.addEventListener("dblclick", (event) => {
+    event.stopPropagation();
+    powanExplorer.enterWorld(node.id, element);
+  });
 
-  element.append(createPowanBody(node, { mode: "preview" }));
+  const body = document.createElement("div");
+  body.className = "node-body nested-preview-label";
+  body.textContent = meaningSurfaceText(node) || EMPTY_MEANING_PLACEHOLDER;
+  body.addEventListener("pointerdown", (event) => {
+    resetPowanFaceClock(node.id, "nested-preview-body-pointerdown");
+    event.preventDefault();
+    event.stopPropagation();
+  });
+  body.addEventListener("dblclick", (event) => {
+    event.preventDefault();
+    event.stopPropagation();
+  });
+  element.append(body);
   return element;
 }

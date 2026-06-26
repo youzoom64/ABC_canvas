@@ -258,8 +258,17 @@ var powanExplorer = {
       !decision?.nestedTarget
     );
   },
+  selectionBelongsToVisibleWorld(nodeId, nodes) {
+    if (!nodeId || !nodeById(nodeId)) {
+      return false;
+    }
+    return nodes.some((node) => (
+      node.id === nodeId ||
+      (typeof isDescendant === "function" && isDescendant(nodeId, node.id))
+    ));
+  },
   ensureSelected(nodes) {
-    if (!selectedId || (openParentId && !nodes.some((node) => node.id === selectedId))) {
+    if (!selectedId || (openParentId && !this.selectionBelongsToVisibleWorld(selectedId, nodes))) {
       selectedId = nodes[0]?.id || openParentId || firstActiveNode()?.id || null;
       selectedIds = new Set(uniqueActiveNodeIds(selectedId ? [selectedId] : []));
       selectionAnchorId = selectedId;
@@ -368,15 +377,23 @@ var powanExplorer = {
   },
   openWorldMenu(clientX, clientY) {
     this.closeNodeMenu("open-world-menu-close-node-menu");
+    const point = screenToWorld(clientX, clientY);
+    const origin = currentWorldOrigin();
+    worldContextMenuDropCenter = powanWorkspace.clampPoint({
+      x: Math.round(origin.x + point.x),
+      y: Math.round(origin.y + point.y),
+    });
     showWorldContextMenu(clientX, clientY);
     logEvent("debug", "open-world-menu", {
       clientX,
       clientY,
       openParentId: openParentId || null,
+      dropCenter: worldContextMenuDropCenter,
     });
   },
   closeWorldMenu(reason = "close-world-menu") {
     hideWorldContextMenu();
+    worldContextMenuDropCenter = null;
     logEvent("debug", reason, { openParentId: openParentId || null });
   },
   talkToPowan(nodeId) {
@@ -496,11 +513,15 @@ var powanExplorer = {
     return plans;
   },
   ensureParentSizeForArrangedChildren(parent, childCount, reason = "arrange-parent-size") {
-    if (!parent || childCount <= 0) {
+    if (!appSettings.arrangeResizeParents || !parent || childCount <= 0) {
       return parent;
     }
     const layout = powanPlacement.nodeLayout(parent);
-    const minimum = powanPlacement.minimumParentSizeForChildren(childCount, appSettings.arrangeSize);
+    const minimum = powanPlacement.minimumParentSizeForChildren(
+      childCount,
+      appSettings.arrangeNestedChildSize,
+      1,
+    );
     const nextWidth = Math.min(NODE_LIMITS.maxWidth, Math.max(layout.width, minimum.width, NODE_LIMITS.minWidth));
     const nextHeight = Math.min(NODE_LIMITS.maxHeight, Math.max(layout.height, minimum.height, NODE_LIMITS.minHeight));
     if (Math.round(nextWidth) === Math.round(layout.width) && Math.round(nextHeight) === Math.round(layout.height)) {
@@ -508,12 +529,7 @@ var powanExplorer = {
     }
     const center = powanPlacement.rectCenter(layout);
     parent.userSized = true;
-    const nextLayout = {
-      x: Math.round(center.x - nextWidth / 2),
-      y: Math.round(center.y - nextHeight / 2),
-      width: Math.round(nextWidth),
-      height: Math.round(nextHeight),
-    };
+    const nextLayout = powanPlacement.rectFromCenter(center, { width: nextWidth, height: nextHeight });
     this.syncChildCoordinatesFromWorld(parent.id, parent.parent || null, nextLayout, `${reason}-layout`);
     logEvent("debug", reason, {
       parentId: parent.id,
@@ -524,22 +540,37 @@ var powanExplorer = {
     });
     return parent;
   },
-  arrangeParentChildren(parent, reason = "arrange-parent-children") {
+  arrangeParentChildren(parent, reason = "arrange-parent-children", options = {}) {
     const children = this.childrenOf(parent);
     if (!children.length) {
       return [];
     }
-    this.ensureParentSizeForArrangedChildren(parent, children.length, `${reason}-parent-size`);
-    const plans = powanPlacement.planParentChildren(parent, children, {
-      spacing: appSettings.arrangeSpacing,
-      sizeScale: appSettings.arrangeSize,
+    const updateWorld = options.updateWorld !== false;
+    if (updateWorld) {
+      this.ensureParentSizeForArrangedChildren(parent, children.length, `${reason}-parent-size`);
+    }
+    const worldPlans = powanPlacement.planParentChildren(parent, children, {
+      spacing: options.spacing ?? appSettings.arrangeChildSpacing,
+      worldSizeScale: options.worldSizeScale ?? appSettings.arrangeChildSize,
+      nestedSizeScale: appSettings.arrangeNestedChildSize,
+    });
+    const nestedPlans = powanPlacement.planParentChildren(parent, children, {
+      spacing: 1,
+      worldSizeScale: options.worldSizeScale ?? appSettings.arrangeChildSize,
+      nestedSizeScale: options.nestedSizeScale ?? appSettings.arrangeNestedChildSize,
     });
     const changedIds = [];
-    for (const plan of plans) {
+    const updateNested = options.updateNested !== false;
+    for (const [index, plan] of worldPlans.entries()) {
       const child = plan.node;
-      child.userSized = true;
-      this.setNodeLayout(child.id, plan.worldLayout, `${reason}-world`);
-      this.setNestedLayout(child.id, parent.id, plan.nestedLayout, `${reason}-nested`);
+      const nestedPlan = nestedPlans[index] || plan;
+      if (updateWorld) {
+        child.userSized = true;
+        this.setNodeLayout(child.id, plan.worldLayout, `${reason}-world`);
+      }
+      if (updateNested) {
+        this.setNestedLayout(child.id, parent.id, nestedPlan.nestedLayout, `${reason}-nested`);
+      }
       changedIds.push(child.id);
     }
     logEvent("debug", reason, {
@@ -556,8 +587,8 @@ var powanExplorer = {
       return [];
     }
     const plans = powanPlacement.planRootChildren(roots, {
-      spacing: appSettings.arrangeSpacing,
-      sizeScale: appSettings.arrangeSize,
+      spacing: appSettings.arrangeWorldParentSpacing,
+      worldSizeScale: appSettings.arrangeWorldParentSize,
     });
     const changedIds = [];
     for (const plan of plans) {
@@ -595,6 +626,9 @@ var powanExplorer = {
       }
       parents.push(parent.id);
       changedIds.push(...this.arrangeParentChildren(parent, reason));
+      if (!appSettings.arrangeRecursive) {
+        return;
+      }
       for (const child of children) {
         visit(child);
       }
@@ -616,7 +650,40 @@ var powanExplorer = {
   arrangeCurrentWorld(reason = "arrange-current-world") {
     const parent = currentWorldParent();
     if (parent) {
-      return this.arrangeSubtree(parent.id, reason);
+      const children = this.childrenOf(parent);
+      if (!children.length) {
+        logEvent("debug", "arrange-current-world-empty", { worldParentId: parent.id });
+        return false;
+      }
+      this.recordHistory(reason);
+      const changedIds = [];
+      const parents = [parent.id];
+      changedIds.push(...this.arrangeParentChildren(parent, reason, {
+        spacing: appSettings.arrangeWorldParentSpacing,
+        worldSizeScale: appSettings.arrangeWorldParentSize,
+        nestedSizeScale: appSettings.arrangeNestedChildSize,
+      }));
+      for (const child of children) {
+        if (!this.childrenOf(child).length) {
+          continue;
+        }
+        parents.push(child.id);
+        changedIds.push(...this.arrangeParentChildren(child, reason, {
+          spacing: appSettings.arrangeWorldParentSpacing,
+          worldSizeScale: appSettings.arrangeWorldParentSize,
+          nestedSizeScale: appSettings.arrangeWorldParentSize,
+          updateWorld: false,
+        }));
+      }
+      this.touchPowans(changedIds, `${reason}-touch`);
+      setDirty();
+      render();
+      logEvent("info", reason, {
+        worldParentId: parent.id,
+        parentCount: parents.length,
+        arrangedCount: changedIds.length,
+      });
+      return true;
     }
     const roots = rootNodes();
     if (!roots.length) {
@@ -627,19 +694,17 @@ var powanExplorer = {
     const changedIds = [];
     const parents = [];
     changedIds.push(...this.arrangeRootChildren(reason));
-    const visit = (parentNode) => {
-      const children = this.childrenOf(parentNode);
-      if (!children.length) {
-        return;
-      }
-      parents.push(parentNode.id);
-      changedIds.push(...this.arrangeParentChildren(parentNode, reason));
-      for (const child of children) {
-        visit(child);
-      }
-    };
     for (const root of roots) {
-      visit(root);
+      if (!this.childrenOf(root).length) {
+        continue;
+      }
+      parents.push(root.id);
+      changedIds.push(...this.arrangeParentChildren(root, reason, {
+        spacing: appSettings.arrangeWorldParentSpacing,
+        worldSizeScale: appSettings.arrangeWorldParentSize,
+        nestedSizeScale: appSettings.arrangeWorldParentSize,
+        updateWorld: false,
+      }));
     }
     this.touchPowans(changedIds, `${reason}-touch`);
     setDirty();
@@ -751,6 +816,16 @@ var powanExplorer = {
         missingIds.push(nodeId);
         continue;
       }
+      const element = visualElementById(node.id);
+      if (element && (element.classList.contains("nested-meaning") || element.classList.contains("nested-preview-meaning")) && node.parent) {
+        const spread = this.spreadNestedMeaningByFactor(node, element, factor, { renderAfter: false });
+        if (spread) {
+          movedCount += 1;
+        } else {
+          missingIds.push(nodeId);
+        }
+        continue;
+      }
       const layout = powanPlacement.nodeLayout(node);
       const center = powanPlacement.rectCenter(layout);
       const nextCenterX = origin.x + (center.x - origin.x) * factor;
@@ -784,6 +859,110 @@ var powanExplorer = {
       },
     });
     return movedCount > 0;
+  },
+  nestedLocalRectForElement(node, element) {
+    const parent = nodeById(node?.parent);
+    const layer = element?.closest?.(".nested-preview-layer") || element?.closest?.(".nested-layer");
+    if (!parent || !layer) {
+      return null;
+    }
+    const current = node.nestedLayoutByParent?.[parent.id] || {};
+    const x = Number.isFinite(Number(current.x)) ? Number(current.x) : Number.parseFloat(element.style.left || "0");
+    const y = Number.isFinite(Number(current.y)) ? Number(current.y) : Number.parseFloat(element.style.top || "0");
+    const width = Number(current.width || element.offsetWidth || 54);
+    const height = Number(current.height || element.offsetHeight || 38);
+    const elementRect = element.getBoundingClientRect?.();
+    const layerRect = layer.getBoundingClientRect?.();
+    if (!elementRect?.width || !elementRect?.height || !layerRect?.width || !layerRect?.height) {
+      return { parent, layer, x, y, width, height };
+    }
+    const scaleX = layerRect.width / Math.max(1, layer.offsetWidth || layerRect.width);
+    const scaleY = layerRect.height / Math.max(1, layer.offsetHeight || layerRect.height);
+    return {
+      parent,
+      layer,
+      x: (elementRect.left - layerRect.left) / Math.max(0.01, scaleX),
+      y: (elementRect.top - layerRect.top) / Math.max(0.01, scaleY),
+      width: elementRect.width / Math.max(0.01, scaleX),
+      height: elementRect.height / Math.max(0.01, scaleY),
+    };
+  },
+  syncNestedElementRect(node, element, localRect, reason = "sync-nested-element-rect") {
+    const local = this.nestedLocalRectForElement(node, element);
+    if (!local) {
+      return false;
+    }
+    const frame = powanPlacement.dragFrameForNestedLayer(local.layer, element);
+    const storedLayout = powanPlacement.nestedLayoutFromDragFrame(local.parent, node, frame, localRect);
+    this.syncChildCoordinatesFromNested(node.id, local.parent.id, storedLayout, reason);
+    return true;
+  },
+  syncNestedElementRectPreserveStoredCenter(node, element, localRect, reason = "sync-nested-element-rect-center") {
+    const local = this.nestedLocalRectForElement(node, element);
+    if (!local) {
+      return false;
+    }
+    const frame = powanPlacement.dragFrameForNestedLayer(local.layer, element);
+    if (frame.type !== "preview") {
+      return this.syncNestedElementRect(node, element, localRect, reason);
+    }
+    const current = node.nestedLayoutByParent?.[local.parent.id] || {};
+    const currentWidth = Number(current.width || localRect.width || local.width);
+    const currentHeight = Number(current.height || localRect.height || local.height);
+    const storedCenterX = Number.isFinite(Number(current.x))
+      ? Number(current.x) + currentWidth / 2
+      : powanPlacement.parentNestedArea(local.parent).x + powanPlacement.parentNestedArea(local.parent).width / 2;
+    const storedCenterY = Number.isFinite(Number(current.y))
+      ? Number(current.y) + currentHeight / 2
+      : powanPlacement.parentNestedArea(local.parent).y + powanPlacement.parentNestedArea(local.parent).height / 2;
+    const sizeLayout = powanPlacement.nestedLayoutFromDragFrame(local.parent, node, frame, localRect);
+    this.syncChildCoordinatesFromNested(
+      node.id,
+      local.parent.id,
+      {
+        x: storedCenterX - Number(sizeLayout.width || currentWidth) / 2,
+        y: storedCenterY - Number(sizeLayout.height || currentHeight) / 2,
+        width: sizeLayout.width,
+        height: sizeLayout.height,
+      },
+      reason,
+    );
+    return true;
+  },
+  spreadNestedMeaningByFactor(node, element, factor, { renderAfter = true } = {}) {
+    const local = this.nestedLocalRectForElement(node, element);
+    if (!local) {
+      return false;
+    }
+    const current = node.nestedLayoutByParent?.[local.parent.id] || powanPlacement.nestedLayoutFromWorld(local.parent, node);
+    const width = Number(current.width || local.width);
+    const height = Number(current.height || local.height);
+    const center = {
+      x: Number(current.x || 0) + width / 2,
+      y: Number(current.y || 0) + height / 2,
+    };
+    const area = powanPlacement.parentNestedArea(local.parent);
+    const origin = powanPlacement.rectCenter(area);
+    const nextCenter = {
+      x: origin.x + (center.x - origin.x) * factor,
+      y: origin.y + (center.y - origin.y) * factor,
+    };
+    this.syncChildCoordinatesFromNested(
+      node.id,
+      local.parent.id,
+      {
+        x: nextCenter.x - width / 2,
+        y: nextCenter.y - height / 2,
+        width: Math.round(width),
+        height: Math.round(height),
+      },
+      "spread-selected-nested",
+    );
+    if (renderAfter) {
+      setDirty();
+      render();
+    }
+    return true;
   },
   resizeMeaningByFactor(node, element, factor, { renderAfter = true } = {}) {
     const layout = node.layout || {};
@@ -826,47 +1005,38 @@ var powanExplorer = {
     return true;
   },
   resizeNestedMeaningByFactor(node, element, factor, { renderAfter = true } = {}) {
-    const parent = nodeById(node.parent);
-    if (!parent) {
+    const local = this.nestedLocalRectForElement(node, element);
+    if (!local) {
       return false;
     }
-    const parentLayout = parent.layout || {};
-    const current = node.nestedLayoutByParent?.[parent.id] || {};
-    const width = Number(current.width || element.offsetWidth || 54);
-    const height = Number(current.height || element.offsetHeight || 38);
-    const maxWidth = Math.max(NESTED_NODE_LIMITS.minWidth, Math.min(NESTED_NODE_LIMITS.maxWidth, Number(parentLayout.width || 260) - 28));
-    const maxHeight = Math.max(NESTED_NODE_LIMITS.minHeight, Math.min(NESTED_NODE_LIMITS.maxHeight, Number(parentLayout.height || 150) - 28));
-    const nextWidth = Math.max(NESTED_NODE_LIMITS.minWidth, Math.min(maxWidth, width * factor));
-    const nextHeight = Math.max(NESTED_NODE_LIMITS.minHeight, Math.min(maxHeight, height * factor));
-    const previousHostLayout = { width, height };
-    const nextHostLayout = { width: Math.round(nextWidth), height: Math.round(nextHeight) };
-    const x = Number.isFinite(Number(current.x)) ? Number(current.x) : Number.parseFloat(element.style.left || "0");
-    const y = Number.isFinite(Number(current.y)) ? Number(current.y) : Number.parseFloat(element.style.top || "0");
-    const elementRect = element?.getBoundingClientRect?.();
-    const layer = element?.closest?.(".nested-preview-layer") || element?.closest?.(".nested-layer");
-    const layerRect = layer?.getBoundingClientRect?.();
-    const scaleX = layerRect?.width ? layerRect.width / Math.max(1, layer.offsetWidth || layerRect.width) : 1;
-    const scaleY = layerRect?.height ? layerRect.height / Math.max(1, layer.offsetHeight || layerRect.height) : 1;
-    const centerX = elementRect?.width && layerRect?.width
-      ? (elementRect.left + elementRect.width / 2 - layerRect.left) / Math.max(0.01, scaleX)
-      : x + width / 2;
-    const centerY = elementRect?.height && layerRect?.height
-      ? (elementRect.top + elementRect.height / 2 - layerRect.top) / Math.max(0.01, scaleY)
-      : y + height / 2;
-    const maxX = Math.max(0, Number(parentLayout.width || 260) - 28 - nextWidth);
-    const maxY = Math.max(0, Number(parentLayout.height || 150) - 28 - nextHeight);
-    this.syncChildCoordinatesFromNested(
-      node.id,
-      parent.id,
+    const isPreview = element.classList.contains("nested-preview-meaning");
+    const minWidth = isPreview ? NESTED_PREVIEW_NODE_LIMITS.minWidth : NESTED_NODE_LIMITS.minWidth;
+    const minHeight = isPreview ? NESTED_PREVIEW_NODE_LIMITS.minHeight : NESTED_NODE_LIMITS.minHeight;
+    const nextWidth = Math.max(minWidth, Math.min(NODE_LIMITS.maxWidth, local.width * factor));
+    const nextHeight = Math.max(minHeight, Math.min(NODE_LIMITS.maxHeight, local.height * factor));
+    const previousContentLayout = { ...(node.layout || {}) };
+    const centerX = local.x + local.width / 2;
+    const centerY = local.y + local.height / 2;
+    const synced = this.syncNestedElementRectPreserveStoredCenter(
+      node,
+      element,
       {
-        x: Math.round(Math.min(maxX, Math.max(0, centerX - nextWidth / 2))),
-        y: Math.round(Math.min(maxY, Math.max(0, centerY - nextHeight / 2))),
+        x: Math.round(centerX - nextWidth / 2),
+        y: Math.round(centerY - nextHeight / 2),
         width: Math.round(nextWidth),
         height: Math.round(nextHeight),
       },
       "resize-focused-nested-node",
     );
-    this.preserveChildrenInsideResizedParent(node, previousHostLayout, nextHostLayout, "resize-focused-nested-node-children");
+    if (!synced) {
+      return false;
+    }
+    this.preserveChildrenInsideResizedParent(
+      node,
+      previousContentLayout,
+      node.layout || previousContentLayout,
+      "resize-focused-nested-node-children",
+    );
     if (renderAfter) {
       setDirty();
       render();
@@ -975,16 +1145,19 @@ var powanExplorer = {
     const scaleY = layerRect.height / Math.max(1, layer.offsetHeight || layerRect.height);
     const centerX = screenRect.left + screenRect.width / 2;
     const centerY = screenRect.top + screenRect.height / 2;
-    const x = (centerX - layerRect.left) / Math.max(0.01, scaleX) - width / 2;
-    const y = (centerY - layerRect.top) / Math.max(0.01, scaleY) - height / 2;
-    const maxX = Math.max(0, (layer.offsetWidth || layerRect.width) - width);
-    const maxY = Math.max(0, (layer.offsetHeight || layerRect.height) - height);
-    const layout = {
-      x: Math.round(Math.min(maxX, Math.max(0, x))),
-      y: Math.round(Math.min(maxY, Math.max(0, y))),
-      width,
-      height,
-    };
+    const layout = powanPlacement.rectFromCenter(
+      {
+        x: (centerX - layerRect.left) / Math.max(0.01, scaleX),
+        y: (centerY - layerRect.top) / Math.max(0.01, scaleY),
+      },
+      { width, height },
+      {
+        x: 0,
+        y: 0,
+        width: layer.offsetWidth || layerRect.width,
+        height: layer.offsetHeight || layerRect.height,
+      },
+    );
     logEvent("trace", "nested-layout-from-screen-rect", {
       parentId: parent.id,
       childId: child.id,
@@ -1116,7 +1289,10 @@ var powanExplorer = {
     if (!layer) {
       return [];
     }
-    return [...layer.children].filter((child) => this.isPowanElement(child));
+    return [...layer.children].filter((child) => (
+      this.isPowanElement(child) &&
+      !child.classList?.contains("nested-preview-simple")
+    ));
   },
   powanDeformProfile(element) {
     const isPowan = this.isPowanElement(element);
@@ -1142,7 +1318,9 @@ var powanExplorer = {
     this.recordHistory("nested-drag-start", { groupKey: `drag:${nodeId}` });
     this.touchPowans([nodeId, parentId], "nested-drag-start-touch");
     nestedDrag = powanNestedDrag.begin({ nodeId, parentId, element, layer, offsetX, offsetY, pointerId, startX, startY, frame });
-    this.beginPowanDragMotion(element, offsetX, offsetY);
+    if (!element?.classList?.contains("nested-preview-simple")) {
+      this.beginPowanDragMotion(element, offsetX, offsetY);
+    }
     logEvent("debug", "nested-drag-start", { nodeId, parentId });
     logEvent("trace", "nested-drag-start-trace", {
       nodeId,

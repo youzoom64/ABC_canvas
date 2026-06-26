@@ -130,6 +130,13 @@ async function copyTextToClipboard(text) {
   return ok;
 }
 
+async function readTextFromClipboard() {
+  if (navigator.clipboard?.readText) {
+    return navigator.clipboard.readText();
+  }
+  throw new Error("clipboard read is not available");
+}
+
 function downloadPowanDocument(exportDoc, fileName) {
   const blob = new Blob([JSON.stringify(exportDoc, null, 2)], { type: "application/json;charset=utf-8" });
   const url = URL.createObjectURL(blob);
@@ -364,20 +371,7 @@ Object.assign(powanExplorer, {
     return true;
   },
 
-  exportPowanSubtree(nodeId) {
-    const node = nodeById(nodeId);
-    if (!node) {
-      logEvent("warn", "powan-export-missing-node", { nodeId });
-      return false;
-    }
-    const exportDoc = powanSubtreeDocument(node.id);
-    downloadPowanDocument(exportDoc, powanFileNameForNode(node));
-    logEvent("info", "powan-export-subtree", { nodeId: node.id, nodeCount: exportDoc.nodes.length });
-    return true;
-  },
-
-  async importPowanSubtreeFile(file, { parentId = null, dropCenter = null, reason = "powan-import-subtree" } = {}) {
-    const sourceDoc = await readPowanDocumentFile(file);
+  importPowanSubtreeDocument(sourceDoc, { parentId = null, dropCenter = null, reason = "powan-import-subtree" } = {}) {
     this.recordHistory(reason);
     const imported = cloneImportedNodes(sourceDoc, { parentId, dropCenter });
     normalizeImportedChildren(imported);
@@ -396,10 +390,50 @@ Object.assign(powanExplorer, {
     setDirty();
     render();
     logEvent("info", reason, {
-      fileName: file.name,
       parentId,
       nodeCount: imported.length,
       rootIds: roots,
+      dropCenter,
+    });
+    return imported;
+  },
+
+  async pastePowansFromClipboard({ parentId = null, dropCenter = null, reason = "powan-paste-clipboard" } = {}) {
+    const text = await readTextFromClipboard();
+    const sourceDoc = JSON.parse(text);
+    if (!Array.isArray(sourceDoc.nodes)) {
+      throw new Error("clipboard does not contain powan nodes");
+    }
+    const imported = this.importPowanSubtreeDocument(sourceDoc, { parentId, dropCenter, reason });
+    saveState.textContent = `pasted ${imported.length}`;
+    logEvent("info", "powan-paste-clipboard-complete", {
+      message: `clipboard pasted: ${imported.length} nodes`,
+      parentId,
+      nodeCount: imported.length,
+    });
+    return imported;
+  },
+
+  exportPowanSubtree(nodeId) {
+    const node = nodeById(nodeId);
+    if (!node) {
+      logEvent("warn", "powan-export-missing-node", { nodeId });
+      return false;
+    }
+    const exportDoc = powanSubtreeDocument(node.id);
+    downloadPowanDocument(exportDoc, powanFileNameForNode(node));
+    logEvent("info", "powan-export-subtree", { nodeId: node.id, nodeCount: exportDoc.nodes.length });
+    return true;
+  },
+
+  async importPowanSubtreeFile(file, { parentId = null, dropCenter = null, reason = "powan-import-subtree" } = {}) {
+    const sourceDoc = await readPowanDocumentFile(file);
+    const imported = this.importPowanSubtreeDocument(sourceDoc, { parentId, dropCenter, reason });
+    logEvent("info", reason, {
+      fileName: file.name,
+      parentId,
+      nodeCount: imported.length,
+      rootIds: importedRootIds(imported),
       dropCenter,
     });
     return imported;

@@ -96,6 +96,40 @@ function selectableOrderIds(scope = "canvas") {
   return currentWorldNodes().map((node) => node.id).filter((id) => nodeById(id));
 }
 
+function selectAllCanvasNodes(reason = "canvas-select-all") {
+  const ids = selectableOrderIds("canvas");
+  const selected = applySelection(ids, {
+    primaryId: selectedId && ids.includes(selectedId) ? selectedId : ids[0],
+    anchorId: ids[0] || null,
+    reason,
+  });
+  logEvent("info", "canvas-select-all-complete", {
+    message: `canvas select all: ${selected.length} nodes`,
+    count: selected.length,
+  });
+  return selected;
+}
+
+function selectSelectedNodeChildrenOrCanvas(reason = "keyboard-canvas-select-all") {
+  const parent = nodeById(selectedId);
+  const childIds = parent && powanExplorer?.childrenOf
+    ? powanExplorer.childrenOf(parent).map((child) => child.id)
+    : [];
+  if (!childIds.length) {
+    return selectAllCanvasNodes(reason);
+  }
+  const selected = applySelection(childIds, {
+    primaryId: childIds[0],
+    anchorId: childIds[0],
+    reason: `${reason}-children`,
+  });
+  logEvent("info", "keyboard-child-select-all-complete", {
+    parentId: parent.id,
+    count: selected.length,
+  });
+  return selected;
+}
+
 function rangeSelectionIds(targetId, scope = "canvas") {
   const order = selectableOrderIds(scope);
   const targetIndex = order.indexOf(targetId);

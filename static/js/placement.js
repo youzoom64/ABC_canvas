@@ -21,6 +21,27 @@ var powanPlacement = {
     };
   },
 
+  rectFromCenter(center, size, bounds = null) {
+    const width = Math.round(Math.max(1, this.number(size?.width, 1)));
+    const height = Math.round(Math.max(1, this.number(size?.height, 1)));
+    const centerX = this.number(center?.x);
+    const centerY = this.number(center?.y);
+    const rawX = centerX - width / 2;
+    const rawY = centerY - height / 2;
+    const x = bounds
+      ? this.clamp(rawX, this.number(bounds.x), this.number(bounds.x) + Math.max(0, this.number(bounds.width) - width))
+      : rawX;
+    const y = bounds
+      ? this.clamp(rawY, this.number(bounds.y), this.number(bounds.y) + Math.max(0, this.number(bounds.height) - height))
+      : rawY;
+    return {
+      x: Math.round(x),
+      y: Math.round(y),
+      width,
+      height,
+    };
+  },
+
   nodeLayout(node) {
     const layout = node?.layout || {};
     return {
@@ -55,17 +76,17 @@ var powanPlacement = {
 
   parentNestedArea(parent) {
     const layout = this.nodeLayout(parent);
-    const inset = this.nestedDisplayInset;
+    const inset = this.nestedLayerInset;
     return {
-      x: inset,
-      y: inset,
+      x: 0,
+      y: 0,
       width: Math.max(56, layout.width - inset * 2),
       height: Math.max(40, layout.height - inset * 2),
     };
   },
 
   scaledSize(size, scale = 1) {
-    const factor = this.clamp(this.number(scale, 1), 0.5, 1.8);
+    const factor = this.clamp(this.number(scale, 1), 0.3, 2.5);
     return {
       width: Math.round(size.width * factor),
       height: Math.round(size.height * factor),
@@ -100,16 +121,17 @@ var powanPlacement = {
     return this.scaledSize(size, scale);
   },
 
-  minimumParentSizeForChildren(count, scale = 1) {
+  minimumParentSizeForChildren(count, scale = 1, spacing = 1) {
     if (count <= 0) {
       return { width: 0, height: 0 };
     }
     const columns = Math.max(1, Math.ceil(Math.sqrt(count)));
     const rows = Math.max(1, Math.ceil(count / columns));
     const size = this.nestedChildSize(count, scale);
+    const spacingScale = this.clamp(this.number(spacing, 1), 0.3, 3);
     return {
-      width: this.nestedDisplayInset * 2 + columns * size.width + Math.max(0, columns - 1) * 12,
-      height: this.nestedDisplayInset * 2 + rows * size.height + Math.max(0, rows - 1) * 10,
+      width: this.nestedDisplayInset * 2 + columns * size.width + Math.max(0, columns - 1) * 12 * spacingScale,
+      height: this.nestedDisplayInset * 2 + rows * size.height + Math.max(0, rows - 1) * 10 * spacingScale,
     };
   },
 
@@ -117,15 +139,15 @@ var powanPlacement = {
     if (count <= 1) {
       return [{ x: 0.5, y: 0.5 }];
     }
-    const spacingScale = this.clamp(this.number(spacing, 1), 0.5, 1.5);
+    const spacingScale = this.clamp(this.number(spacing, 1), 0.3, 3);
     if (count === 2) {
-      const offset = this.clamp(0.18 * spacingScale, 0.08, 0.46);
+      const offset = this.clamp(0.18 * spacingScale, 0.08, 0.86);
       return [
         { x: 0.5 - offset, y: 0.5 },
         { x: 0.5 + offset, y: 0.5 },
       ];
     }
-    const radius = this.clamp((count <= 4 ? 0.34 : 0.38) * spacingScale, 0.12, 0.48);
+    const radius = this.clamp((count <= 4 ? 0.34 : 0.38) * spacingScale, 0.12, 0.86);
     return Array.from({ length: count }, (_, index) => {
       const angle = -Math.PI / 2 + (Math.PI * 2 * index) / count;
       return {
@@ -140,25 +162,46 @@ var powanPlacement = {
     const height = Math.min(size.height, Math.max(6, area.height));
     const centerX = area.x + area.width * anchor.x;
     const centerY = area.y + area.height * anchor.y;
+    return this.rectFromCenter({ x: centerX, y: centerY }, { width, height }, area);
+  },
+
+  fallbackOffset(anchor, width, height) {
     return {
-      x: Math.round(this.clamp(centerX - width / 2, area.x, area.x + area.width - width)),
-      y: Math.round(this.clamp(centerY - height / 2, area.y, area.y + area.height - height)),
-      width: Math.round(width),
-      height: Math.round(height),
+      x: (this.number(anchor?.x, 0.5) - 0.5) * width,
+      y: (this.number(anchor?.y, 0.5) - 0.5) * height,
     };
   },
 
   planWorldChildren(parent, children, options = {}) {
     const anchors = this.anchors(children.length, options.spacing);
-    const worldArea = parent ? this.parentWorldArea(parent) : this.rootWorldArea();
+    const worldOrigin = powanWorkspace.origin;
     const nestedArea = parent ? this.parentNestedArea(parent) : null;
-    const worldSize = this.worldChildSize(children.length, options.sizeScale);
-    const nestedSize = parent ? this.nestedChildSize(children.length, options.sizeScale) : null;
-    return children.map((child, index) => ({
-      node: child,
-      worldLayout: this.rectAtAnchor(worldArea, worldSize, anchors[index]),
-      nestedLayout: parent ? this.rectAtAnchor(nestedArea, nestedSize, anchors[index]) : null,
-    }));
+    const nestedOrigin = nestedArea ? this.rectCenter(nestedArea) : null;
+    const worldSize = this.worldChildSize(children.length, options.worldSizeScale ?? options.sizeScale);
+    const nestedSize = parent ? this.nestedChildSize(children.length, options.nestedSizeScale ?? options.sizeScale) : null;
+    const worldFallbackWidth = INTERIOR_STAGE.width * 0.76;
+    const worldFallbackHeight = INTERIOR_STAGE.height * 0.76;
+    return children.map((child, index) => {
+      const anchor = anchors[index] || { x: 0.5, y: 0.5 };
+      const worldOffset = this.fallbackOffset(anchor, worldFallbackWidth, worldFallbackHeight);
+      const worldCenter = {
+        x: worldOrigin.x + worldOffset.x,
+        y: worldOrigin.y + worldOffset.y,
+      };
+      const nestedLayout = parent ? (() => {
+        const nestedOffset = this.fallbackOffset(anchor, nestedArea.width * 0.76, nestedArea.height * 0.76);
+        const nextCenter = {
+          x: nestedOrigin.x + nestedOffset.x,
+          y: nestedOrigin.y + nestedOffset.y,
+        };
+        return this.rectFromCenter(nextCenter, nestedSize, nestedArea);
+      })() : null;
+      return {
+        node: child,
+        worldLayout: this.rectFromCenter(worldCenter, worldSize),
+        nestedLayout,
+      };
+    });
   },
 
   planParentChildren(parent, children, options = {}) {
@@ -256,15 +299,35 @@ var powanPlacement = {
       : { x: 0, y: 0, width: frame.width, height: frame.height };
     const center = this.rectCenter(localRect);
     const anchor = {
-      x: this.clamp((center.x - previewArea.x) / Math.max(1, previewArea.width), 0, 1),
-      y: this.clamp((center.y - previewArea.y) / Math.max(1, previewArea.height), 0, 1),
+      x: (center.x - previewArea.x) / Math.max(1, previewArea.width),
+      y: (center.y - previewArea.y) / Math.max(1, previewArea.height),
     };
-    const existing = child?.nestedLayoutByParent?.[parent.id] || {};
+    const childCount = typeof meaningChildren === "function"
+      ? Math.max(1, meaningChildren(parent).length)
+      : 1;
+    const columns = Math.ceil(Math.sqrt(childCount));
+    const rows = Math.ceil(childCount / columns);
+    const previewSize = typeof nestedPreviewChildSize === "function"
+      ? nestedPreviewChildSize(previewArea.width / columns, previewArea.height / rows, frame.depth)
+      : this.nestedChildSize(childCount, 1);
+    const storedBaseSize = this.nestedChildSize(childCount, 1);
+    const displayScale = this.clamp(
+      ((this.number(localRect?.width, previewSize.width) / Math.max(1, previewSize.width)) +
+        (this.number(localRect?.height, previewSize.height) / Math.max(1, previewSize.height))) / 2,
+      0.3,
+      2.5,
+    );
+    const parentArea = this.parentNestedArea(parent);
     const size = {
-      width: this.number(existing.width, this.nestedChildSize(1).width),
-      height: this.number(existing.height, this.nestedChildSize(1).height),
+      width: Math.round(storedBaseSize.width * displayScale),
+      height: Math.round(storedBaseSize.height * displayScale),
     };
-    return this.rectAtAnchor(this.parentNestedArea(parent), size, anchor);
+    return {
+      x: Math.round(parentArea.x + parentArea.width * anchor.x - size.width / 2),
+      y: Math.round(parentArea.y + parentArea.height * anchor.y - size.height / 2),
+      width: size.width,
+      height: size.height,
+    };
   },
 
   // === A2: 入れ子チップは「親の内部世界の等比縮小ビュー」 ===

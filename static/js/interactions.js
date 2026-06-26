@@ -401,6 +401,10 @@ function addConversationAttachmentsFromPaste(event) {
 
 function showNodeContextMenu(clientX, clientY) {
   const margin = 8;
+  if (selectChildPowansMenuButton) {
+    const parent = nodeById(nodeContextMenuNodeId);
+    selectChildPowansMenuButton.disabled = !parent || !powanExplorer.childrenOf(parent).length;
+  }
   nodeContextMenu.hidden = false;
   const rect = nodeContextMenu.getBoundingClientRect();
   const left = Math.min(window.innerWidth - rect.width - margin, Math.max(margin, clientX));
@@ -743,6 +747,11 @@ async function refreshConversationSessions(nodeId, selectedId = null) {
   try {
     const data = await requestConversationSessions(nodeId);
     if (conversationNodeId !== nodeId) {
+      logEvent("debug", "conversation-sessions-load-skipped", {
+        message: `sessions load skipped: node changed ${nodeId} -> ${conversationNodeId || "none"}`,
+        nodeId,
+        currentNodeId: conversationNodeId,
+      });
       return;
     }
     conversationSessionList = data.sessions || [];
@@ -751,6 +760,7 @@ async function refreshConversationSessions(nodeId, selectedId = null) {
     renderConversationTabs();
     updateConversationSessionMode();
     logEvent("debug", "conversation-sessions-load-complete", {
+      message: `sessions loaded: ${nodeId}, ${(data.sessions || []).length} sessions`,
       nodeId,
       activeConversationId: conversationActiveSessionId,
       selectedConversationId: normalizeConversationId(selectedId),
@@ -772,6 +782,11 @@ async function loadConversationMessages(nodeId) {
     }
     const data = await response.json();
     if (conversationNodeId !== nodeId || serial !== conversationLoadSerial) {
+      logEvent("debug", "conversation-load-skipped", {
+        message: `conversation load skipped: stale view for ${nodeId}`,
+        nodeId,
+        currentNodeId: conversationNodeId,
+      });
       return;
     }
     conversationActiveSessionId = normalizeConversationId(data.conversationId);
@@ -784,6 +799,7 @@ async function loadConversationMessages(nodeId) {
     renderConversationTabs();
     refreshConversationSessions(nodeId, data.conversationId);
     logEvent("debug", "conversation-load-complete", {
+      message: `conversation loaded: ${nodeId}, ${(data.messages || []).length} messages`,
       nodeId,
       conversationId: data.conversationId,
       messageCount: (data.messages || []).length,
@@ -798,6 +814,12 @@ async function loadConversationSession(nodeId, conversationId) {
   try {
     const data = await requestConversationSessionMessages(nodeId, conversationId);
     if (conversationNodeId !== nodeId || serial !== conversationLoadSerial) {
+      logEvent("debug", "conversation-session-load-skipped", {
+        message: `session load skipped: stale view for ${nodeId}`,
+        nodeId,
+        conversationId,
+        currentNodeId: conversationNodeId,
+      });
       return;
     }
     conversationViewingSessionId = normalizeConversationId(data.conversationId);
@@ -816,6 +838,7 @@ async function loadConversationSession(nodeId, conversationId) {
     renderConversationTabs();
     updateConversationSessionMode();
     logEvent("debug", "conversation-session-load-complete", {
+      message: `session loaded: ${nodeId}/${data.conversationId}, ${(data.messages || []).length} messages`,
       nodeId,
       conversationId: data.conversationId,
       active: Boolean(data.conversation?.active),
@@ -832,6 +855,11 @@ async function loadAllConversationSessions(nodeId) {
   try {
     const data = await requestConversationSessions(nodeId);
     if (conversationNodeId !== nodeId || serial !== conversationLoadSerial) {
+      logEvent("debug", "conversation-all-sessions-load-skipped", {
+        message: `all sessions load skipped: stale view for ${nodeId}`,
+        nodeId,
+        currentNodeId: conversationNodeId,
+      });
       return;
     }
     conversationSessionList = data.sessions || [];
@@ -845,11 +873,21 @@ async function loadAllConversationSessions(nodeId) {
     const orderedSessions = [...conversationSessionList].sort((left, right) => normalizeConversationId(left.id) - normalizeConversationId(right.id));
     for (const session of orderedSessions) {
       if (conversationNodeId !== nodeId || serial !== conversationLoadSerial) {
+        logEvent("debug", "conversation-all-sessions-load-skipped", {
+          message: `all sessions load stopped: node changed while rendering ${nodeId}`,
+          nodeId,
+          currentNodeId: conversationNodeId,
+        });
         return;
       }
       appendConversationMessage("system", conversationSessionLabel(session));
       const payload = await requestConversationSessionMessages(nodeId, session.id);
       if (conversationNodeId !== nodeId || serial !== conversationLoadSerial) {
+        logEvent("debug", "conversation-all-sessions-load-skipped", {
+          message: `all sessions load stopped: node changed after session ${session.id}`,
+          nodeId,
+          currentNodeId: conversationNodeId,
+        });
         return;
       }
       for (const message of payload.messages || []) {
@@ -859,6 +897,7 @@ async function loadAllConversationSessions(nodeId) {
     updateConversationSessionMode();
     conversationLog.scrollTop = 0;
     logEvent("debug", "conversation-all-sessions-load-complete", {
+      message: `all sessions loaded: ${nodeId}, ${orderedSessions.length} sessions`,
       nodeId,
       activeConversationId: conversationActiveSessionId,
       count: orderedSessions.length,
@@ -893,11 +932,9 @@ async function requestPowanCodexReply(nodeId, text, { signal = null, includeMean
   }
   const data = await response.json();
   logEvent("debug", "conversation-codex-reply-received", {
+    message: `reply received: ${nodeId}/${data.conversationId}, ${(data.assistantMessage?.text || "").length} chars`,
     nodeId,
-    includeMeaningTree,
-    attachmentCount: attachments.length,
     conversationId: data.conversationId,
-    threadId: data.codexThreadId,
     length: (data.assistantMessage?.text || "").length,
   });
   return data;
@@ -980,8 +1017,7 @@ async function saveConversationAutoSummarySetting() {
   const data = await response.json();
   appSettings.autoSummaryEnabled = data.autoSummaryEnabled !== false;
   appSettings.autoSummaryTurns = normalizeConversationAutoSummaryTurns(data.autoSummaryTurns);
-  appSettings.arrangeSpacing = normalizeArrangeSpacing(data.arrangeSpacing);
-  appSettings.arrangeSize = normalizeArrangeSize(data.arrangeSize);
+  applyArrangeSettings(data);
   syncSettingsInputs();
   saveStoredSettings();
   logEvent("info", "set-conversation-auto-summary-saved", {
@@ -1007,8 +1043,7 @@ async function refreshConversationSounds() {
     appSettings.inputSoundVolume = normalizeConversationSoundVolume(data.inputSoundVolume);
     appSettings.autoSummaryEnabled = data.autoSummaryEnabled !== false;
     appSettings.autoSummaryTurns = normalizeConversationAutoSummaryTurns(data.autoSummaryTurns);
-    appSettings.arrangeSpacing = normalizeArrangeSpacing(data.arrangeSpacing);
-    appSettings.arrangeSize = normalizeArrangeSize(data.arrangeSize);
+    applyArrangeSettings(data);
     stopConversationChunkSound("conversation-settings-refreshed");
     stopInputWaitingSound("input-settings-refreshed");
     conversationChunkAudio = null;
@@ -1170,8 +1205,7 @@ async function saveConversationSoundSetting(name) {
   appSettings.inputSoundVolume = normalizeConversationSoundVolume(data.inputSoundVolume);
   appSettings.autoSummaryEnabled = data.autoSummaryEnabled !== false;
   appSettings.autoSummaryTurns = normalizeConversationAutoSummaryTurns(data.autoSummaryTurns);
-  appSettings.arrangeSpacing = normalizeArrangeSpacing(data.arrangeSpacing);
-  appSettings.arrangeSize = normalizeArrangeSize(data.arrangeSize);
+  applyArrangeSettings(data);
   stopConversationChunkSound("conversation-sound-saved");
   conversationChunkAudio = null;
   syncSettingsInputs();
@@ -1216,8 +1250,7 @@ async function saveInputSoundSetting(name) {
   appSettings.inputSoundVolume = normalizeConversationSoundVolume(data.inputSoundVolume);
   appSettings.autoSummaryEnabled = data.autoSummaryEnabled !== false;
   appSettings.autoSummaryTurns = normalizeConversationAutoSummaryTurns(data.autoSummaryTurns);
-  appSettings.arrangeSpacing = normalizeArrangeSpacing(data.arrangeSpacing);
-  appSettings.arrangeSize = normalizeArrangeSize(data.arrangeSize);
+  applyArrangeSettings(data);
   stopInputWaitingSound("input-sound-saved");
   inputWaitingAudio = null;
   syncSettingsInputs();
@@ -1241,6 +1274,58 @@ async function saveInputSoundVolumeSetting(value) {
   syncSettingsInputs();
   saveStoredSettings();
   logEvent("info", "set-input-volume-saved", { volume: appSettings.inputSoundVolume });
+}
+
+function arrangeSettingsPayload() {
+  return {
+    arrangeSpacing: appSettings.arrangeChildSpacing,
+    arrangeSize: appSettings.arrangeChildSize,
+    arrangeResizeParents: appSettings.arrangeResizeParents,
+    arrangeRecursive: appSettings.arrangeRecursive,
+    arrangeChildSpacing: appSettings.arrangeChildSpacing,
+    arrangeChildSize: appSettings.arrangeChildSize,
+    arrangeNestedChildSize: appSettings.arrangeNestedChildSize,
+    arrangeWorldParentSpacing: appSettings.arrangeWorldParentSpacing,
+    arrangeWorldParentSize: appSettings.arrangeWorldParentSize,
+  };
+}
+
+async function savePanelArrangeSettings(reason = "panel-arrange-settings") {
+  const response = await fetch("/api/settings/arrange", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(arrangeSettingsPayload()),
+  });
+  if (!response.ok) {
+    const error = await response.json().catch(() => ({ detail: "arrange save failed" }));
+    throw new Error(error.detail || "arrange save failed");
+  }
+  const data = await response.json();
+  applyArrangeSettings(data);
+  syncSettingsInputs();
+  saveStoredSettings();
+  logEvent("info", "panel-arrange-settings-saved", {
+    message: "panel arrange settings saved",
+    reason,
+  });
+}
+
+function updatePanelArrangeSettings(reason = "panel-arrange-settings-change") {
+  appSettings.arrangeResizeParents = panelArrangeResizeParentsInput ? panelArrangeResizeParentsInput.checked : appSettings.arrangeResizeParents;
+  appSettings.arrangeRecursive = panelArrangeRecursiveInput ? panelArrangeRecursiveInput.checked : appSettings.arrangeRecursive;
+  appSettings.arrangeWorldParentSpacing = normalizeArrangeSpacing(panelArrangeChildSpacingInput?.value);
+  appSettings.arrangeWorldParentSize = normalizeArrangeSize(panelArrangeChildSizeInput?.value);
+  appSettings.arrangeNestedChildSize = normalizeArrangeSize(panelArrangeNestedChildSizeInput?.value);
+  appSettings.arrangeChildSpacing = normalizeArrangeSpacing(panelArrangeWorldParentSpacingInput?.value);
+  appSettings.arrangeChildSize = normalizeArrangeSize(panelArrangeWorldParentSizeInput?.value);
+  appSettings.arrangeSpacing = appSettings.arrangeChildSpacing;
+  appSettings.arrangeSize = appSettings.arrangeChildSize;
+  syncArrangePanelInputs();
+  saveStoredSettings();
+  savePanelArrangeSettings(reason).catch((error) => {
+    logEvent("error", "panel-arrange-settings-save-error", { message: error.message, reason });
+    console.error(error);
+  });
 }
 
 function setConversationSending(enabled) {
@@ -1655,6 +1740,11 @@ function typeConversationReply(nodeId, text, onComplete = null) {
     conversationTypingNodeId = null;
     conversationTypingMouthOpen = false;
     updateConversationCancelButton();
+    logEvent("debug", "conversation-reply-display-complete", {
+      message: `reply display complete: ${nodeId}, 0 chars`,
+      nodeId,
+      length: 0,
+    });
     if (onComplete) {
       onComplete();
     }
@@ -1662,6 +1752,13 @@ function typeConversationReply(nodeId, text, onComplete = null) {
   }
   function tick() {
     if (conversationNodeId !== nodeId) {
+      logEvent("warn", "conversation-reply-display-aborted-node-changed", {
+        message: `reply display skipped: node changed ${nodeId} -> ${conversationNodeId || "none"}`,
+        nodeId,
+        currentNodeId: conversationNodeId,
+        typedLength: index,
+        length: visibleText.length,
+      });
       setPowanSpeaking(nodeId, false);
       stopConversationChunkSound("conversation-node-changed");
       conversationTypingNodeId = null;
@@ -1688,6 +1785,11 @@ function typeConversationReply(nodeId, text, onComplete = null) {
       conversationTypingNodeId = null;
       conversationTypingMouthOpen = false;
       updateConversationCancelButton();
+      logEvent("debug", "conversation-reply-display-complete", {
+        message: `reply display complete: ${nodeId}, ${visibleText.length} chars`,
+        nodeId,
+        length: visibleText.length,
+      });
       if (onComplete) {
         onComplete();
       }
@@ -1707,6 +1809,11 @@ async function startNewConversationSession(nodeId, reason = "conversation-new-se
   try {
     const data = await requestNewConversationSession(node.id);
     if (conversationNodeId !== node.id) {
+      logEvent("debug", "conversation-new-session-skipped", {
+        message: `new session skipped: node changed ${node.id} -> ${conversationNodeId || "none"}`,
+        nodeId: node.id,
+        currentNodeId: conversationNodeId,
+      });
       return;
     }
     conversationActiveSessionId = normalizeConversationId(data.conversationId);
@@ -1721,7 +1828,11 @@ async function startNewConversationSession(nodeId, reason = "conversation-new-se
     rememberConversationTabState(activeConversationTabId);
     renderConversationTabs();
     refreshConversationSessions(node.id, data.conversationId);
-    logEvent("info", reason, { nodeId: node.id, conversationId: data.conversationId });
+    logEvent("info", reason, {
+      message: `new session ready: ${node.id}/${data.conversationId}`,
+      nodeId: node.id,
+      conversationId: data.conversationId,
+    });
   } catch (error) {
     appendConversationMessage("system", `新規セッションを開始できなかった: ${error.message}`, { forceFollow: true });
     logEvent("error", "conversation-new-session-error", { nodeId: node.id, message: error.message });
@@ -1745,6 +1856,11 @@ async function summarizeConversationIntoNewSession(nodeId, reason = "conversatio
   try {
     const data = await requestConversationSummary(node.id);
     if (conversationNodeId !== node.id) {
+      logEvent("debug", "conversation-summary-skipped", {
+        message: `summary skipped: node changed ${node.id} -> ${conversationNodeId || "none"}`,
+        nodeId: node.id,
+        currentNodeId: conversationNodeId,
+      });
       return;
     }
     conversationActiveSessionId = normalizeConversationId(data.conversationId);
@@ -1762,6 +1878,7 @@ async function summarizeConversationIntoNewSession(nodeId, reason = "conversatio
     renderConversationTabs();
     refreshConversationSessions(node.id, data.conversationId);
     logEvent("info", reason, {
+      message: `summary session ready: ${node.id}/${data.conversationId}, ${(data.summary || "").length} chars`,
       nodeId: node.id,
       conversationId: data.conversationId,
       summaryLength: (data.summary || "").length,
@@ -2018,11 +2135,74 @@ arrangePowanMenuButton.addEventListener("click", () => {
   const arrangeIds = selected.length > 1 && selected.includes(nodeId) ? selected : [nodeId];
   powanExplorer.arrangeSubtree(arrangeIds, arrangeIds.length > 1 ? "arrange-selected-subtrees" : "arrange-subtree");
 });
+if (selectChildPowansMenuButton) {
+  selectChildPowansMenuButton.addEventListener("click", () => {
+    const nodeId = nodeContextMenuNodeId;
+    const parent = nodeById(nodeId);
+    const childIds = parent ? powanExplorer.childrenOf(parent).map((child) => child.id) : [];
+    powanExplorer.closeNodeMenu("select-child-powans-menu-close");
+    if (!childIds.length) {
+      logEvent("debug", "child-select-all-empty", { parentId: nodeId || null });
+      return;
+    }
+    const selected = applySelection(childIds, {
+      primaryId: childIds[0],
+      anchorId: childIds[0],
+      reason: "child-menu-select-all",
+    });
+    logEvent("info", "child-select-all-complete", {
+      parentId: nodeId,
+      count: selected.length,
+    });
+  });
+}
 if (arrangeWorldMenuButton) {
   arrangeWorldMenuButton.addEventListener("click", () => {
     powanExplorer.closeWorldMenu("arrange-current-world-menu-close");
     powanExplorer.arrangeCurrentWorld();
   });
+}
+if (selectWorldParentsMenuButton) {
+  selectWorldParentsMenuButton.addEventListener("click", () => {
+    powanExplorer.closeWorldMenu("select-world-parents-menu-close");
+    selectAllCanvasNodes("world-menu-select-all-parents");
+  });
+}
+if (pasteWorldMenuButton) {
+  pasteWorldMenuButton.addEventListener("click", () => {
+    const dropCenter = worldContextMenuDropCenter ? { ...worldContextMenuDropCenter } : visibleWorldCenter();
+    const parentId = openParentId || null;
+    powanExplorer.closeWorldMenu("paste-world-menu-close");
+    powanExplorer.pastePowansFromClipboard({
+      parentId,
+      dropCenter,
+      reason: "world-menu-paste-clipboard",
+    }).catch((error) => {
+      saveState.textContent = "paste error";
+      logEvent("error", "world-menu-paste-clipboard-error", { message: error.message });
+      console.error(error);
+    });
+  });
+}
+if (panelArrangeWorldButton) {
+  panelArrangeWorldButton.addEventListener("click", () => {
+    powanExplorer.arrangeCurrentWorld("panel-arrange-current-world");
+  });
+}
+for (const input of [
+  panelArrangeResizeParentsInput,
+  panelArrangeRecursiveInput,
+  panelArrangeChildSpacingInput,
+  panelArrangeChildSizeInput,
+  panelArrangeNestedChildSizeInput,
+  panelArrangeWorldParentSpacingInput,
+  panelArrangeWorldParentSizeInput,
+]) {
+  if (!input) {
+    continue;
+  }
+  const eventName = input.type === "checkbox" ? "change" : "input";
+  input.addEventListener(eventName, () => updatePanelArrangeSettings(`panel-${input.id}`));
 }
 exportPowanMenuButton.addEventListener("click", () => {
   const nodeId = nodeContextMenuNodeId;
@@ -2157,8 +2337,20 @@ conversationForm.addEventListener("submit", async (event) => {
     });
     if (data.cancelled) {
       markConversationPendingCancelled("キャンセルしました");
-      logEvent("info", "conversation-codex-cancelled", { nodeId: node.id, conversationId: data.conversationId });
+      logEvent("info", "conversation-codex-cancelled", {
+        message: `reply cancelled: ${node.id}/${data.conversationId}`,
+        nodeId: node.id,
+        conversationId: data.conversationId,
+      });
       return;
+    }
+    if (conversationRequestAbortController === controller) {
+      conversationRequestAbortController = null;
+      conversationRequestNodeId = null;
+    }
+    const arrangedAfterReply = powanExplorer.arrangeSubtree(node.id, "conversation-agent-arrange-created-children");
+    if (arrangedAfterReply) {
+      await saveDocument();
     }
     if (pendingMessage.isConnected) {
       pendingMessage.remove();
@@ -2169,13 +2361,19 @@ conversationForm.addEventListener("submit", async (event) => {
     stopInputWaitingSound("conversation-codex-error");
     if (error.name === "AbortError" || conversationCancelRequested) {
       markConversationPendingCancelled("キャンセルしました");
-      logEvent("info", "conversation-fetch-cancelled", { nodeId: node.id });
+      logEvent("info", "conversation-fetch-cancelled", {
+        message: `reply fetch cancelled: ${node.id}`,
+        nodeId: node.id,
+      });
     } else {
       if (pendingMessage.isConnected) {
         pendingMessage.remove();
       }
       appendConversationMessage("system", `Codex execで返事できなかった: ${error.message}`, { forceFollow: true });
-      logEvent("error", "conversation-codex-error", { nodeId: node.id, message: error.message });
+      logEvent("error", "conversation-codex-error", {
+        message: `reply failed: ${node.id}: ${error.message}`,
+        nodeId: node.id,
+      });
     }
   } finally {
     stopInputWaitingSound("conversation-send-finally");
@@ -2263,15 +2461,19 @@ if (inputVolumeInput) {
 }
 if (settingsButton) {
   settingsButton.addEventListener("click", () => {
-    const params = new URLSearchParams();
-    if (projectName) {
-      params.set("project", projectName);
-    }
-    if (documentName) {
-      params.set("file", documentName);
-    }
-    window.location.href = `/settings?${params.toString()}`;
+    openSettingsPage();
   });
+}
+
+function openSettingsPage() {
+  const params = new URLSearchParams();
+  if (projectName) {
+    params.set("project", projectName);
+  }
+  if (documentName) {
+    params.set("file", documentName);
+  }
+  window.location.href = `/settings?${params.toString()}`;
 }
 
 function createChildMeaning() {
@@ -2576,6 +2778,11 @@ window.addEventListener("keydown", (event) => {
       powanExplorer.redo();
       return;
     }
+    if (key === "a") {
+      event.preventDefault();
+      selectSelectedNodeChildrenOrCanvas("keyboard-canvas-select-all");
+      return;
+    }
     if (key === "c") {
       event.preventDefault();
       powanExplorer.copySelectedPowans().catch((error) => {
@@ -2630,14 +2837,17 @@ async function refreshFiles() {
 }
 
 async function loadDocument(name = "project.powan") {
-  logEvent("debug", "load-document-start", { projectName, name });
   const nextDoc = await fetchDocument(name);
-  documentSnapshot = documentSignature(nextDoc);
+  documentSnapshot = await documentSignature(nextDoc);
   powanExplorer.setDocument(nextDoc, { name, status: "loaded", reason: "load-document-state" });
   await refreshFiles();
   render();
   startAutoReload();
-  logEvent("debug", "load-document-complete", { projectName, name, nodeCount: doc.nodes.length });
+  logEvent("debug", "load-document-complete", {
+    message: `document loaded: ${name}, ${doc.nodes.length} nodes`,
+    name,
+    nodeCount: doc.nodes.length,
+  });
 }
 
 async function loadDocumentFromFile() {
@@ -2652,13 +2862,17 @@ async function loadDocumentFromFile() {
     }
     const importedName = file.name.endsWith(".powan") ? file.name : `${file.name}.powan`;
     powanExplorer.setDocument(imported, { name: importedName, status: "loaded file", reason: "load-file-state" });
-    documentSnapshot = documentSignature(imported);
+    documentSnapshot = await documentSignature(imported);
     await refreshFiles();
     render();
-    logEvent("debug", "load-file-complete", { name: documentName, nodeCount: doc.nodes.length });
+    logEvent("debug", "load-file-complete", {
+      message: `file loaded: ${documentName}, ${doc.nodes.length} nodes`,
+      name: documentName,
+      nodeCount: doc.nodes.length,
+    });
   } catch (error) {
     saveState.textContent = "load error";
-    logEvent("error", "load-file-error", { message: error.message });
+    logEvent("error", "load-file-error", { message: `file load failed: ${error.message}` });
     console.error(error);
   } finally {
     fileInput.value = "";
@@ -2669,17 +2883,15 @@ async function saveDocument() {
   if (conversationRequestAbortController) {
     saveState.textContent = "agent running";
     logEvent("warn", "save-document-blocked-during-agent-run", {
-      projectName,
+      message: `save blocked: agent running for ${conversationRequestNodeId || conversationNodeId || "unknown"}`,
       name: documentName,
-      nodeCount: doc?.nodes?.length || 0,
-      conversationNodeId,
       conversationRequestNodeId,
+      console: true,
     });
     return;
   }
   saveState.textContent = "saving";
   const savedViewport = saveViewportToDocument();
-  logEvent("debug", "save-document-start", { projectName, name: documentName, nodeCount: doc.nodes.length, viewport: savedViewport });
   const savePayload = JSON.stringify(doc);
   const saveUrl = `/api/doc/${encodeURIComponent(documentName)}?project=${encodeURIComponent(projectName)}`;
   const saveHeaders = {
@@ -2689,34 +2901,18 @@ async function saveDocument() {
     saveHeaders["X-ABC-Document-Snapshot"] = encodeURIComponent(documentSnapshot);
   }
   try {
-    logEvent("debug", "save-document-fetch-start", {
-      projectName,
-      name: documentName,
-      nodeCount: doc.nodes.length,
-      viewport: savedViewport,
-      payloadLength: savePayload.length,
-      hasSnapshot: Boolean(documentSnapshot),
-    });
     const response = await fetch(saveUrl, {
       method: "POST",
       headers: saveHeaders,
       body: savePayload,
     });
-    logEvent("debug", "save-document-response", {
-      projectName,
-      name: documentName,
-      status: response.status,
-      ok: response.ok,
-      viewport: savedViewport,
-    });
     if (response.status === 409 || response.status === 428) {
       saveState.textContent = "server updated";
       logEvent("warn", "save-document-stale-rejected", {
-        projectName,
+        message: `save rejected: stale document ${documentName}, status ${response.status}`,
         name: documentName,
-        nodeCount: doc.nodes.length,
-        viewport: savedViewport,
         status: response.status,
+        console: true,
       });
       await reloadCurrentDocument({ force: true, reason: "save-conflict-reload", restoreViewport: false });
       return;
@@ -2724,27 +2920,31 @@ async function saveDocument() {
     if (!response.ok) {
       const responseText = await response.text();
       logEvent("error", "save-document-failed-response", {
-        projectName,
+        message: `save failed: ${documentName}, status ${response.status}`,
         name: documentName,
         status: response.status,
-        viewport: savedViewport,
-        responseText: responseText.slice(0, 1200),
+        responseText: responseText.slice(0, 160),
+        console: true,
       });
       throw new Error(`save failed: ${response.status}`);
     }
     const data = await response.json();
     saveState.textContent = "saved";
-    documentSnapshot = data.snapshot || documentSignature(doc);
+    documentSnapshot = data.snapshot || await documentSignature(doc);
     await refreshFiles();
-    logEvent("debug", "save-document-complete", { projectName, name: documentName, nodeCount: doc.nodes.length, viewport: savedViewport });
+    logEvent("info", "save-document-complete", {
+      message: `document saved: ${documentName}, ${doc.nodes.length} nodes`,
+      name: documentName,
+      nodeCount: doc.nodes.length,
+      console: true,
+    });
   } catch (error) {
     saveState.textContent = "save error";
     logEvent("error", "save-document-error", {
-      projectName,
+      message: `save error: ${documentName}: ${error?.message || String(error)}`,
       name: documentName,
       nodeCount: doc?.nodes?.length || 0,
-      viewport: savedViewport,
-      message: error?.message || String(error),
+      console: true,
     });
     await flushLogQueue();
   }
@@ -2760,19 +2960,20 @@ async function saveDocumentAs() {
     return;
   }
   powanExplorer.setDocumentName(trimmed.endsWith(".powan") ? trimmed : `${trimmed}.powan`, "save-document-as-name");
-  logEvent("debug", "save-document-as", { name: documentName });
   await saveDocument();
 }
 
 async function createDocument() {
-  logEvent("debug", "create-document-start", { projectName });
   const response = await fetch(
     `/api/doc?project=${encodeURIComponent(projectName)}&random_color=${appSettings.randomPowanColor ? "true" : "false"}`,
     { method: "POST" },
   );
   const data = await response.json();
   await powanExplorer.loadDocument(data.file);
-  logEvent("debug", "create-document-complete", { projectName, name: data.file });
+  logEvent("debug", "create-document-complete", {
+    message: `document created: ${data.file}`,
+    name: data.file,
+  });
 }
 
 function bootstrapAbcCanvas() {
@@ -2789,7 +2990,10 @@ function bootstrapAbcCanvas() {
   startPowanFaceClock();
   powanExplorer.loadDocument(documentName).catch((error) => {
     saveState.textContent = "error";
-    logEvent("error", "load-document-error", { projectName, name: documentName, message: error.message });
+    logEvent("error", "load-document-error", {
+      message: `document load failed: ${documentName}: ${error.message}`,
+      name: documentName,
+    });
     console.error(error);
   });
 }

@@ -393,7 +393,7 @@ function classifyPointerIntent(intent, event) {
 function beginPointerIntent(event, node, element) {
   if (event.button === 1) {
     event.preventDefault();
-    powanExplorer.select(node.id);
+    applySelectionFromEvent(node.id, event, { scope: "canvas" });
     powanExplorer.enterWorld(node.id, element);
     return;
   }
@@ -402,7 +402,7 @@ function beginPointerIntent(event, node, element) {
   }
   if (openParentId === node.id) {
     event.preventDefault();
-    powanExplorer.select(node.id);
+    applySelectionFromEvent(node.id, event, { scope: "canvas" });
     logEvent("trace", "drag-intent-blocked-open-parent", {
       nodeId: node.id,
       pointerId: event.pointerId,
@@ -412,7 +412,7 @@ function beginPointerIntent(event, node, element) {
     return;
   }
   event.preventDefault();
-  powanExplorer.select(node.id);
+  applySelectionFromEvent(node.id, event, { scope: "canvas" });
   pointerIntent = {
     id: node.id,
     element,
@@ -473,12 +473,9 @@ function openMeaningEditor(nodeId) {
     return;
   }
   if (element.classList.contains("nested-meaning")) {
-    const body = element.querySelector(":scope > .node-body");
-    if (body) {
-      beginNestedNameEdit(node.id, element, body);
-      logEvent("debug", "meaning-editor-open-nested", { nodeId: node.id });
-      return;
-    }
+    focusPanelMeaningInput(node);
+    logEvent("debug", "meaning-editor-open-nested-panel", { nodeId: node.id });
+    return;
   }
   if (element.classList.contains("nested-preview-meaning")) {
     focusPanelMeaningInput(node);
@@ -500,13 +497,23 @@ function beginNestedPointer(event, node, element) {
   const decision = powanHitTest.dragCueDecision(event, element);
   logNestedPointerDebug("nested-pointer-hit-test", event, node, element, decision);
   if (!decision.canDrag) {
-    powanExplorer.select(node.id);
+    if (decision.insideEllipse && !decision.textTarget && !decision.nestedTarget) {
+      beginPanIntent(event, {
+        nodeId: node.parent || node.id,
+        nestedNodeId: node.id,
+        reason: decision.reason,
+        distance: decision.distance,
+      });
+      logNestedPointerDebug("nested-pointer-pan-intent", event, node, element, decision);
+      return;
+    }
+    applySelectionFromEvent(node.id, event, { scope: "canvas" });
     logNestedPointerDebug("nested-pointer-rejected-edge", event, node, element, decision);
     return;
   }
   event.preventDefault();
   event.stopPropagation();
-  powanExplorer.select(node.id);
+  applySelectionFromEvent(node.id, event, { scope: "canvas" });
   const parentElement = element.closest(".node, .nested-meaning, .nested-preview-meaning");
   const layer = element.closest(".nested-preview-layer") || element.closest(".nested-layer");
   const parentNode = nodeById(node.parent);

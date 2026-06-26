@@ -105,20 +105,33 @@
         <section class="settings-section">
           <div class="settings-section-head">
             <h2>整列</h2>
-            <span class="settings-muted">右クリックの整列で使う間隔と大きさ</span>
+            <span class="settings-muted">整列ボタンと右クリック整列で使う並べ方</span>
           </div>
-          <div class="settings-range-row">
-            <span>間隔</span>
-            <input id="arrangeSpacingInput" type="range" min="0.7" max="1.4" step="0.05" />
-            <output id="arrangeSpacingValue">1.00</output>
-          </div>
-          <div class="settings-range-row">
-            <span>大きさ</span>
-            <input id="arrangeSizeInput" type="range" min="0.7" max="1.2" step="0.05" />
-            <output id="arrangeSizeValue">1.00</output>
+          <p class="settings-help">整列は、世界または親ポワンの中心を基準に、配下のポワンを放射状に並べ直します。</p>
+          <div class="settings-check-row">
+            <label><input id="arrangeResizeParentsInput" type="checkbox" /> 親ポワンの大きさを広げる <span class="settings-inline-help">子が入りきらない時に親ポワンも大きくする</span></label>
+            <label><input id="arrangeRecursiveInput" type="checkbox" /> 配下も全て整列 <span class="settings-inline-help">見えている階層の下にある子ポワンも並べ直す</span></label>
           </div>
           <div class="settings-action-row">
-            <button id="saveArrangeButton" type="button">Save Arrange</button>
+            <button id="saveArrangeButton" type="button">Save Arrange Checks</button>
+          </div>
+        </section>
+
+        <section class="settings-section">
+          <div class="settings-section-head">
+            <h2>CMDログ</h2>
+            <span class="settings-muted">起動CMDへ表示するログレベル</span>
+          </div>
+          <div class="settings-check-row" id="consoleLogLevelInputs">
+            <label><input type="checkbox" value="trace" /> trace</label>
+            <label><input type="checkbox" value="debug" /> debug</label>
+            <label><input type="checkbox" value="info" /> info</label>
+            <label><input type="checkbox" value="warn" /> warn</label>
+            <label><input type="checkbox" value="error" /> error</label>
+            <label><input type="checkbox" value="fatal" /> fatal</label>
+          </div>
+          <div class="settings-action-row">
+            <button id="saveConsoleLogLevelsButton" type="button">Save CMD Logs</button>
           </div>
         </section>
 
@@ -126,6 +139,6 @@
       </section>
     </main>
 
-    <script src="/static/settings.js?v=arrange-settings-1"></script>
+    <script src="/static/settings.js?v=wide-arrange-range-1"></script>
   </body>
 </html>

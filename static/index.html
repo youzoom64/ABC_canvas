@@ -128,11 +128,35 @@
             <button id="backButton" type="button" disabled>上の階層へ</button>
             <button id="addNodeButton" type="button">Add Child</button>
             <button id="addRootButton" type="button">Add Free Node</button>
+            <button id="panelArrangeWorldButton" type="button">この世界を整列</button>
             <button id="deleteButton" type="button">Delete</button>
           </div>
 
           <div class="panel-section app-settings">
             <div class="world-label">設定</div>
+            <div class="panel-setting-group">
+              <div class="world-label">整列</div>
+              <label class="setting-volume">
+                <span>今見えている子ポワン同士の距離 <span id="panelArrangeChildSpacingValue">1.00</span></span>
+                <input id="panelArrangeChildSpacingInput" type="range" min="0.3" max="3.0" step="0.01" />
+              </label>
+              <label class="setting-volume">
+                <span>今見えている子ポワンの大きさ <span id="panelArrangeChildSizeValue">1.00</span></span>
+                <input id="panelArrangeChildSizeInput" type="range" min="0.3" max="2.5" step="0.01" />
+              </label>
+              <label class="setting-volume">
+                <span>親から見える子の大きさ <span id="panelArrangeNestedChildSizeValue">1.00</span></span>
+                <input id="panelArrangeNestedChildSizeInput" type="range" min="0.3" max="2.5" step="0.01" />
+              </label>
+              <label class="setting-volume">
+                <span>下の世界で作る子ポワン同士の距離 <span id="panelArrangeWorldParentSpacingValue">1.00</span></span>
+                <input id="panelArrangeWorldParentSpacingInput" type="range" min="0.3" max="3.0" step="0.01" />
+              </label>
+              <label class="setting-volume">
+                <span>下の世界で作る子ポワンの大きさ <span id="panelArrangeWorldParentSizeValue">1.00</span></span>
+                <input id="panelArrangeWorldParentSizeInput" type="range" min="0.3" max="2.5" step="0.01" />
+              </label>
+            </div>
             <label>
               Shape
               <select id="shapeInput">
@@ -213,6 +237,7 @@
       <button id="talkToPowanNewTabButton" type="button">新規タブで話しかける</button>
       <button id="openCodeMenuButton" type="button">コードを開く</button>
       <button id="arrangePowanMenuButton" type="button">整列</button>
+      <button id="selectChildPowansMenuButton" type="button">中の子ポワン全選択</button>
       <button id="copySelectionMenuButton" type="button">選択をコピー</button>
       <button id="deleteSelectionMenuButton" type="button">選択を削除</button>
       <button id="exportPowanMenuButton" type="button">powanをエクスポート</button>
@@ -221,8 +246,10 @@
 
     <nav id="worldContextMenu" class="node-context-menu" hidden>
       <button id="arrangeWorldMenuButton" type="button">この世界を整列</button>
+      <button id="selectWorldParentsMenuButton" type="button">親ポワン全選択</button>
+      <button id="pasteWorldMenuButton" type="button">ここに貼り付け</button>
     </nav>
 
-    <script src="/static/app.js?v=conversation-tabs-2"></script>
+    <script src="/static/app.js?v=stable-nested-wheel-47"></script>
   </body>
 </html>

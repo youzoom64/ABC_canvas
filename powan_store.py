@@ -322,7 +322,13 @@ class PowanStore:
         self.log_event(
             "info",
             "powan-db-save-document",
-            {"project": self.safe_project_name(project), "file": document_name, "nodeCount": len(document.get("nodes") or [])},
+            {
+                "message": f"document saved to DB: {document_name}, {len(document.get('nodes') or [])} nodes",
+                "project": self.safe_project_name(project),
+                "file": document_name,
+                "nodeCount": len(document.get("nodes") or []),
+                "console": True,
+            },
         )
 
     def write_powan_row(self, connection: sqlite3.Connection, document_name: str, node: dict[str, Any], now: str) -> None:
@@ -704,15 +710,14 @@ class PowanStore:
             "info" if status == "completed" else "error",
             "powan-db-record-api-action",
             {
+                "message": f"api action recorded: {action}/{status} #{log_id}",
                 "project": self.safe_project_name(project),
                 "file": document_name,
                 "nodeId": powan_id,
                 "action": action,
                 "status": status,
                 "logId": log_id,
-                "request": request_payload or {},
-                "response": response_payload or {},
-                "error": error_text,
+                "error": error_text[:240] if error_text else "",
             },
         )
         return {

@@ -17,15 +17,26 @@ const inputSoundVolumeValue = document.querySelector("#inputSoundVolumeValue");
 const saveInputSoundVolumeButton = document.querySelector("#saveInputSoundVolumeButton");
 const codexSandboxSelect = document.querySelector("#codexSandboxSelect");
 const saveCodexSandboxButton = document.querySelector("#saveCodexSandboxButton");
-const arrangeSpacingInput = document.querySelector("#arrangeSpacingInput");
-const arrangeSpacingValue = document.querySelector("#arrangeSpacingValue");
-const arrangeSizeInput = document.querySelector("#arrangeSizeInput");
-const arrangeSizeValue = document.querySelector("#arrangeSizeValue");
+const arrangeResizeParentsInput = document.querySelector("#arrangeResizeParentsInput");
+const arrangeRecursiveInput = document.querySelector("#arrangeRecursiveInput");
+const arrangeChildSpacingInput = document.querySelector("#arrangeChildSpacingInput");
+const arrangeChildSpacingValue = document.querySelector("#arrangeChildSpacingValue");
+const arrangeChildSizeInput = document.querySelector("#arrangeChildSizeInput");
+const arrangeChildSizeValue = document.querySelector("#arrangeChildSizeValue");
+const arrangeNestedChildSizeInput = document.querySelector("#arrangeNestedChildSizeInput");
+const arrangeNestedChildSizeValue = document.querySelector("#arrangeNestedChildSizeValue");
+const arrangeWorldParentSpacingInput = document.querySelector("#arrangeWorldParentSpacingInput");
+const arrangeWorldParentSpacingValue = document.querySelector("#arrangeWorldParentSpacingValue");
+const arrangeWorldParentSizeInput = document.querySelector("#arrangeWorldParentSizeInput");
+const arrangeWorldParentSizeValue = document.querySelector("#arrangeWorldParentSizeValue");
 const saveArrangeButton = document.querySelector("#saveArrangeButton");
+const consoleLogLevelInputs = [...document.querySelectorAll("#consoleLogLevelInputs input[type='checkbox']")];
+const saveConsoleLogLevelsButton = document.querySelector("#saveConsoleLogLevelsButton");
 const settingsStatus = document.querySelector("#settingsStatus");
 
 const settingsParams = new URLSearchParams(window.location.search);
 const settingsProject = settingsParams.get("project") || "";
+let currentSettingsData = {};
 
 function setSettingsStatus(text) {
   settingsStatus.textContent = text;
@@ -70,12 +81,33 @@ function normalizeRangeScale(value, fallback, min, max) {
 }
 
 function renderArrange(data) {
-  const spacing = normalizeRangeScale(data.arrangeSpacing, 1, 0.7, 1.4);
-  const size = normalizeRangeScale(data.arrangeSize, 1, 0.7, 1.2);
-  arrangeSpacingInput.value = String(spacing);
-  arrangeSpacingValue.textContent = spacing.toFixed(2);
-  arrangeSizeInput.value = String(size);
-  arrangeSizeValue.textContent = size.toFixed(2);
+  arrangeResizeParentsInput.checked = data.arrangeResizeParents !== false;
+  arrangeRecursiveInput.checked = data.arrangeRecursive !== false;
+  setRangeValue(arrangeChildSpacingInput, arrangeChildSpacingValue, data.arrangeChildSpacing ?? data.arrangeSpacing, 1, 0.3, 3.0);
+  setRangeValue(arrangeChildSizeInput, arrangeChildSizeValue, data.arrangeChildSize ?? data.arrangeSize, 1, 0.3, 2.5);
+  setRangeValue(arrangeNestedChildSizeInput, arrangeNestedChildSizeValue, data.arrangeNestedChildSize ?? data.arrangeSize, 1, 0.3, 2.5);
+  setRangeValue(arrangeWorldParentSpacingInput, arrangeWorldParentSpacingValue, data.arrangeWorldParentSpacing ?? data.arrangeSpacing, 1, 0.3, 3.0);
+  setRangeValue(arrangeWorldParentSizeInput, arrangeWorldParentSizeValue, data.arrangeWorldParentSize ?? data.arrangeSize, 1, 0.3, 2.5);
+}
+
+function setRangeValue(input, output, value, fallback, min, max) {
+  if (!input || !output) {
+    return;
+  }
+  const next = normalizeRangeScale(value, fallback, min, max);
+  input.value = String(next);
+  output.textContent = next.toFixed(2);
+}
+
+function selectedConsoleLogLevels() {
+  return consoleLogLevelInputs.filter((input) => input.checked).map((input) => input.value);
+}
+
+function renderConsoleLogLevels(data) {
+  const levels = new Set(Array.isArray(data.consoleLogLevels) ? data.consoleLogLevels : ["info", "warn", "error"]);
+  for (const input of consoleLogLevelInputs) {
+    input.checked = levels.has(input.value);
+  }
 }
 
 function renderVolume(value) {
@@ -91,6 +123,7 @@ function renderInputVolume(value) {
 }
 
 function renderSettings(data) {
+  currentSettingsData = { ...(data || {}) };
   soundFolderInput.value = data.soundRoot || "";
   defaultSoundFolder.textContent = data.defaultSoundRoot ? `default: ${data.defaultSoundRoot}` : "";
   renderSoundOptions(settingsSoundSelect, data.sounds || [], data.conversationSound || "");
@@ -99,6 +132,7 @@ function renderSettings(data) {
   renderInputVolume(data.inputSoundVolume);
   codexSandboxSelect.value = data.codexSandbox || "danger-full-access";
   renderArrange(data);
+  renderConsoleLogLevels(data);
 }
 
 async function loadSettings() {
@@ -265,8 +299,15 @@ async function saveArrange() {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
-        arrangeSpacing: normalizeRangeScale(arrangeSpacingInput.value, 1, 0.7, 1.4),
-        arrangeSize: normalizeRangeScale(arrangeSizeInput.value, 1, 0.7, 1.2),
+        arrangeSpacing: normalizeRangeScale(currentSettingsData.arrangeChildSpacing ?? currentSettingsData.arrangeSpacing, 1, 0.3, 3.0),
+        arrangeSize: normalizeRangeScale(currentSettingsData.arrangeChildSize ?? currentSettingsData.arrangeSize, 1, 0.3, 2.5),
+        arrangeResizeParents: arrangeResizeParentsInput.checked,
+        arrangeRecursive: arrangeRecursiveInput.checked,
+        arrangeChildSpacing: normalizeRangeScale(currentSettingsData.arrangeChildSpacing ?? currentSettingsData.arrangeSpacing, 1, 0.3, 3.0),
+        arrangeChildSize: normalizeRangeScale(currentSettingsData.arrangeChildSize ?? currentSettingsData.arrangeSize, 1, 0.3, 2.5),
+        arrangeNestedChildSize: normalizeRangeScale(currentSettingsData.arrangeNestedChildSize ?? currentSettingsData.arrangeSize, 1, 0.3, 2.5),
+        arrangeWorldParentSpacing: normalizeRangeScale(currentSettingsData.arrangeWorldParentSpacing ?? currentSettingsData.arrangeSpacing, 1, 0.3, 3.0),
+        arrangeWorldParentSize: normalizeRangeScale(currentSettingsData.arrangeWorldParentSize ?? currentSettingsData.arrangeSize, 1, 0.3, 2.5),
       }),
     });
     if (!response.ok) {
@@ -277,6 +318,26 @@ async function saveArrange() {
     setSettingsStatus("arrange saved");
   } finally {
     saveArrangeButton.disabled = false;
+  }
+}
+
+async function saveConsoleLogLevels() {
+  saveConsoleLogLevelsButton.disabled = true;
+  setSettingsStatus("saving CMD logs");
+  try {
+    const response = await fetch("/api/settings/console-log-levels", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ consoleLogLevels: selectedConsoleLogLevels() }),
+    });
+    if (!response.ok) {
+      const error = await response.json().catch(() => ({ detail: "save failed" }));
+      throw new Error(error.detail || "save failed");
+    }
+    renderSettings(await response.json());
+    setSettingsStatus("CMD logs saved");
+  } finally {
+    saveConsoleLogLevelsButton.disabled = false;
   }
 }
 
@@ -341,14 +402,39 @@ saveCodexSandboxButton.addEventListener("click", () => {
     console.error(error);
   });
 });
-arrangeSpacingInput.addEventListener("input", () => {
-  arrangeSpacingValue.textContent = normalizeRangeScale(arrangeSpacingInput.value, 1, 0.7, 1.4).toFixed(2);
-});
-arrangeSizeInput.addEventListener("input", () => {
-  arrangeSizeValue.textContent = normalizeRangeScale(arrangeSizeInput.value, 1, 0.7, 1.2).toFixed(2);
-});
+if (arrangeChildSpacingInput) {
+  arrangeChildSpacingInput.addEventListener("input", () => {
+    arrangeChildSpacingValue.textContent = normalizeRangeScale(arrangeChildSpacingInput.value, 1, 0.3, 3.0).toFixed(2);
+  });
+}
+if (arrangeChildSizeInput) {
+  arrangeChildSizeInput.addEventListener("input", () => {
+    arrangeChildSizeValue.textContent = normalizeRangeScale(arrangeChildSizeInput.value, 1, 0.3, 2.5).toFixed(2);
+  });
+}
+if (arrangeNestedChildSizeInput) {
+  arrangeNestedChildSizeInput.addEventListener("input", () => {
+    arrangeNestedChildSizeValue.textContent = normalizeRangeScale(arrangeNestedChildSizeInput.value, 1, 0.3, 2.5).toFixed(2);
+  });
+}
+if (arrangeWorldParentSpacingInput) {
+  arrangeWorldParentSpacingInput.addEventListener("input", () => {
+    arrangeWorldParentSpacingValue.textContent = normalizeRangeScale(arrangeWorldParentSpacingInput.value, 1, 0.3, 3.0).toFixed(2);
+  });
+}
+if (arrangeWorldParentSizeInput) {
+  arrangeWorldParentSizeInput.addEventListener("input", () => {
+    arrangeWorldParentSizeValue.textContent = normalizeRangeScale(arrangeWorldParentSizeInput.value, 1, 0.3, 2.5).toFixed(2);
+  });
+}
 saveArrangeButton.addEventListener("click", () => {
   saveArrange().catch((error) => {
+    setSettingsStatus(error.message);
+    console.error(error);
+  });
+});
+saveConsoleLogLevelsButton.addEventListener("click", () => {
+  saveConsoleLogLevels().catch((error) => {
     setSettingsStatus(error.message);
     console.error(error);
   });
