@@ -1,4 +1,4 @@
-const ABC_CANVAS_SCRIPT_VERSION = "stable-nested-wheel-89";
+const ABC_CANVAS_SCRIPT_VERSION = "stable-nested-wheel-109";
 const ABC_CANVAS_SCRIPTS = [
   "/static/js/workspace.js",
   "/static/js/state.js",
@@ -37,6 +37,12 @@ function loadAbcCanvasScript(src) {
 async function wireAbcCanvas() {
   for (const src of ABC_CANVAS_SCRIPTS) {
     await loadAbcCanvasScript(src);
+  }
+  if (typeof logEvent === "function") {
+    logEvent("debug", "frontend-scripts-loaded", {
+      scriptVersion: ABC_CANVAS_SCRIPT_VERSION,
+      scriptCount: ABC_CANVAS_SCRIPTS.length,
+    });
   }
   bootstrapAbcCanvas();
 }

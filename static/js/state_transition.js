@@ -63,7 +63,7 @@ var powanStateTransition = {
     return { kind: "none", targetParentId: null, reason: "unknown" };
   },
 
-  attach({ explorer, childId, parentId, animationPlan, placement = "current", fromRect = null }) {
+  attach({ explorer, childId, parentId, animationPlan, placement = "current", fromRect = null, arrangeInside = true }) {
     const child = nodeById(childId);
     const parent = nodeById(parentId);
     logEvent("trace", "state-transition-attach-before", {
@@ -96,7 +96,6 @@ var powanStateTransition = {
       if (oldParent) {
         oldParent.children = explorer.childrenOf(oldParent).filter((node) => node.id !== child.id).map((node) => node.id);
         explorer.setHoldingCount(oldParent);
-        explorer.syncParentCoordinates(oldParent.id, { force: true, reason: "set-parent-old-parent-pack" });
       }
     }
     parent.children = explorer.childrenOf(parent).map((node) => node.id);
@@ -117,16 +116,24 @@ var powanStateTransition = {
     } else {
       explorer.syncChildCoordinatesFromWorld(child.id, parent.id, currentLayout, "set-parent-current-layout");
     }
-    const arrangedIds = explorer.arrangeParentChildren(parent, "set-parent-arrange-inside-world", {
-      spacing: appSettings.arrangeWorldParentSpacing,
-      worldSizeScale: appSettings.arrangeWorldParentSize,
-      nestedSizeScale: appSettings.arrangeNestedChildSize,
-    });
-    explorer.touchPowans([parent.id, ...arrangedIds], "set-parent-arrange-touch");
+    finishArrangeLayoutMotion();
+    const layoutMotionTargets = [];
+    const arrangedIds = arrangeInside
+      ? explorer.arrangeParentChildren(parent, "set-parent-arrange-inside-world", {
+          spacing: appSettings.arrangeWorldParentSpacing,
+          worldSizeScale: appSettings.arrangeWorldParentSize,
+          nestedSizeScale: appSettings.arrangeNestedChildSize,
+          layoutMotionTargets,
+        })
+      : [];
+    if (arrangedIds.length) {
+      explorer.touchPowans([parent.id, ...arrangedIds], "set-parent-arrange-touch");
+    }
 
     explorer.setChildEditParent(null, "set-parent-clear-child-edit");
     setDirty();
     render();
+    animateArrangeLayoutTargets(layoutMotionTargets, { reason: "set-parent-arrange-inside-world" });
     requestAnimationFrame(() => {
       if (animationPlan.kind === "meaning-release") {
         animateMeaningRelease(childId, animationPlan.targetParentId || oldParentId, { fromRect: animationFromRect });
@@ -142,9 +149,10 @@ var powanStateTransition = {
       placement,
       parentChildCount: explorer.childrenOf(parent).length,
       arrangedCount: arrangedIds.length,
+      arrangeInside,
       animationPlan,
     });
-    logEvent("debug", "set-parent", { childId, parentId, oldParentId, placement, arrangedCount: arrangedIds.length, animationPlan });
+    logEvent("debug", "set-parent", { childId, parentId, oldParentId, placement, arrangedCount: arrangedIds.length, arrangeInside, animationPlan });
     return child;
   },
 

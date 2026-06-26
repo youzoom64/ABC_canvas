@@ -443,4 +443,39 @@ var powanPlacement = {
       height: Math.round(height),
     });
   },
+
+  nestedFrameView(frame, parent = null) {
+    if (frame?.type === "preview") {
+      const area = typeof nestedPreviewArea === "function"
+        ? nestedPreviewArea(this.number(frame.width, 1), this.number(frame.height, 1), this.number(frame.depth, 1))
+        : { x: 0, y: 0, width: this.number(frame.width, 1), height: this.number(frame.height, 1) };
+      return {
+        offsetX: this.number(area.x),
+        offsetY: this.number(area.y),
+        layerSize: {
+          width: Math.max(1, this.number(area.width, 1)),
+          height: Math.max(1, this.number(area.height, 1)),
+        },
+      };
+    }
+    const area = parent ? this.parentNestedArea(parent) : null;
+    return {
+      offsetX: 0,
+      offsetY: 0,
+      layerSize: {
+        width: Math.max(1, this.number(frame?.width, area?.width || 1)),
+        height: Math.max(1, this.number(frame?.height, area?.height || 1)),
+      },
+    };
+  },
+
+  worldLayoutFromNestedFrame(parent, child, frame, localRect) {
+    const view = this.nestedFrameView(frame, parent);
+    return this.worldLayoutFromNestedView(parent, child, {
+      x: this.number(localRect?.x) - view.offsetX,
+      y: this.number(localRect?.y) - view.offsetY,
+      width: this.number(localRect?.width, this.nodeLayout(child).width),
+      height: this.number(localRect?.height, this.nodeLayout(child).height),
+    }, view.layerSize);
+  },
 };

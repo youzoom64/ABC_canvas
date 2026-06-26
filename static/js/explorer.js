@@ -28,6 +28,86 @@ function preserveLocalNodeLayouts(nextDoc, previousDoc) {
   return { doc: merged, preservedCount };
 }
 
+function arrangePipelineError(error) {
+  return {
+    name: error?.name || "",
+    message: error?.message || String(error),
+    stack: error?.stack ? String(error.stack).slice(0, 1200) : "",
+  };
+}
+
+function logArrangePipelineStep(reason, stage, details = {}) {
+  logEvent("debug", "arrange-pipeline-step", {
+    reason,
+    stage,
+    ...details,
+  });
+}
+
+function logArrangeCurrentWorldCheckpoint(reason, stage, details = {}) {
+  logEvent("debug", "arrange-current-world-checkpoint", {
+    reason,
+    stage,
+    ...details,
+  });
+}
+
+function setArrangeMotionStartWorldLayout(node, layout) {
+  node.layout = powanWorkspace.clampLayout({
+    ...(node.layout || {}),
+    ...layout,
+  });
+}
+
+function setArrangeMotionStartNestedLayout(node, parentId, layout) {
+  node.nestedLayoutByParent = {
+    ...(node.nestedLayoutByParent || {}),
+    [parentId]: {
+      ...((node.nestedLayoutByParent || {})[parentId] || {}),
+      ...layout,
+    },
+  };
+}
+
+function runArrangeRenderAndAnimation({ reason, layoutMotionTargets, details = {}, onComplete = null }) {
+  const targetCount = Array.isArray(layoutMotionTargets) ? layoutMotionTargets.length : 0;
+  const payload = { ...details, targetCount };
+  if (typeof syncArrangeMotionStartsFromVisibleElements === "function") {
+    syncArrangeMotionStartsFromVisibleElements(layoutMotionTargets, reason);
+  }
+  logArrangePipelineStep(reason, "render-before", payload);
+  try {
+    render();
+  } catch (error) {
+    logEvent("error", "arrange-pipeline-render-error", {
+      reason,
+      ...payload,
+      error: arrangePipelineError(error),
+    });
+    throw error;
+  }
+  logArrangePipelineStep(reason, "render-after", payload);
+  logArrangePipelineStep(reason, "animate-before", {
+    ...payload,
+    hasAnimateFunction: typeof animateArrangeLayoutTargets === "function",
+  });
+  try {
+    const animationStarted = animateArrangeLayoutTargets(layoutMotionTargets, { reason, onComplete });
+    logArrangePipelineStep(reason, "animate-after", {
+      ...payload,
+      animationStarted: Boolean(animationStarted),
+    });
+    return animationStarted;
+  } catch (error) {
+    logEvent("error", "arrange-pipeline-animate-error", {
+      reason,
+      ...payload,
+      error: arrangePipelineError(error),
+    });
+    throw error;
+  }
+}
+
 var powanExplorer = {
   setProjectName(name, reason = "set-project-name") {
     projectName = name;
@@ -520,12 +600,13 @@ var powanExplorer = {
     return parent;
   },
   arrangeParentChildren(parent, reason = "arrange-parent-children", options = {}) {
-    const children = this.childrenOf(parent);
+    const children = parent ? this.childrenOf(parent) : rootNodes();
     if (!children.length) {
       return [];
     }
     const updateWorld = options.updateWorld !== false;
     const updateNested = options.updateNested !== false;
+    const layoutMotionTargets = Array.isArray(options.layoutMotionTargets) ? options.layoutMotionTargets : null;
     const spacing = options.spacing ?? appSettings.arrangeChildSpacing;
     const worldArea = parent ? powanPlacement.parentWorldArea(parent) : powanPlacement.rootWorldArea();
     const worldSize = powanPlacement.worldChildSize(children.length, options.worldSizeScale ?? appSettings.arrangeChildSize);
@@ -539,47 +620,61 @@ var powanExplorer = {
       : [];
     const changedIds = [];
     for (const [index, child] of children.entries()) {
+      const currentWorldLayout = powanPlacement.nodeLayout(child);
+      const currentNestedLayout = parent
+        ? normalizeArrangeMotionLayout(child.nestedLayoutByParent?.[parent.id] || nestedPlacements[index]?.layout)
+        : null;
       if (updateWorld) {
+        const targetLayout = worldPlacements[index].layout;
         child.userSized = true;
-        this.setNodeLayout(child.id, worldPlacements[index].layout, `${reason}-world`);
+        if (layoutMotionTargets) {
+          setArrangeMotionStartWorldLayout(child, currentWorldLayout);
+          layoutMotionTargets.push({
+            kind: "world",
+            nodeId: child.id,
+            from: currentWorldLayout,
+            to: targetLayout,
+          });
+        } else {
+          this.setNodeLayout(child.id, targetLayout, `${reason}-world`);
+        }
       }
       if (parent && updateNested) {
-        this.setNestedLayout(child.id, parent.id, nestedPlacements[index].layout, `${reason}-nested`);
+        const targetNestedLayout = nestedPlacements[index].layout;
+        if (layoutMotionTargets) {
+          setArrangeMotionStartNestedLayout(child, parent.id, currentNestedLayout);
+          layoutMotionTargets.push({
+            kind: "nested",
+            nodeId: child.id,
+            parentId: parent.id,
+            from: currentNestedLayout,
+            to: targetNestedLayout,
+          });
+        } else {
+          this.setNestedLayout(child.id, parent.id, targetNestedLayout, `${reason}-nested`);
+        }
       }
       changedIds.push(child.id);
     }
     logEvent("debug", reason, {
-      parentId: parent.id,
+      parentId: parent?.id || null,
       childCount: children.length,
       changedCount: changedIds.length,
     });
     return changedIds;
   },
-  arrangeRootChildren(reason = "arrange-root-children") {
+  arrangeRootChildren(reason = "arrange-root-children", options = {}) {
     const roots = rootNodes();
     if (!roots.length) {
       logEvent("debug", "arrange-root-children-empty");
       return [];
     }
-    const worldArea = powanPlacement.rootWorldArea();
-    const worldSize = powanPlacement.worldChildSize(roots.length, appSettings.arrangeWorldParentSize);
-    const placements = powanPlacement.arrangeRadially(
-      worldArea,
-      roots,
-      worldSize,
-      appSettings.arrangeWorldParentSpacing,
-    );
-    const changedIds = [];
-    for (const [index, child] of roots.entries()) {
-      child.userSized = true;
-      this.setNodeLayout(child.id, placements[index].layout, `${reason}-world`);
-      changedIds.push(child.id);
-    }
-    logEvent("debug", reason, {
-      childCount: roots.length,
-      changedCount: changedIds.length,
+    return this.arrangeParentChildren(null, reason, {
+      spacing: appSettings.arrangeWorldParentSpacing,
+      worldSizeScale: appSettings.arrangeWorldParentSize,
+      nestedSizeScale: appSettings.arrangeNestedChildSize,
+      layoutMotionTargets: options.layoutMotionTargets,
     });
-    return changedIds;
   },
   arrangeNodeChildren(nodeId, reason = "arrange-node-children") {
     const parent = nodeById(nodeId);
@@ -587,19 +682,30 @@ var powanExplorer = {
       logEvent("warn", "arrange-node-children-missing-node", { nodeId });
       return false;
     }
-    if (!this.childrenOf(parent).length) {
+    const children = this.childrenOf(parent);
+    if (!children.length) {
       logEvent("debug", "arrange-node-children-empty", { nodeId });
       return false;
     }
+    finishArrangeLayoutMotion();
     this.recordHistory(reason);
+    const layoutMotionTargets = [];
     const changedIds = this.arrangeParentChildren(parent, reason, {
       spacing: appSettings.arrangeWorldParentSpacing,
       worldSizeScale: appSettings.arrangeWorldParentSize,
       nestedSizeScale: appSettings.arrangeNestedChildSize,
+      layoutMotionTargets,
     });
     this.touchPowans([parent.id, ...changedIds], `${reason}-touch`);
     setDirty();
-    render();
+    runArrangeRenderAndAnimation({
+      reason,
+      layoutMotionTargets,
+      details: {
+        nodeId: parent.id,
+        changedCount: changedIds.length,
+      },
+    });
     logEvent("info", reason, {
       nodeId: parent.id,
       arrangedCount: changedIds.length,
@@ -619,7 +725,9 @@ var powanExplorer = {
       logEvent("debug", "arrange-subtree-empty", { nodeIds: rootIds });
       return false;
     }
+    finishArrangeLayoutMotion();
     this.recordHistory(reason);
+    const layoutMotionTargets = [];
     const parents = [];
     const changedIds = [];
     const visit = (parent, options) => {
@@ -633,7 +741,8 @@ var powanExplorer = {
         visit(child, {
           spacing: appSettings.arrangeWorldParentSpacing,
           worldSizeScale: appSettings.arrangeWorldParentSize,
-          nestedSizeScale: appSettings.arrangeWorldParentSize,
+          nestedSizeScale: appSettings.arrangeNestedChildSize,
+          layoutMotionTargets,
         });
       }
     };
@@ -642,11 +751,21 @@ var powanExplorer = {
         spacing: appSettings.arrangeWorldParentSpacing,
         worldSizeScale: appSettings.arrangeWorldParentSize,
         nestedSizeScale: appSettings.arrangeNestedChildSize,
+        layoutMotionTargets,
       });
     }
     this.touchPowans([...rootIds, ...changedIds], `${reason}-touch`);
     setDirty();
-    render();
+    runArrangeRenderAndAnimation({
+      reason,
+      layoutMotionTargets,
+      details: {
+        nodeId: rootIds.length === 1 ? rootIds[0] : null,
+        nodeIds: rootIds,
+        parentCount: parents.length,
+        changedCount: changedIds.length,
+      },
+    });
     logEvent("info", reason, {
       nodeId: rootIds.length === 1 ? rootIds[0] : null,
       nodeIds: rootIds,
@@ -663,10 +782,21 @@ var powanExplorer = {
         logEvent("debug", "arrange-current-world-empty", { worldParentId: parent.id });
         return false;
       }
+      finishArrangeLayoutMotion();
       this.recordHistory(reason);
+      const layoutMotionTargets = [];
       const changedIds = [];
       const parents = [];
+      const visitedIds = new Set();
       const visit = (worldParent, options) => {
+        if (!worldParent || visitedIds.has(worldParent.id)) {
+          logEvent("warn", "arrange-current-world-skip-revisited", {
+            reason,
+            parentId: worldParent?.id || null,
+          });
+          return;
+        }
+        visitedIds.add(worldParent.id);
         const worldChildren = this.childrenOf(worldParent);
         if (!worldChildren.length) {
           return;
@@ -677,7 +807,8 @@ var powanExplorer = {
           visit(child, {
             spacing: appSettings.arrangeWorldParentSpacing,
             worldSizeScale: appSettings.arrangeWorldParentSize,
-            nestedSizeScale: appSettings.arrangeWorldParentSize,
+            nestedSizeScale: appSettings.arrangeNestedChildSize,
+            layoutMotionTargets,
           });
         }
       };
@@ -685,11 +816,54 @@ var powanExplorer = {
         spacing: appSettings.arrangeWorldParentSpacing,
         worldSizeScale: appSettings.arrangeWorldParentSize,
         nestedSizeScale: appSettings.arrangeNestedChildSize,
+        layoutMotionTargets,
+      });
+      logArrangeCurrentWorldCheckpoint(reason, "visit-done", {
+        worldParentId: parent.id,
+        parentCount: parents.length,
+        changedCount: changedIds.length,
+        targetCount: layoutMotionTargets.length,
+      });
+      logArrangeCurrentWorldCheckpoint(reason, "touch-before", {
+        worldParentId: parent.id,
+        changedCount: changedIds.length,
       });
       this.touchPowans(changedIds, `${reason}-touch`);
+      logArrangeCurrentWorldCheckpoint(reason, "touch-after", {
+        worldParentId: parent.id,
+        changedCount: changedIds.length,
+      });
+      logArrangeCurrentWorldCheckpoint(reason, "dirty-before", {
+        worldParentId: parent.id,
+      });
       setDirty();
-      render();
-      focusViewportOnRect(powanPlacement.parentWorldArea(parent), 64);
+      logArrangeCurrentWorldCheckpoint(reason, "dirty-after", {
+        worldParentId: parent.id,
+      });
+      logArrangeCurrentWorldCheckpoint(reason, "pipeline-before", {
+        worldParentId: parent.id,
+        parentCount: parents.length,
+        changedCount: changedIds.length,
+        targetCount: layoutMotionTargets.length,
+      });
+      runArrangeRenderAndAnimation({
+        reason,
+        layoutMotionTargets,
+        details: {
+          worldParentId: parent.id,
+          parentCount: parents.length,
+          changedCount: changedIds.length,
+        },
+        onComplete: () => animateViewportToRect(powanPlacement.parentWorldArea(parent), 64, {
+          reason: `${reason}-viewport`,
+        }),
+      });
+      logArrangeCurrentWorldCheckpoint(reason, "pipeline-after", {
+        worldParentId: parent.id,
+        parentCount: parents.length,
+        changedCount: changedIds.length,
+        targetCount: layoutMotionTargets.length,
+      });
       logEvent("info", reason, {
         worldParentId: parent.id,
         parentCount: parents.length,
@@ -702,11 +876,27 @@ var powanExplorer = {
       logEvent("debug", "arrange-current-world-empty");
       return false;
     }
+    finishArrangeLayoutMotion();
     this.recordHistory(reason);
+    const layoutMotionTargets = [];
     const changedIds = [];
     const parents = [];
-    changedIds.push(...this.arrangeRootChildren(reason));
+    const visitedIds = new Set();
+    changedIds.push(...this.arrangeParentChildren(null, reason, {
+      spacing: appSettings.arrangeWorldParentSpacing,
+      worldSizeScale: appSettings.arrangeWorldParentSize,
+      nestedSizeScale: appSettings.arrangeNestedChildSize,
+      layoutMotionTargets,
+    }));
     const visit = (worldParent) => {
+      if (!worldParent || visitedIds.has(worldParent.id)) {
+        logEvent("warn", "arrange-current-world-skip-revisited", {
+          reason,
+          parentId: worldParent?.id || null,
+        });
+        return;
+      }
+      visitedIds.add(worldParent.id);
       const worldChildren = this.childrenOf(worldParent);
       if (!worldChildren.length) {
         return;
@@ -715,7 +905,8 @@ var powanExplorer = {
       changedIds.push(...this.arrangeParentChildren(worldParent, reason, {
         spacing: appSettings.arrangeWorldParentSpacing,
         worldSizeScale: appSettings.arrangeWorldParentSize,
-        nestedSizeScale: appSettings.arrangeWorldParentSize,
+        nestedSizeScale: appSettings.arrangeNestedChildSize,
+        layoutMotionTargets,
       }));
       for (const child of worldChildren) {
         visit(child);
@@ -724,10 +915,56 @@ var powanExplorer = {
     for (const root of roots) {
       visit(root);
     }
+    logArrangeCurrentWorldCheckpoint(reason, "visit-done", {
+      worldParentId: null,
+      rootCount: roots.length,
+      parentCount: parents.length,
+      changedCount: changedIds.length,
+      targetCount: layoutMotionTargets.length,
+    });
+    logArrangeCurrentWorldCheckpoint(reason, "touch-before", {
+      worldParentId: null,
+      changedCount: changedIds.length,
+    });
     this.touchPowans(changedIds, `${reason}-touch`);
+    logArrangeCurrentWorldCheckpoint(reason, "touch-after", {
+      worldParentId: null,
+      changedCount: changedIds.length,
+    });
+    logArrangeCurrentWorldCheckpoint(reason, "dirty-before", {
+      worldParentId: null,
+    });
     setDirty();
-    render();
-    focusViewportOnRect(powanPlacement.rootWorldArea(), 64);
+    logArrangeCurrentWorldCheckpoint(reason, "dirty-after", {
+      worldParentId: null,
+    });
+    logArrangeCurrentWorldCheckpoint(reason, "pipeline-before", {
+      worldParentId: null,
+      rootCount: roots.length,
+      parentCount: parents.length,
+      changedCount: changedIds.length,
+      targetCount: layoutMotionTargets.length,
+    });
+    runArrangeRenderAndAnimation({
+      reason,
+      layoutMotionTargets,
+      details: {
+        worldParentId: null,
+        rootCount: roots.length,
+        parentCount: parents.length,
+        changedCount: changedIds.length,
+      },
+      onComplete: () => animateViewportToRect(powanPlacement.rootWorldArea(), 64, {
+        reason: `${reason}-viewport`,
+      }),
+    });
+    logArrangeCurrentWorldCheckpoint(reason, "pipeline-after", {
+      worldParentId: null,
+      rootCount: roots.length,
+      parentCount: parents.length,
+      changedCount: changedIds.length,
+      targetCount: layoutMotionTargets.length,
+    });
     logEvent("info", reason, {
       worldParentId: null,
       rootCount: roots.length,
@@ -752,17 +989,18 @@ var powanExplorer = {
     this.setNestedLayout(child.id, parent.id, nestedLayout, `${reason}-nested`);
     return child;
   },
-  syncChildCoordinatesFromNested(childId, parentId, nestedPatch, reason = "sync-child-from-nested") {
+  syncChildCoordinatesFromNested(childId, parentId, nestedPatch, reason = "sync-child-from-nested", frame = null) {
     const child = nodeById(childId);
     const parent = nodeById(parentId);
     if (!child || !parent) {
       logEvent("warn", "sync-child-from-nested-missing-node", { childId, parentId, reason });
       return null;
     }
-    const layerSize = powanPlacement.parentNestedArea(parent);
-    const nextLayout = powanPlacement.worldLayoutFromNestedView(parent, child, nestedPatch, layerSize);
+    const nextLayout = frame
+      ? powanPlacement.worldLayoutFromNestedFrame(parent, child, frame, nestedPatch)
+      : powanPlacement.worldLayoutFromNestedView(parent, child, nestedPatch, powanPlacement.parentNestedArea(parent));
     this.setNodeLayout(child.id, nextLayout, `${reason}-world`);
-    logEvent("debug", reason, { childId, parentId, nestedPatch, layout: nextLayout });
+    logEvent("debug", reason, { childId, parentId, nestedPatch, frame, layout: nextLayout });
     return child;
   },
   focusViewportOnNode(nodeId, reason = "focus-node") {
@@ -974,7 +1212,13 @@ var powanExplorer = {
     if (!local) {
       return false;
     }
-    this.syncChildCoordinatesFromNested(node.id, local.parent.id, localRect, reason);
+    this.syncChildCoordinatesFromNested(
+      node.id,
+      local.parent.id,
+      localRect,
+      reason,
+      powanPlacement.dragFrameForNestedLayer(local.layer, element),
+    );
     return true;
   },
   syncNestedElementRectPreserveStoredCenter(node, element, localRect, reason = "sync-nested-element-rect-center") {
@@ -1090,7 +1334,7 @@ var powanExplorer = {
     parent.children = children.map((node) => node.id);
     return children;
   },
-  attach(childId, parentId, { animation = "enter", placement = "current", fromRect = null, recordHistory = true } = {}) {
+  attach(childId, parentId, { animation = "enter", placement = "current", fromRect = null, recordHistory = true, arrangeInside = true } = {}) {
     if (recordHistory) {
       this.recordHistory("attach-powan");
     }
@@ -1103,6 +1347,7 @@ var powanExplorer = {
       animation,
       placement,
       fromRect,
+      arrangeInside,
     });
   },
   nestedLayoutFromScreenRect(parent, child, screenRect) {
@@ -1354,6 +1599,7 @@ var powanExplorer = {
       parent.id,
       localRect,
       "nested-drag-layout",
+      nestedDrag.frame,
     );
     updateCoordinateBadge(node);
     setDirty();
@@ -1371,7 +1617,7 @@ var powanExplorer = {
       return;
     }
     const localRect = powanNestedDrag.clampInside(dragState);
-    this.syncChildCoordinatesFromNested(node.id, parent.id, localRect, "nested-drag-clamp-inside");
+    this.syncChildCoordinatesFromNested(node.id, parent.id, localRect, "nested-drag-clamp-inside", dragState.frame);
   },
   detachNestedDragToWorld(dragState) {
     const node = nodeById(dragState.id);
@@ -1449,7 +1695,13 @@ var powanExplorer = {
       layout,
     });
     if (targetParentId && targetParentId !== node.parent) {
-      this.attach(node.id, targetParentId, { animation: "release", placement: "current", fromRect: rect, recordHistory: false });
+      this.attach(node.id, targetParentId, {
+        animation: "release",
+        placement: "current",
+        fromRect: rect,
+        recordHistory: false,
+        arrangeInside: targetParentId !== openParentId,
+      });
     } else {
       this.detach(node.id, { animation: "release", fromRect: rect, recordHistory: false });
     }

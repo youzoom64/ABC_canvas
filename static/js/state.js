@@ -156,6 +156,7 @@ var worldLayer = null;
 var pan = null;
 var panIntent = null;
 var viewportBeforeInterior = null;
+var viewportMotion = null;
 var treeResize = null;
 var panelResize = null;
 var conversationResize = null;
@@ -266,6 +267,26 @@ var LOG_QUEUE_LIMIT = 1200;
 var LOG_FLUSH_BATCH_SIZE = 120;
 var logQueue = [];
 var logFlushTimer = null;
+var FOCUSED_CLIENT_LOG_ACTIONS = new Set([
+  "frontend-scripts-loaded",
+  "arrange-current-world-checkpoint",
+  "arrange-current-world-skip-revisited",
+  "arrange-visible-start-sync",
+  "arrange-selected-visual-snapshot",
+  "arrange-layout-selected-target",
+  "arrange-layout-animation-call",
+  "arrange-layout-animation-prepared",
+  "arrange-layout-animation-empty",
+  "arrange-layout-animation-start",
+  "arrange-layout-animation-complete",
+  "viewport-motion-start",
+  "viewport-motion-complete",
+]);
+var FOCUSED_CLIENT_LOG_PREFIXES = [
+  "arrange-pipeline-",
+  "arrange-layout-animation-",
+  "client-unhandled-",
+];
 var INTERIOR_STAGE = {
   x: 260,
   y: 180,
@@ -345,10 +366,23 @@ function flushLogQueue({ beacon = false } = {}) {
   });
 }
 
+function shouldKeepClientLog(level, action) {
+  if (level === "warn" || level === "error" || level === "fatal") {
+    return true;
+  }
+  if (FOCUSED_CLIENT_LOG_ACTIONS.has(action)) {
+    return true;
+  }
+  return FOCUSED_CLIENT_LOG_PREFIXES.some((prefix) => action.startsWith(prefix));
+}
+
 function logEvent(level, action, details = {}) {
   const current = LOG_LEVELS[CURRENT_LOG_LEVEL] ?? LOG_LEVELS.debug;
   const value = LOG_LEVELS[level] ?? LOG_LEVELS.info;
   if (value < current) {
+    return;
+  }
+  if (!shouldKeepClientLog(level, action)) {
     return;
   }
   const payload = {
@@ -373,6 +407,40 @@ function logEvent(level, action, details = {}) {
     console.log(message, payload);
   }
 }
+
+function clientErrorLogPayload(error) {
+  return {
+    name: error?.name || "",
+    message: error?.message || String(error || ""),
+    stack: error?.stack ? String(error.stack).slice(0, 1400) : "",
+  };
+}
+
+window.addEventListener("error", (event) => {
+  try {
+    logEvent("error", "client-unhandled-error", {
+      message: event.message || "",
+      source: event.filename || "",
+      line: event.lineno || 0,
+      column: event.colno || 0,
+      error: clientErrorLogPayload(event.error || event.message),
+    });
+    flushLogQueue();
+  } catch (loggingError) {
+    console.error(loggingError);
+  }
+});
+
+window.addEventListener("unhandledrejection", (event) => {
+  try {
+    logEvent("error", "client-unhandled-rejection", {
+      error: clientErrorLogPayload(event.reason),
+    });
+    flushLogQueue();
+  } catch (loggingError) {
+    console.error(loggingError);
+  }
+});
 
 window.addEventListener("pagehide", () => flushLogQueue({ beacon: true }));
 
@@ -739,6 +807,109 @@ function applyViewportTransform() {
   worldLayer.style.transform = `translate(${viewport.x}px, ${viewport.y}px) scale(${viewport.scale})`;
 }
 
+function setViewportRaw(nextViewport) {
+  viewport.x = finiteViewportNumber(nextViewport.x, viewport.x);
+  viewport.y = finiteViewportNumber(nextViewport.y, viewport.y);
+  viewport.scale = clampViewScale(finiteViewportNumber(nextViewport.scale, viewport.scale));
+  applyViewportTransform();
+}
+
+function stopViewportMotion({ finish = false } = {}) {
+  const motion = viewportMotion;
+  if (!motion) {
+    return;
+  }
+  if (motion.frameId) {
+    cancelAnimationFrame(motion.frameId);
+  }
+  viewportMotion = null;
+  if (finish) {
+    setViewportRaw(motion.target);
+  }
+}
+
+function viewportMotionEase(progress) {
+  const t = Math.max(0, Math.min(1, progress));
+  return 1 - Math.pow(1 - t, 3);
+}
+
+function viewportStateForRect(rect, padding = 72) {
+  const canvasWidth = Math.max(1, canvas.clientWidth);
+  const canvasHeight = Math.max(1, canvas.clientHeight);
+  const targetWidth = Math.max(1, Number(rect?.width || 0) + padding * 2);
+  const targetHeight = Math.max(1, Number(rect?.height || 0) + padding * 2);
+  const scale = clampViewScale(Math.min(canvasWidth / targetWidth, canvasHeight / targetHeight));
+  return {
+    scale,
+    x: canvasWidth / 2 - (Number(rect?.x || 0) + Number(rect?.width || 0) / 2) * scale,
+    y: canvasHeight / 2 - (Number(rect?.y || 0) + Number(rect?.height || 0) / 2) * scale,
+  };
+}
+
+function animateViewportToState(target, { reason = "viewport-motion", duration = 520 } = {}) {
+  const next = {
+    x: finiteViewportNumber(target?.x, viewport.x),
+    y: finiteViewportNumber(target?.y, viewport.y),
+    scale: clampViewScale(finiteViewportNumber(target?.scale, viewport.scale)),
+  };
+  stopViewportMotion();
+  const from = {
+    x: finiteViewportNumber(viewport.x, 0),
+    y: finiteViewportNumber(viewport.y, 0),
+    scale: clampViewScale(finiteViewportNumber(viewport.scale, 1)),
+  };
+  const distance = Math.max(
+    Math.abs(from.x - next.x),
+    Math.abs(from.y - next.y),
+    Math.abs(from.scale - next.scale) * 1000,
+  );
+  if (distance < 0.5) {
+    setViewportRaw(next);
+    return false;
+  }
+  const startedAt = performance.now();
+  viewportMotion = {
+    frameId: null,
+    target: next,
+    reason,
+  };
+  const activeMotion = viewportMotion;
+  const step = (timestamp) => {
+    const motion = viewportMotion;
+    if (!motion || motion !== activeMotion) {
+      return;
+    }
+    const progress = Math.min(1, (timestamp - startedAt) / Math.max(1, duration));
+    const eased = viewportMotionEase(progress);
+    setViewportRaw({
+      x: from.x + (next.x - from.x) * eased,
+      y: from.y + (next.y - from.y) * eased,
+      scale: from.scale + (next.scale - from.scale) * eased,
+    });
+    if (progress < 1) {
+      motion.frameId = requestAnimationFrame(step);
+      return;
+    }
+    viewportMotion = null;
+    setViewportRaw(next);
+    logEvent("debug", "viewport-motion-complete", {
+      reason,
+      viewport: normalizedViewportState(),
+    });
+  };
+  viewportMotion.frameId = requestAnimationFrame(step);
+  logEvent("debug", "viewport-motion-start", {
+    reason,
+    from,
+    to: next,
+  });
+  return true;
+}
+
+function animateViewportToRect(rect, padding = 72, options = {}) {
+  return animateViewportToState(viewportStateForRect(rect, padding), options);
+}
+
 function screenToWorld(clientX, clientY) {
   const rect = canvas.getBoundingClientRect();
   return {
@@ -779,10 +950,12 @@ function storedViewportState(nextDoc) {
 }
 
 function applyViewportState(nextViewport) {
-  viewport.x = Math.round(finiteViewportNumber(nextViewport.x, 0));
-  viewport.y = Math.round(finiteViewportNumber(nextViewport.y, 0));
-  viewport.scale = clampViewScale(finiteViewportNumber(nextViewport.scale, 1));
-  applyViewportTransform();
+  stopViewportMotion();
+  setViewportRaw({
+    x: Math.round(finiteViewportNumber(nextViewport.x, 0)),
+    y: Math.round(finiteViewportNumber(nextViewport.y, 0)),
+    scale: clampViewScale(finiteViewportNumber(nextViewport.scale, 1)),
+  });
 }
 
 function saveViewportToDocument() {
@@ -870,12 +1043,15 @@ function normalizeDocumentWorkspace(nextDoc, reason = "normalize-document-worksp
 }
 
 function focusViewportOnPoint(point, scale = 1) {
+  stopViewportMotion();
   const canvasWidth = Math.max(1, canvas.clientWidth);
   const canvasHeight = Math.max(1, canvas.clientHeight);
-  viewport.scale = clampViewScale(scale);
-  viewport.x = canvasWidth / 2 - point.x * viewport.scale;
-  viewport.y = canvasHeight / 2 - point.y * viewport.scale;
-  applyViewportTransform();
+  const nextScale = clampViewScale(scale);
+  setViewportRaw({
+    scale: nextScale,
+    x: canvasWidth / 2 - point.x * nextScale,
+    y: canvasHeight / 2 - point.y * nextScale,
+  });
 }
 
 function resetViewportToWorkspaceOrigin() {
@@ -905,23 +1081,20 @@ function restoreViewportFromDocument(nextDoc, { resetMissing = true, restoreWorl
 }
 
 function zoomAt(clientX, clientY, nextScale) {
+  stopViewportMotion();
   const rect = canvas.getBoundingClientRect();
   const before = screenToWorld(clientX, clientY);
-  viewport.scale = clampViewScale(nextScale);
-  viewport.x = clientX - rect.left - before.x * viewport.scale;
-  viewport.y = clientY - rect.top - before.y * viewport.scale;
-  applyViewportTransform();
+  const scale = clampViewScale(nextScale);
+  setViewportRaw({
+    scale,
+    x: clientX - rect.left - before.x * scale,
+    y: clientY - rect.top - before.y * scale,
+  });
 }
 
 function focusViewportOnRect(rect, padding = 72) {
-  const canvasWidth = Math.max(1, canvas.clientWidth);
-  const canvasHeight = Math.max(1, canvas.clientHeight);
-  const targetWidth = Math.max(1, rect.width + padding * 2);
-  const targetHeight = Math.max(1, rect.height + padding * 2);
-  viewport.scale = clampViewScale(Math.min(canvasWidth / targetWidth, canvasHeight / targetHeight));
-  viewport.x = canvasWidth / 2 - (rect.x + rect.width / 2) * viewport.scale;
-  viewport.y = canvasHeight / 2 - (rect.y + rect.height / 2) * viewport.scale;
-  applyViewportTransform();
+  stopViewportMotion();
+  setViewportRaw(viewportStateForRect(rect, padding));
 }
 
 function rememberViewportBeforeInterior() {
@@ -939,11 +1112,9 @@ function restoreViewportBeforeInterior() {
   if (!viewportBeforeInterior) {
     return;
   }
-  viewport.x = viewportBeforeInterior.x;
-  viewport.y = viewportBeforeInterior.y;
-  viewport.scale = viewportBeforeInterior.scale;
+  stopViewportMotion();
+  setViewportRaw(viewportBeforeInterior);
   viewportBeforeInterior = null;
-  applyViewportTransform();
 }
 
 function setViewportForInteriorWorld(parent) {
@@ -1008,6 +1179,7 @@ function visibleWorldCenter() {
 
 function beginPan(event) {
   event.preventDefault();
+  stopViewportMotion();
   window.getSelection()?.removeAllRanges();
   panIntent = null;
   pan = {
@@ -1044,6 +1216,7 @@ function beginPanIntent(event, details = {}) {
 
 function startPanFromIntent(intent, event) {
   event.preventDefault();
+  stopViewportMotion();
   window.getSelection()?.removeAllRanges();
   pan = {
     pointerId: intent.pointerId,
@@ -1151,10 +1324,12 @@ function applyHistoryState(snapshot, reason = "history-restore") {
   childEditParentId = nodeById(snapshot.childEditParentId) ? snapshot.childEditParentId : null;
   codePanelNodeId = nodeById(snapshot.codePanelNodeId) ? snapshot.codePanelNodeId : null;
   const nextViewport = snapshot.viewport || {};
-  viewport.x = finiteViewportNumber(nextViewport.x, viewport.x);
-  viewport.y = finiteViewportNumber(nextViewport.y, viewport.y);
-  viewport.scale = clampViewScale(finiteViewportNumber(nextViewport.scale, viewport.scale));
-  applyViewportTransform();
+  stopViewportMotion();
+  setViewportRaw({
+    x: finiteViewportNumber(nextViewport.x, viewport.x),
+    y: finiteViewportNumber(nextViewport.y, viewport.y),
+    scale: clampViewScale(finiteViewportNumber(nextViewport.scale, viewport.scale)),
+  });
   setDirty();
   render();
   updateHistoryButtons();

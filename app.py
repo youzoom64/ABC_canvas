@@ -181,8 +181,29 @@ def log_server_event(level: str, action: str, details: dict[str, Any] | None = N
 reset_logs()
 log_server_event("info", "server-startup", {"appRoot": str(APP_ROOT)})
 
+
+class NoCacheStaticFiles(StaticFiles):
+    async def get_response(self, path: str, scope: dict[str, Any]):
+        response = await super().get_response(path, scope)
+        response.headers["Cache-Control"] = "no-store, max-age=0"
+        response.headers["Pragma"] = "no-cache"
+        response.headers["Expires"] = "0"
+        return response
+
+
+def no_cache_file(path: Path) -> FileResponse:
+    return FileResponse(
+        path,
+        headers={
+            "Cache-Control": "no-store, max-age=0",
+            "Pragma": "no-cache",
+            "Expires": "0",
+        },
+    )
+
+
 app = FastAPI(title="ABC Canvas")
-app.mount("/static", StaticFiles(directory=STATIC_ROOT), name="static")
+app.mount("/static", NoCacheStaticFiles(directory=STATIC_ROOT), name="static")
 
 
 @app.exception_handler(RequestValidationError)
@@ -953,17 +974,17 @@ app.include_router(create_ai_router(STORE, DEFAULT_FILE, log_server_event))
 
 @app.get("/")
 def index() -> FileResponse:
-    return FileResponse(STATIC_ROOT / "project.html")
+    return no_cache_file(STATIC_ROOT / "project.html")
 
 
 @app.get("/canvas")
 def canvas() -> FileResponse:
-    return FileResponse(STATIC_ROOT / "index.html")
+    return no_cache_file(STATIC_ROOT / "index.html")
 
 
 @app.get("/settings")
 def settings_page() -> FileResponse:
-    return FileResponse(STATIC_ROOT / "settings.html")
+    return no_cache_file(STATIC_ROOT / "settings.html")
 
 
 @app.get("/api/projects")
