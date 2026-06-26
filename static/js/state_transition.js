@@ -117,6 +117,12 @@ var powanStateTransition = {
     } else {
       explorer.syncChildCoordinatesFromWorld(child.id, parent.id, currentLayout, "set-parent-current-layout");
     }
+    const arrangedIds = explorer.arrangeParentChildren(parent, "set-parent-arrange-inside-world", {
+      spacing: appSettings.arrangeWorldParentSpacing,
+      worldSizeScale: appSettings.arrangeWorldParentSize,
+      nestedSizeScale: appSettings.arrangeNestedChildSize,
+    });
+    explorer.touchPowans([parent.id, ...arrangedIds], "set-parent-arrange-touch");
 
     explorer.setChildEditParent(null, "set-parent-clear-child-edit");
     setDirty();
@@ -135,9 +141,10 @@ var powanStateTransition = {
       childParentAfter: child.parent || null,
       placement,
       parentChildCount: explorer.childrenOf(parent).length,
+      arrangedCount: arrangedIds.length,
       animationPlan,
     });
-    logEvent("debug", "set-parent", { childId, parentId, oldParentId, placement, animationPlan });
+    logEvent("debug", "set-parent", { childId, parentId, oldParentId, placement, arrangedCount: arrangedIds.length, animationPlan });
     return child;
   },
 

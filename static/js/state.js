@@ -511,8 +511,8 @@ function applyArrangeSettings(data = {}) {
   appSettings.arrangeChildSize = normalizeArrangeSize(data.arrangeChildSize ?? data.arrangeSize);
   appSettings.arrangeNestedChildSize = normalizeArrangeSize(data.arrangeNestedChildSize ?? data.arrangeSize);
   appSettings.nestedLayerScale = normalizeNestedLayerScale(data.nestedLayerScale ?? appSettings.nestedLayerScale);
-  appSettings.arrangeWorldParentSpacing = appSettings.arrangeChildSpacing;
-  appSettings.arrangeWorldParentSize = appSettings.arrangeChildSize;
+  appSettings.arrangeWorldParentSpacing = normalizeArrangeSpacing(data.arrangeWorldParentSpacing ?? data.arrangeSpacing);
+  appSettings.arrangeWorldParentSize = normalizeArrangeSize(data.arrangeWorldParentSize ?? data.arrangeSize);
   document.documentElement.style.setProperty("--nested-layer-scale", appSettings.nestedLayerScale.toFixed(2));
 }
 
@@ -563,10 +563,12 @@ function syncArrangePanelInputs() {
   if (panelArrangeRecursiveInput) {
     panelArrangeRecursiveInput.checked = Boolean(appSettings.arrangeRecursive);
   }
-  setRangeControl(panelArrangeChildSpacingInput, panelArrangeChildSpacingValue, appSettings.arrangeChildSpacing);
-  setRangeControl(panelArrangeChildSizeInput, panelArrangeChildSizeValue, appSettings.arrangeChildSize);
+  setRangeControl(panelArrangeChildSpacingInput, panelArrangeChildSpacingValue, appSettings.arrangeWorldParentSpacing);
+  setRangeControl(panelArrangeChildSizeInput, panelArrangeChildSizeValue, appSettings.arrangeWorldParentSize);
   setRangeControl(panelArrangeNestedChildSizeInput, panelArrangeNestedChildSizeValue, appSettings.arrangeNestedChildSize);
   setRangeControl(panelNestedLayerScaleInput, panelNestedLayerScaleValue, appSettings.nestedLayerScale);
+  setRangeControl(panelArrangeWorldParentSpacingInput, panelArrangeWorldParentSpacingValue, appSettings.arrangeChildSpacing);
+  setRangeControl(panelArrangeWorldParentSizeInput, panelArrangeWorldParentSizeValue, appSettings.arrangeChildSize);
 }
 
 function setRandomPowanColor(enabled, reason = "set-random-powan-color") {

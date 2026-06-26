@@ -581,6 +581,31 @@ var powanExplorer = {
     });
     return changedIds;
   },
+  arrangeNodeChildren(nodeId, reason = "arrange-node-children") {
+    const parent = nodeById(nodeId);
+    if (!parent) {
+      logEvent("warn", "arrange-node-children-missing-node", { nodeId });
+      return false;
+    }
+    if (!this.childrenOf(parent).length) {
+      logEvent("debug", "arrange-node-children-empty", { nodeId });
+      return false;
+    }
+    this.recordHistory(reason);
+    const changedIds = this.arrangeParentChildren(parent, reason, {
+      spacing: appSettings.arrangeWorldParentSpacing,
+      worldSizeScale: appSettings.arrangeWorldParentSize,
+      nestedSizeScale: appSettings.arrangeNestedChildSize,
+    });
+    this.touchPowans([parent.id, ...changedIds], `${reason}-touch`);
+    setDirty();
+    render();
+    logEvent("info", reason, {
+      nodeId: parent.id,
+      arrangedCount: changedIds.length,
+    });
+    return changedIds.length > 0;
+  },
   arrangeSubtree(nodeIdOrIds, reason = "arrange-subtree") {
     const requestedIds = Array.isArray(nodeIdOrIds) ? nodeIdOrIds : [nodeIdOrIds];
     const ids = uniqueActiveNodeIds(requestedIds);
