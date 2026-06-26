@@ -21,4 +21,3 @@ echo.
 
 echo.
 echo ABC Canvas stopped.
-pause

@@ -63,6 +63,9 @@ function applySelection(
     log = true,
   } = {},
 ) {
+  if (reason !== "create-child-select" && typeof clearCreateChildRepeatContext === "function") {
+    clearCreateChildRepeatContext();
+  }
   const normalized = uniqueActiveNodeIds(ids);
   const primary = primaryId && normalized.includes(primaryId) ? primaryId : (normalized[0] || null);
   selectedIds = new Set(normalized);

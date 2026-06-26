@@ -846,7 +846,7 @@ function finishArrangeLayoutMotion() {
   refreshArrangeMotionView();
 }
 
-function animateArrangeLayoutTargets(targets, { reason = "arrange-layout", duration = 720, onComplete = null } = {}) {
+function animateArrangeLayoutTargets(targets, { reason = "arrange-layout", duration = 720, onStart = null, onComplete = null } = {}) {
   const rawTargetCount = Array.isArray(targets) ? targets.length : 0;
   let prepared;
   try {
@@ -860,6 +860,9 @@ function animateArrangeLayoutTargets(targets, { reason = "arrange-layout", durat
     throw error;
   }
   if (!prepared.length) {
+    if (typeof onStart === "function") {
+      onStart();
+    }
     if (typeof onComplete === "function") {
       onComplete();
     }
@@ -909,6 +912,9 @@ function animateArrangeLayoutTargets(targets, { reason = "arrange-layout", durat
       applyArrangeMotionTarget(target, target.from);
     }
     refreshArrangeMotionView();
+    if (typeof onStart === "function") {
+      onStart();
+    }
     arrangeLayoutMotion.frameId = requestAnimationFrame(step);
   } catch (error) {
     arrangeLayoutMotion = null;

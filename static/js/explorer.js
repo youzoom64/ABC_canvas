@@ -36,6 +36,23 @@ function arrangePipelineError(error) {
   };
 }
 
+var createChildRepeatContext = null;
+
+function clearCreateChildRepeatContext() {
+  createChildRepeatContext = null;
+}
+
+function createChildParentForSelection() {
+  const selected = nodeById(selectedId);
+  if (!selected) {
+    return null;
+  }
+  if (createChildRepeatContext?.childId === selected.id) {
+    return createChildRepeatContext.parentId ? nodeById(createChildRepeatContext.parentId) : null;
+  }
+  return selected;
+}
+
 function setArrangeMotionStartWorldLayout(node, layout) {
   node.layout = powanWorkspace.clampLayout({
     ...(node.layout || {}),
@@ -53,7 +70,7 @@ function setArrangeMotionStartNestedLayout(node, parentId, layout) {
   };
 }
 
-function runArrangeRenderAndAnimation({ reason, layoutMotionTargets, details = {}, onComplete = null }) {
+function runArrangeRenderAndAnimation({ reason, layoutMotionTargets, details = {}, onStart = null, onComplete = null }) {
   const targetCount = Array.isArray(layoutMotionTargets) ? layoutMotionTargets.length : 0;
   const payload = { ...details, targetCount };
   if (typeof syncArrangeMotionStartsFromVisibleElements === "function") {
@@ -70,7 +87,7 @@ function runArrangeRenderAndAnimation({ reason, layoutMotionTargets, details = {
     throw error;
   }
   try {
-    return animateArrangeLayoutTargets(layoutMotionTargets, { reason, onComplete });
+    return animateArrangeLayoutTargets(layoutMotionTargets, { reason, onStart, onComplete });
   } catch (error) {
     logEvent("error", "arrange-pipeline-animate-error", {
       reason,
@@ -801,7 +818,7 @@ var powanExplorer = {
           parentCount: parents.length,
           changedCount: changedIds.length,
         },
-        onComplete: () => animateViewportToRect(powanPlacement.parentWorldArea(parent), 64, {
+        onStart: () => animateViewportToRect(powanPlacement.parentWorldArea(parent), 64, {
           reason: `${reason}-viewport`,
         }),
       });
@@ -867,7 +884,7 @@ var powanExplorer = {
         parentCount: parents.length,
         changedCount: changedIds.length,
       },
-      onComplete: () => animateViewportToRect(powanPlacement.rootWorldArea(), 64, {
+      onStart: () => animateViewportToRect(powanPlacement.rootWorldArea(), 64, {
         reason: `${reason}-viewport`,
       }),
     });
@@ -1901,7 +1918,7 @@ var powanExplorer = {
     return worldTransition;
   },
   createChild() {
-    const parent = nodeById(selectedId);
+    const parent = createChildParentForSelection();
     this.recordHistory("create-child-node");
     if (parent) {
       this.touchPowan(parent.id, "create-child-parent-touch");
@@ -1916,6 +1933,10 @@ var powanExplorer = {
     doc.nodes.push(child);
     this.touchPowan(child.id, "create-child-touch");
     this.setSelected(child.id, "create-child-select");
+    createChildRepeatContext = {
+      childId: child.id,
+      parentId: parent?.id || null,
+    };
     if (parent) {
       this.attach(child.id, parent.id, { placement: "pack", recordHistory: false });
     } else {
