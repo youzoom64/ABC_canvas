@@ -5,7 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <title>ABC Canvas</title>
     <link rel="icon" href="data:," />
-    <link rel="stylesheet" href="/static/style.css?v=nested-preview-label-full-1" />
+    <link rel="stylesheet" href="/static/style.css?v=settings-autosave-1" />
   </head>
   <body>
     <header class="topbar">
@@ -25,6 +25,7 @@
         <button id="saveButton" type="button">Save</button>
         <button id="saveAsButton" type="button">Save As</button>
         <button id="settingsButton" type="button">Settings</button>
+        <button id="restartButton" class="restart-button" type="button">Restart</button>
         <button id="shutdownButton" class="shutdown-button" type="button">Exit</button>
         <span id="saveState" class="save-state">ready</span>
       </div>
@@ -65,6 +66,10 @@
               <input id="conversationTreeContextInput" type="checkbox" />
               全体像を見せる
             </label>
+            <label class="conversation-direct-code-context">
+              <input id="conversationDirectChildCodeInput" type="checkbox" />
+              直下コードを入れる
+            </label>
             <input
               id="conversationAutoSummaryTurnsInput"
               class="conversation-auto-summary-turns"
@@ -92,6 +97,7 @@
             <textarea id="conversationInput" rows="2" autocomplete="off" placeholder="ポワンに話しかける"></textarea>
           </div>
           <button id="cancelConversationButton" class="conversation-cancel-button" type="button" hidden>Cancel</button>
+          <button id="sendCodeConversationButton" class="conversation-code-send-button" type="button" title="自分のコードを書く">コード作成</button>
           <button id="sendConversationButton" type="submit">Send</button>
         </form>
       </section>
@@ -255,6 +261,6 @@
       <button id="pasteWorldMenuButton" type="button">ここに貼り付け</button>
     </nav>
 
-    <script src="/static/app.js?v=stable-nested-wheel-113"></script>
+    <script src="/static/app.js?v=stable-nested-wheel-120"></script>
   </body>
 </html>

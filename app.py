@@ -7,6 +7,7 @@ import json
 import os
 import random
 import subprocess
+import sys
 import threading
 import time
 from concurrent.futures import ThreadPoolExecutor, as_completed
@@ -35,6 +36,8 @@ DEFAULT_SOUND_ROOT = SETTING_ROOT / "sound"
 SETTINGS_PATH = SETTING_ROOT / "settings.json"
 LOG_ROOT = APP_ROOT / "logs"
 CLIENT_LOG_PATH = LOG_ROOT / "abc_canvas.log"
+RESTART_LOG_PATH = LOG_ROOT / "abc_canvas_restart.log"
+START_SCRIPT_PATH = APP_ROOT / "start_abc_canvas.bat"
 DEFAULT_FILE = "project.powan"
 SOUND_EXTENSIONS = {".mp3", ".wav", ".ogg", ".m4a", ".aac", ".flac"}
 INLINE_IMAGE_MAX_BYTES = 25 * 1024 * 1024
@@ -92,7 +95,7 @@ POWAN_WORK_EVENT_LOCK = threading.Lock()
 def reset_logs() -> None:
     LOG_ROOT.mkdir(parents=True, exist_ok=True)
     for path in LOG_ROOT.glob("*.log"):
-        if path.is_file():
+        if path.is_file() and path != RESTART_LOG_PATH:
             path.unlink()
     CLIENT_LOG_PATH.write_text("", encoding="utf-8")
 
@@ -238,6 +241,11 @@ class ShutdownRequest(BaseModel):
     reason: str = "frontend"
 
 
+class RestartRequest(BaseModel):
+    reason: str = "frontend"
+    visibleConsole: bool | None = None
+
+
 class SoundFolderRequest(BaseModel):
     soundRoot: str
 
@@ -284,6 +292,10 @@ class ConsoleLogSettingsRequest(BaseModel):
     consoleLogLevels: list[str] = Field(default_factory=list)
 
 
+class RestartVisibleConsoleSettingsRequest(BaseModel):
+    restartVisibleConsole: bool = False
+
+
 class ConversationMessageRequest(BaseModel):
     role: str = "user"
     text: str
@@ -292,6 +304,7 @@ class ConversationMessageRequest(BaseModel):
 class PowanCodexRequest(BaseModel):
     text: str
     includeMeaningTree: bool = False
+    includeDirectChildCode: bool = False
     attachments: list[dict[str, Any]] = Field(default_factory=list)
 
 
@@ -462,6 +475,180 @@ def shutdown_later(pids: list[int]) -> None:
         )
         return
     os._exit(0)
+
+
+def restart_helper_code() -> str:
+    return r"""
+import json
+import os
+import socket
+import subprocess
+import sys
+import time
+from pathlib import Path
+
+app_root = Path(os.environ["ABC_CANVAS_RESTART_ROOT"])
+python_exe = os.environ.get("ABC_CANVAS_RESTART_PYTHON") or sys.executable
+log_path = os.environ.get("ABC_CANVAS_RESTART_LOG")
+start_script = Path(os.environ.get("ABC_CANVAS_RESTART_START_SCRIPT") or "")
+visible_console = os.environ.get("ABC_CANVAS_RESTART_VISIBLE_CONSOLE") == "1"
+
+
+def helper_log(action, **details):
+    if not log_path:
+        return
+    entry = {
+        "time": time.strftime("%Y-%m-%dT%H:%M:%S"),
+        "action": action,
+        **details,
+    }
+    try:
+        with open(log_path, "a", encoding="utf-8") as handle:
+            handle.write(json.dumps(entry, ensure_ascii=False) + "\n")
+    except OSError:
+        pass
+
+
+try:
+    helper_log("restart-helper-start", appRoot=str(app_root), python=python_exe, visibleConsole=visible_console)
+    deadline = time.time() + 12
+    port_busy = True
+    while time.time() < deadline:
+        sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+        sock.settimeout(0.2)
+        try:
+            port_busy = sock.connect_ex(("127.0.0.1", 8790)) == 0
+        finally:
+            sock.close()
+        if not port_busy:
+            helper_log("restart-helper-port-free")
+            break
+        time.sleep(0.25)
+    if port_busy:
+        helper_log("restart-helper-port-wait-timeout")
+    time.sleep(0.25)
+    env = os.environ.copy()
+    env["PYTHONUTF8"] = "1"
+    env["PYTHONIOENCODING"] = "utf-8"
+    if visible_console and os.name == "nt" and start_script.exists():
+        process = subprocess.Popen(
+            [str(start_script)],
+            cwd=str(app_root),
+            env=env,
+            creationflags=getattr(subprocess, "CREATE_NEW_CONSOLE", 0),
+        )
+        helper_log("restart-helper-visible-cmd-started", pid=process.pid, startScript=str(start_script))
+    else:
+        flags = 0
+        if os.name == "nt":
+            flags = (
+                getattr(subprocess, "CREATE_NO_WINDOW", 0)
+                | getattr(subprocess, "CREATE_NEW_PROCESS_GROUP", 0)
+                | getattr(subprocess, "DETACHED_PROCESS", 0)
+            )
+        process = subprocess.Popen(
+            [python_exe, "-m", "uvicorn", "app:app", "--host", "127.0.0.1", "--port", "8790", "--no-access-log"],
+            cwd=str(app_root),
+            env=env,
+            stdin=subprocess.DEVNULL,
+            stdout=subprocess.DEVNULL,
+            stderr=subprocess.DEVNULL,
+            creationflags=flags,
+        )
+        helper_log("restart-helper-hidden-uvicorn-started", pid=process.pid)
+except Exception as exc:
+    helper_log("restart-helper-error", error=repr(exc))
+    raise
+"""
+
+
+def launch_restart_helper(visible_console: bool = False) -> int | None:
+    env = os.environ.copy()
+    env["PYTHONUTF8"] = "1"
+    env["PYTHONIOENCODING"] = "utf-8"
+    env["ABC_CANVAS_RESTART_ROOT"] = str(APP_ROOT)
+    env["ABC_CANVAS_RESTART_PYTHON"] = sys.executable
+    env["ABC_CANVAS_RESTART_LOG"] = str(RESTART_LOG_PATH)
+    env["ABC_CANVAS_RESTART_START_SCRIPT"] = str(START_SCRIPT_PATH)
+    env["ABC_CANVAS_RESTART_VISIBLE_CONSOLE"] = "1" if visible_console else "0"
+    flags = 0
+    if os.name == "nt":
+        flags = (
+            getattr(subprocess, "CREATE_NO_WINDOW", 0)
+            | getattr(subprocess, "CREATE_NEW_PROCESS_GROUP", 0)
+            | getattr(subprocess, "DETACHED_PROCESS", 0)
+        )
+    log_server_event(
+        "info",
+        "restart-helper-launch",
+        {
+            "python": sys.executable,
+            "appRoot": str(APP_ROOT),
+            "restartLog": str(RESTART_LOG_PATH),
+            "visibleConsole": bool(visible_console),
+            "startScript": str(START_SCRIPT_PATH),
+        },
+    )
+    try:
+        process = subprocess.Popen(
+            [sys.executable, "-c", restart_helper_code()],
+            cwd=str(APP_ROOT),
+            env=env,
+            stdin=subprocess.DEVNULL,
+            stdout=subprocess.DEVNULL,
+            stderr=subprocess.DEVNULL,
+            creationflags=flags,
+        )
+    except OSError as exc:
+        log_server_event(
+            "error",
+            "restart-helper-launch-failed",
+            {"error": str(exc), "restartLog": str(RESTART_LOG_PATH), "visibleConsole": bool(visible_console)},
+        )
+        return None
+    log_server_event(
+        "info",
+        "restart-helper-launched",
+        {"helperPid": process.pid, "restartLog": str(RESTART_LOG_PATH), "visibleConsole": bool(visible_console)},
+    )
+    return process.pid
+
+
+def kill_pids_later(pids: list[int], *, tree: bool) -> None:
+    time.sleep(0.35)
+    if os.name == "nt":
+        args = ["taskkill"]
+        for pid in pids:
+            args.extend(["/PID", str(pid)])
+        if tree:
+            args.append("/T")
+        args.append("/F")
+        log_server_event("info", "restart-kill-targets", {"targetPids": pids, "tree": tree})
+        subprocess.Popen(
+            args,
+            stdout=subprocess.DEVNULL,
+            stderr=subprocess.DEVNULL,
+            creationflags=getattr(subprocess, "CREATE_NO_WINDOW", 0),
+        )
+        return
+    os._exit(0)
+
+
+def restart_later(pids: list[int], visible_console: bool = False) -> None:
+    helper_pid = launch_restart_helper(visible_console=visible_console)
+    if helper_pid is None:
+        log_server_event(
+            "error",
+            "restart-aborted",
+            {"reason": "helper launch failed", "targetPids": pids, "visibleConsole": bool(visible_console)},
+        )
+        return
+    log_server_event(
+        "info",
+        "restart-kill-old-server",
+        {"helperPid": helper_pid, "targetPids": pids, "visibleConsole": bool(visible_console)},
+    )
+    kill_pids_later(pids, tree=False)
 
 
 def safe_project_name(name: str) -> str:
@@ -847,6 +1034,7 @@ def load_app_settings() -> dict[str, Any]:
         "arrangeWorldParentSpacing": clamp_arrange_spacing(data.get("arrangeWorldParentSpacing", data.get("arrangeSpacing", DEFAULT_ARRANGE_SPACING))),
         "arrangeWorldParentSize": clamp_arrange_size(data.get("arrangeWorldParentSize", data.get("arrangeSize", DEFAULT_ARRANGE_SIZE))),
         "nestedLayerScale": clamp_nested_layer_scale(data.get("nestedLayerScale", 0.5)),
+        "restartVisibleConsole": bool(data.get("restartVisibleConsole", False)),
         "consoleLogLevels": normalize_console_log_levels(data.get("consoleLogLevels")),
     }
 
@@ -898,6 +1086,7 @@ def setting_payload() -> dict[str, Any]:
         "arrangeWorldParentSpacing": settings["arrangeWorldParentSpacing"],
         "arrangeWorldParentSize": settings["arrangeWorldParentSize"],
         "nestedLayerScale": settings["nestedLayerScale"],
+        "restartVisibleConsole": settings["restartVisibleConsole"],
         "consoleLogLevels": settings["consoleLogLevels"],
         "sounds": sounds,
     }
@@ -1200,6 +1389,15 @@ def save_console_log_levels(request: ConsoleLogSettingsRequest) -> dict[str, Any
     return setting_payload()
 
 
+@app.post("/api/settings/restart-visible-console")
+def save_restart_visible_console(request: RestartVisibleConsoleSettingsRequest) -> dict[str, Any]:
+    settings = load_app_settings()
+    settings["restartVisibleConsole"] = bool(request.restartVisibleConsole)
+    save_app_settings(settings)
+    log_server_event("info", "restart-visible-console-updated", {"restartVisibleConsole": settings["restartVisibleConsole"]})
+    return setting_payload()
+
+
 @app.get("/api/settings/sounds")
 def list_sounds() -> dict[str, list[dict[str, str]]]:
     return {"sounds": list_sound_files(current_sound_root())}
@@ -1416,6 +1614,7 @@ def run_powan_codex_message(
     file: str,
     text: str,
     include_meaning_tree: bool = False,
+    include_direct_child_code: bool = False,
     attachments: list[dict[str, Any]] | None = None,
     source: str = "conversation",
     sender_node_id: str | None = None,
@@ -1441,6 +1640,7 @@ def run_powan_codex_message(
             "textPreview": compact_console_text(text),
             "messageLength": len(text.strip()),
             "includeMeaningTree": bool(include_meaning_tree),
+            "includeDirectChildCode": bool(include_direct_child_code),
             "attachmentCount": len(materialized_attachments),
         },
     )
@@ -1467,6 +1667,7 @@ def run_powan_codex_message(
             "hasThread": bool(conversation.get("codexThreadId")),
             "messageLength": len(text.strip()),
             "includeMeaningTree": bool(include_meaning_tree),
+            "includeDirectChildCode": bool(include_direct_child_code),
             "attachmentCount": len(materialized_attachments),
             "attachmentPathCount": sum(1 for attachment in materialized_attachments if isinstance(attachment, dict) and attachment.get("path")),
             "codexSandbox": codex_sandbox,
@@ -1486,6 +1687,7 @@ def run_powan_codex_message(
             "textPreview": compact_console_text(text),
             "hasThread": bool(conversation.get("codexThreadId")),
             "codexSandbox": codex_sandbox,
+            "includeDirectChildCode": bool(include_direct_child_code),
         },
     )
     try:
@@ -1499,6 +1701,7 @@ def run_powan_codex_message(
             conversation=conversation,
             messages=messages,
             include_meaning_tree=bool(include_meaning_tree),
+            include_direct_child_code=bool(include_direct_child_code),
             attachments=materialized_attachments,
             codex_sandbox=codex_sandbox,
         )
@@ -2003,6 +2206,7 @@ def talk_to_powan_with_codex(
         file=file,
         text=request.text,
         include_meaning_tree=bool(request.includeMeaningTree),
+        include_direct_child_code=bool(request.includeDirectChildCode),
         attachments=request.attachments,
         source="conversation",
     )
@@ -2382,3 +2586,22 @@ def shutdown_app(request: ShutdownRequest) -> dict[str, Any]:
     log_server_event("info", "shutdown-requested", {"reason": request.reason, "targetPids": pids})
     threading.Thread(target=shutdown_later, args=(pids,), daemon=True).start()
     return {"status": "shutting down", "targetPids": pids}
+
+
+@app.post("/api/restart")
+def restart_app(request: RestartRequest) -> dict[str, Any]:
+    pids = shutdown_target_pids()
+    settings = load_app_settings()
+    visible_console = bool(settings["restartVisibleConsole"] if request.visibleConsole is None else request.visibleConsole)
+    log_server_event(
+        "info",
+        "restart-requested",
+        {
+            "reason": request.reason,
+            "targetPids": pids,
+            "visibleConsole": visible_console,
+            "visibleConsoleSource": "settings" if request.visibleConsole is None else "request",
+        },
+    )
+    threading.Thread(target=restart_later, args=(pids, visible_console), daemon=True).start()
+    return {"status": "restarting", "targetPids": pids, "visibleConsole": visible_console}

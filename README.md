@@ -148,21 +148,6 @@ POST /api/ai/powans/{node_id}/children
 POST /api/ai/powans/{node_id}/actions/tree
 ```
 
-## 公開前の注意
-
-次の場所には、会話履歴、添付、個人設定、作業中データが入ることがあります。
-
-```text
-powan_work/
-logs/
-setting/settings.json
-.playwright-mcp/
-tmp_*/
-__pycache__/
-```
-
-配布やGitHub公開前に中身を確認してください。
-
 ## 詳しい説明
 
 長い旧READMEはここに残しています。

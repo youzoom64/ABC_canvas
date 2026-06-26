@@ -98,6 +98,18 @@ button:disabled {
   font-weight: 750;
 }
 
+.restart-button {
+  border-color: rgba(67, 132, 157, 0.34);
+  background: rgba(236, 250, 255, 0.86);
+  color: #28596b;
+  font-weight: 750;
+}
+
+.restart-button:hover {
+  background: #f1fbff;
+  box-shadow: 0 6px 18px rgba(50, 126, 160, 0.14);
+}
+
 .shutdown-button:hover {
   background: #fff1f1;
   box-shadow: 0 6px 18px rgba(150, 58, 58, 0.14);
@@ -331,12 +343,12 @@ textarea {
 }
 
 .settings-folder-row {
-  grid-template-columns: minmax(0, 1fr) auto auto auto;
+  grid-template-columns: minmax(0, 1fr) auto auto;
 }
 
 .settings-sound-row,
 .settings-volume-row {
-  grid-template-columns: minmax(0, 1fr) auto;
+  grid-template-columns: minmax(0, 1fr);
 }
 
 .settings-range-row {
@@ -356,7 +368,7 @@ textarea {
 }
 
 .settings-action-row {
-  grid-template-columns: minmax(0, 1fr) auto;
+  display: none;
 }
 
 .settings-folder-row input,
@@ -907,7 +919,8 @@ body.resizing-conversation {
 }
 
 .conversation-auto-summary,
-.conversation-tree-context {
+.conversation-tree-context,
+.conversation-direct-code-context {
   display: inline-flex;
   align-items: center;
   gap: 4px;
@@ -1163,7 +1176,7 @@ body.resizing-conversation {
 
 .conversation-form {
   display: grid;
-  grid-template-columns: minmax(0, 1fr) auto auto;
+  grid-template-columns: minmax(0, 1fr) auto auto auto;
   gap: 8px;
   padding: 10px 12px 12px;
   border-top: 1px solid rgba(95, 157, 185, 0.16);
@@ -1201,6 +1214,12 @@ body.resizing-conversation {
 .conversation-cancel-button {
   border-color: rgba(168, 74, 74, 0.38);
   color: #8a3030;
+}
+
+.conversation-code-send-button {
+  border-color: rgba(67, 132, 157, 0.34);
+  color: #28596b;
+  background: rgba(232, 249, 255, 0.84);
 }
 
 .conversation-form input {

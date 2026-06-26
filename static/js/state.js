@@ -49,6 +49,7 @@ var panelArrangeWorldParentSpacingValue = document.querySelector("#panelArrangeW
 var panelArrangeWorldParentSizeInput = document.querySelector("#panelArrangeWorldParentSizeInput");
 var panelArrangeWorldParentSizeValue = document.querySelector("#panelArrangeWorldParentSizeValue");
 var shutdownButton = document.querySelector("#shutdownButton");
+var restartButton = document.querySelector("#restartButton");
 var saveState = document.querySelector("#saveState");
 var panel = document.querySelector("#panel");
 var panelToggleButton = document.querySelector("#panelToggleButton");
@@ -62,6 +63,7 @@ var conversationForm = document.querySelector("#conversationForm");
 var conversationAttachmentTray = document.querySelector("#conversationAttachmentTray");
 var conversationInput = document.querySelector("#conversationInput");
 var sendConversationButton = document.querySelector("#sendConversationButton");
+var sendCodeConversationButton = document.querySelector("#sendCodeConversationButton");
 var cancelConversationButton = document.querySelector("#cancelConversationButton");
 var newConversationButton = document.querySelector("#newConversationButton");
 var summarizeConversationButton = document.querySelector("#summarizeConversationButton");
@@ -69,6 +71,7 @@ var conversationSessionSelect = document.querySelector("#conversationSessionSele
 var conversationAutoSummaryInput = document.querySelector("#conversationAutoSummaryInput");
 var conversationAutoSummaryTurnsInput = document.querySelector("#conversationAutoSummaryTurnsInput");
 var conversationTreeContextInput = document.querySelector("#conversationTreeContextInput");
+var conversationDirectChildCodeInput = document.querySelector("#conversationDirectChildCodeInput");
 var conversationFontDecreaseButton = document.querySelector("#conversationFontDecreaseButton");
 var conversationFontIncreaseButton = document.querySelector("#conversationFontIncreaseButton");
 var conversationFontSizeValue = document.querySelector("#conversationFontSizeValue");
@@ -188,6 +191,7 @@ var appSettings = {
   conversationSoundVolume: 0.55,
   inputSound: "",
   inputSoundVolume: 0.55,
+  restartVisibleConsole: false,
   autoSummaryEnabled: true,
   autoSummaryTurns: 50,
   arrangeSpacing: 1,
@@ -553,6 +557,7 @@ function loadStoredSettings() {
   appSettings.conversationSoundVolume = normalizeConversationSoundVolume(stored.conversationSoundVolume);
   appSettings.inputSound = typeof stored.inputSound === "string" ? stored.inputSound : "";
   appSettings.inputSoundVolume = normalizeConversationSoundVolume(stored.inputSoundVolume);
+  appSettings.restartVisibleConsole = Boolean(stored.restartVisibleConsole);
   appSettings.autoSummaryEnabled = stored.autoSummaryEnabled !== false;
   appSettings.autoSummaryTurns = normalizeConversationAutoSummaryTurns(stored.autoSummaryTurns);
   applyArrangeSettings(stored);

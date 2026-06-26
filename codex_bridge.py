@@ -79,6 +79,7 @@ class CodexPowanBridge:
         conversation: dict[str, Any],
         messages: list[dict[str, Any]],
         include_meaning_tree: bool = False,
+        include_direct_child_code: bool = False,
         attachments: list[dict[str, Any]] | None = None,
         codex_sandbox: str = "danger-full-access",
     ) -> CodexRunResult:
@@ -91,6 +92,7 @@ class CodexPowanBridge:
             conversation=conversation,
             messages=messages,
             include_meaning_tree=include_meaning_tree,
+            include_direct_child_code=include_direct_child_code,
             attachments=attachments,
         )
         prompt = self.render_prompt(prompt_payload)
@@ -309,6 +311,7 @@ class CodexPowanBridge:
         conversation: dict[str, Any],
         messages: list[dict[str, Any]],
         include_meaning_tree: bool = False,
+        include_direct_child_code: bool = False,
         attachments: list[dict[str, Any]] | None = None,
     ) -> dict[str, Any]:
         return build_powan_context(
@@ -320,16 +323,20 @@ class CodexPowanBridge:
             messages=messages,
             user_text=user_text,
             include_meaning_tree=include_meaning_tree,
+            include_direct_child_code=include_direct_child_code,
             attachments=attachments,
         )
 
     def render_prompt(self, payload: dict[str, Any]) -> str:
         context_json = json.dumps(payload, ensure_ascii=False, indent=2)
+        code_instruction = ""
+        if payload.get("codeWriteMode"):
+            code_instruction = "今回は自分のコードを書くための送信です。directChildCode に入っている直下ポワンのコードを先に読んで、それを材料にしてください。\n"
         return f"""あなたはポワンです。
 このポワンに込められた意味として話しましょう。
 返事はこのポワン本人として自然に返してください。
 attachments に path がある時は、そのファイルをこのプロジェクト内の添付として読めます。
-現在のポワン文脈:
+{code_instruction}現在のポワン文脈:
 ```json
 {context_json}
 ```

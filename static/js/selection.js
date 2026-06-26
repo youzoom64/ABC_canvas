@@ -114,10 +114,25 @@ function selectAllCanvasNodes(reason = "canvas-select-all") {
 }
 
 function selectSelectedNodeChildrenOrCanvas(reason = "keyboard-canvas-select-all") {
-  const parent = nodeById(selectedId);
-  const childIds = parent && powanExplorer?.childrenOf
-    ? powanExplorer.childrenOf(parent).map((child) => child.id)
-    : [];
+  const parents = selectedNodeIds().map((id) => nodeById(id)).filter(Boolean);
+  const childIds = uniqueActiveNodeIds(
+    parents.flatMap((parent) => (
+      powanExplorer?.childrenOf ? powanExplorer.childrenOf(parent).map((child) => child.id) : []
+    )),
+  );
+  if (parents.length > 1) {
+    const selected = applySelection(childIds, {
+      primaryId: childIds[0] || null,
+      anchorId: childIds[0] || null,
+      reason: `${reason}-selected-children`,
+      updatePanel: childIds.length > 0,
+    });
+    logEvent("info", "keyboard-selected-children-complete", {
+      parentIds: parents.map((parent) => parent.id),
+      count: selected.length,
+    });
+    return selected;
+  }
   if (!childIds.length) {
     return selectAllCanvasNodes(reason);
   }
@@ -127,7 +142,7 @@ function selectSelectedNodeChildrenOrCanvas(reason = "keyboard-canvas-select-all
     reason: `${reason}-children`,
   });
   logEvent("info", "keyboard-child-select-all-complete", {
-    parentId: parent.id,
+    parentIds: parents.map((parent) => parent.id),
     count: selected.length,
   });
   return selected;

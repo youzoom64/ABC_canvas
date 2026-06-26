@@ -908,13 +908,17 @@ async function loadAllConversationSessions(nodeId) {
   }
 }
 
-async function requestPowanCodexReply(nodeId, text, { signal = null, includeMeaningTree = false, attachments = [] } = {}) {
+async function requestPowanCodexReply(
+  nodeId,
+  text,
+  { signal = null, includeMeaningTree = false, includeDirectChildCode = false, attachments = [] } = {},
+) {
   const response = await fetch(
     `/api/conversations/${encodeURIComponent(nodeId)}/codex?project=${encodeURIComponent(projectName)}&file=${encodeURIComponent(documentName)}`,
     {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ text, includeMeaningTree, attachments }),
+      body: JSON.stringify({ text, includeMeaningTree, includeDirectChildCode, attachments }),
       signal,
     },
   );
@@ -1041,6 +1045,7 @@ async function refreshConversationSounds() {
     appSettings.conversationSoundVolume = normalizeConversationSoundVolume(data.conversationSoundVolume);
     appSettings.inputSound = data.inputSound || "";
     appSettings.inputSoundVolume = normalizeConversationSoundVolume(data.inputSoundVolume);
+    appSettings.restartVisibleConsole = Boolean(data.restartVisibleConsole);
     appSettings.autoSummaryEnabled = data.autoSummaryEnabled !== false;
     appSettings.autoSummaryTurns = normalizeConversationAutoSummaryTurns(data.autoSummaryTurns);
     applyArrangeSettings(data);
@@ -1058,6 +1063,7 @@ async function refreshConversationSounds() {
       volume: appSettings.conversationSoundVolume,
       inputSound: appSettings.inputSound,
       inputVolume: appSettings.inputSoundVolume,
+      restartVisibleConsole: appSettings.restartVisibleConsole,
       autoSummaryEnabled: appSettings.autoSummaryEnabled,
       autoSummaryTurns: appSettings.autoSummaryTurns,
       soundRoot: data.soundRoot,
@@ -1340,6 +1346,9 @@ function setConversationSending(enabled) {
   const hasNode = Boolean(conversationNodeId);
   const canEdit = conversationCanEditSession();
   sendConversationButton.disabled = !hasNode || conversationSending || !canEdit;
+  if (sendCodeConversationButton) {
+    sendCodeConversationButton.disabled = !hasNode || conversationSending || !canEdit;
+  }
   conversationInput.disabled = !hasNode || conversationSending || !canEdit;
   if (newConversationButton) {
     newConversationButton.disabled = !hasNode || conversationSending;
@@ -1435,13 +1444,19 @@ function shortWorkText(value, limit = 24) {
   return [...String(value || "").replace(/\s+/g, " ").trim()].slice(0, limit).join("");
 }
 
-function conversationWaitingText(node, { includeMeaningTree = false, attachmentCount = 0, status = "送信中", workText = "" } = {}) {
+function conversationWaitingText(
+  node,
+  { includeMeaningTree = false, includeDirectChildCode = false, attachmentCount = 0, status = "送信中", workText = "" } = {},
+) {
   const parts = [`${shortConversationTargetName(node)}へ${status}`];
   if (workText) {
     parts.push(shortWorkText(workText));
   }
   if (includeMeaningTree) {
     parts.push("全体");
+  }
+  if (includeDirectChildCode) {
+    parts.push("直下コード");
   }
   if (attachmentCount > 0) {
     parts.push(`添付${attachmentCount}`);
@@ -2287,25 +2302,27 @@ if (conversationPanel) {
     addConversationAttachmentsFromDrop(event);
   });
 }
-conversationForm.addEventListener("submit", async (event) => {
-  event.preventDefault();
+async function sendConversation({ forceDirectChildCode = false } = {}) {
   const node = nodeById(conversationNodeId);
   const text = conversationInput.value.trim();
+  const includeDirectChildCode = forceDirectChildCode || Boolean(conversationDirectChildCodeInput?.checked);
+  const effectiveText = text || (forceDirectChildCode ? "自分のコードを書いて" : "");
   const attachmentPayloads = conversationPendingAttachments.map(conversationPayloadAttachment);
-  if (!node || (!text && !attachmentPayloads.length) || sendConversationButton.disabled) {
+  if (!node || (!effectiveText && !attachmentPayloads.length) || conversationSending || !conversationCanEditSession()) {
     return;
   }
   const includeMeaningTree = Boolean(conversationTreeContextInput?.checked);
   const displayAttachments = [...conversationPendingAttachments];
-  appendConversationMessage("user", text || "添付を渡す", { forceFollow: true, attachments: displayAttachments });
+  appendConversationMessage("user", effectiveText || "添付を渡す", { forceFollow: true, attachments: displayAttachments });
   conversationInput.value = "";
   conversationPendingAttachments = [];
   renderConversationAttachmentTray();
   rememberConversationTabState(activeConversationTabId);
   logEvent("debug", "conversation-send", {
     nodeId: node.id,
-    length: text.length,
+    length: effectiveText.length,
     includeMeaningTree,
+    includeDirectChildCode,
     attachmentCount: attachmentPayloads.length,
     attachmentPathCount: attachmentPayloads.filter((attachment) => attachment.pathAvailable).length,
   });
@@ -2316,9 +2333,10 @@ conversationForm.addEventListener("submit", async (event) => {
   setConversationSending(true);
   const waitingText = conversationWaitingText(node, {
     includeMeaningTree,
+    includeDirectChildCode,
     attachmentCount: attachmentPayloads.length,
     status: "送信中",
-    workText: text || (attachmentPayloads.length ? "添付を渡す" : ""),
+    workText: effectiveText || (attachmentPayloads.length ? "添付を渡す" : ""),
   });
   const pendingMessage = appendConversationMessage("system", waitingText, { forceFollow: true });
   conversationPendingMessage = pendingMessage;
@@ -2333,9 +2351,10 @@ conversationForm.addEventListener("submit", async (event) => {
       logEvent("debug", "conversation-work-events-start-error", { message: error.message });
     }
     startConversationWorkPolling(workEventStartSequence);
-    const data = await requestPowanCodexReply(node.id, text, {
+    const data = await requestPowanCodexReply(node.id, effectiveText, {
       signal: controller.signal,
       includeMeaningTree,
+      includeDirectChildCode,
       attachments: attachmentPayloads,
     });
     stopInputWaitingSound("conversation-reply-received");
@@ -2408,7 +2427,17 @@ conversationForm.addEventListener("submit", async (event) => {
     }
     conversationCancelRequested = false;
   }
+}
+
+conversationForm.addEventListener("submit", (event) => {
+  event.preventDefault();
+  sendConversation();
 });
+if (sendCodeConversationButton) {
+  sendCodeConversationButton.addEventListener("click", () => {
+    sendConversation({ forceDirectChildCode: true });
+  });
+}
 titleInput.addEventListener("blur", () => powanExplorer.endHistoryGroup());
 bodyInput.addEventListener("blur", () => powanExplorer.endHistoryGroup());
 powanKindInput.addEventListener("blur", () => powanExplorer.endHistoryGroup());

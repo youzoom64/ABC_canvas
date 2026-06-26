@@ -30,6 +30,8 @@ const arrangeWorldParentSpacingValue = document.querySelector("#arrangeWorldPare
 const arrangeWorldParentSizeInput = document.querySelector("#arrangeWorldParentSizeInput");
 const arrangeWorldParentSizeValue = document.querySelector("#arrangeWorldParentSizeValue");
 const saveArrangeButton = document.querySelector("#saveArrangeButton");
+const restartVisibleConsoleInput = document.querySelector("#restartVisibleConsoleInput");
+const saveRestartVisibleConsoleButton = document.querySelector("#saveRestartVisibleConsoleButton");
 const consoleLogLevelInputs = [...document.querySelectorAll("#consoleLogLevelInputs input[type='checkbox']")];
 const saveConsoleLogLevelsButton = document.querySelector("#saveConsoleLogLevelsButton");
 const settingsStatus = document.querySelector("#settingsStatus");
@@ -37,9 +39,26 @@ const settingsStatus = document.querySelector("#settingsStatus");
 const settingsParams = new URLSearchParams(window.location.search);
 const settingsProject = settingsParams.get("project") || "";
 let currentSettingsData = {};
+const autoSaveTimers = new Map();
 
 function setSettingsStatus(text) {
   settingsStatus.textContent = text;
+}
+
+function reportSettingsError(error) {
+  setSettingsStatus(error.message);
+  console.error(error);
+}
+
+function autoSave(key, saveFn, delay = 0) {
+  window.clearTimeout(autoSaveTimers.get(key));
+  autoSaveTimers.set(
+    key,
+    window.setTimeout(() => {
+      autoSaveTimers.delete(key);
+      saveFn().catch(reportSettingsError);
+    }, delay),
+  );
 }
 
 function canvasBackUrl() {
@@ -132,6 +151,7 @@ function renderSettings(data) {
   renderInputVolume(data.inputSoundVolume);
   codexSandboxSelect.value = data.codexSandbox || "danger-full-access";
   renderArrange(data);
+  restartVisibleConsoleInput.checked = Boolean(data.restartVisibleConsole);
   renderConsoleLogLevels(data);
 }
 
@@ -299,15 +319,15 @@ async function saveArrange() {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
-        arrangeSpacing: normalizeRangeScale(currentSettingsData.arrangeChildSpacing ?? currentSettingsData.arrangeSpacing, 1, 0.3, 3.0),
-        arrangeSize: normalizeRangeScale(currentSettingsData.arrangeChildSize ?? currentSettingsData.arrangeSize, 1, 0.3, 2.5),
+        arrangeSpacing: normalizeRangeScale(arrangeChildSpacingInput?.value ?? currentSettingsData.arrangeChildSpacing ?? currentSettingsData.arrangeSpacing, 1, 0.3, 3.0),
+        arrangeSize: normalizeRangeScale(arrangeChildSizeInput?.value ?? currentSettingsData.arrangeChildSize ?? currentSettingsData.arrangeSize, 1, 0.3, 2.5),
         arrangeResizeParents: arrangeResizeParentsInput.checked,
         arrangeRecursive: arrangeRecursiveInput.checked,
-        arrangeChildSpacing: normalizeRangeScale(currentSettingsData.arrangeChildSpacing ?? currentSettingsData.arrangeSpacing, 1, 0.3, 3.0),
-        arrangeChildSize: normalizeRangeScale(currentSettingsData.arrangeChildSize ?? currentSettingsData.arrangeSize, 1, 0.3, 2.5),
-        arrangeNestedChildSize: normalizeRangeScale(currentSettingsData.arrangeNestedChildSize ?? currentSettingsData.arrangeSize, 1, 0.3, 2.5),
-        arrangeWorldParentSpacing: normalizeRangeScale(currentSettingsData.arrangeWorldParentSpacing ?? currentSettingsData.arrangeSpacing, 1, 0.3, 3.0),
-        arrangeWorldParentSize: normalizeRangeScale(currentSettingsData.arrangeWorldParentSize ?? currentSettingsData.arrangeSize, 1, 0.3, 2.5),
+        arrangeChildSpacing: normalizeRangeScale(arrangeChildSpacingInput?.value ?? currentSettingsData.arrangeChildSpacing ?? currentSettingsData.arrangeSpacing, 1, 0.3, 3.0),
+        arrangeChildSize: normalizeRangeScale(arrangeChildSizeInput?.value ?? currentSettingsData.arrangeChildSize ?? currentSettingsData.arrangeSize, 1, 0.3, 2.5),
+        arrangeNestedChildSize: normalizeRangeScale(arrangeNestedChildSizeInput?.value ?? currentSettingsData.arrangeNestedChildSize ?? currentSettingsData.arrangeSize, 1, 0.3, 2.5),
+        arrangeWorldParentSpacing: normalizeRangeScale(arrangeWorldParentSpacingInput?.value ?? currentSettingsData.arrangeWorldParentSpacing ?? currentSettingsData.arrangeSpacing, 1, 0.3, 3.0),
+        arrangeWorldParentSize: normalizeRangeScale(arrangeWorldParentSizeInput?.value ?? currentSettingsData.arrangeWorldParentSize ?? currentSettingsData.arrangeSize, 1, 0.3, 2.5),
       }),
     });
     if (!response.ok) {
@@ -341,6 +361,26 @@ async function saveConsoleLogLevels() {
   }
 }
 
+async function saveRestartVisibleConsole() {
+  saveRestartVisibleConsoleButton.disabled = true;
+  setSettingsStatus("saving restart");
+  try {
+    const response = await fetch("/api/settings/restart-visible-console", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ restartVisibleConsole: restartVisibleConsoleInput.checked }),
+    });
+    if (!response.ok) {
+      const error = await response.json().catch(() => ({ detail: "save failed" }));
+      throw new Error(error.detail || "save failed");
+    }
+    renderSettings(await response.json());
+    setSettingsStatus("restart saved");
+  } finally {
+    saveRestartVisibleConsoleButton.disabled = false;
+  }
+}
+
 settingsBackButton.textContent = settingsProject ? "Canvas" : "Projects";
 settingsBackButton.addEventListener("click", () => {
   window.location.href = canvasBackUrl();
@@ -353,6 +393,15 @@ saveSoundFolderButton.addEventListener("click", () => {
     setSettingsStatus(error.message);
     console.error(error);
   });
+});
+soundFolderInput.addEventListener("change", () => {
+  autoSave("soundFolder", saveSoundFolder);
+});
+soundFolderInput.addEventListener("keydown", (event) => {
+  if (event.key === "Enter") {
+    event.preventDefault();
+    autoSave("soundFolder", saveSoundFolder);
+  }
 });
 browseSoundFolderButton.addEventListener("click", () => {
   browseSoundFolder().catch((error) => {
@@ -372,8 +421,15 @@ saveConversationSoundButton.addEventListener("click", () => {
     console.error(error);
   });
 });
+settingsSoundSelect.addEventListener("change", () => {
+  autoSave("conversationSound", saveConversationSound);
+});
 soundVolumeInput.addEventListener("input", () => {
   renderVolume(soundVolumeInput.value);
+  autoSave("conversationSoundVolume", saveSoundVolume, 350);
+});
+soundVolumeInput.addEventListener("change", () => {
+  autoSave("conversationSoundVolume", saveSoundVolume);
 });
 saveSoundVolumeButton.addEventListener("click", () => {
   saveSoundVolume().catch((error) => {
@@ -387,8 +443,15 @@ saveInputSoundButton.addEventListener("click", () => {
     console.error(error);
   });
 });
+settingsInputSoundSelect.addEventListener("change", () => {
+  autoSave("inputSound", saveInputSound);
+});
 inputSoundVolumeInput.addEventListener("input", () => {
   renderInputVolume(inputSoundVolumeInput.value);
+  autoSave("inputSoundVolume", saveInputSoundVolume, 350);
+});
+inputSoundVolumeInput.addEventListener("change", () => {
+  autoSave("inputSoundVolume", saveInputSoundVolume);
 });
 saveInputSoundVolumeButton.addEventListener("click", () => {
   saveInputSoundVolume().catch((error) => {
@@ -402,31 +465,60 @@ saveCodexSandboxButton.addEventListener("click", () => {
     console.error(error);
   });
 });
+codexSandboxSelect.addEventListener("change", () => {
+  autoSave("codexSandbox", saveCodexSandbox);
+});
 if (arrangeChildSpacingInput) {
   arrangeChildSpacingInput.addEventListener("input", () => {
     arrangeChildSpacingValue.textContent = normalizeRangeScale(arrangeChildSpacingInput.value, 1, 0.3, 3.0).toFixed(2);
+    autoSave("arrange", saveArrange, 350);
+  });
+  arrangeChildSpacingInput.addEventListener("change", () => {
+    autoSave("arrange", saveArrange);
   });
 }
 if (arrangeChildSizeInput) {
   arrangeChildSizeInput.addEventListener("input", () => {
     arrangeChildSizeValue.textContent = normalizeRangeScale(arrangeChildSizeInput.value, 1, 0.3, 2.5).toFixed(2);
+    autoSave("arrange", saveArrange, 350);
+  });
+  arrangeChildSizeInput.addEventListener("change", () => {
+    autoSave("arrange", saveArrange);
   });
 }
 if (arrangeNestedChildSizeInput) {
   arrangeNestedChildSizeInput.addEventListener("input", () => {
     arrangeNestedChildSizeValue.textContent = normalizeRangeScale(arrangeNestedChildSizeInput.value, 1, 0.3, 2.5).toFixed(2);
+    autoSave("arrange", saveArrange, 350);
+  });
+  arrangeNestedChildSizeInput.addEventListener("change", () => {
+    autoSave("arrange", saveArrange);
   });
 }
 if (arrangeWorldParentSpacingInput) {
   arrangeWorldParentSpacingInput.addEventListener("input", () => {
     arrangeWorldParentSpacingValue.textContent = normalizeRangeScale(arrangeWorldParentSpacingInput.value, 1, 0.3, 3.0).toFixed(2);
+    autoSave("arrange", saveArrange, 350);
+  });
+  arrangeWorldParentSpacingInput.addEventListener("change", () => {
+    autoSave("arrange", saveArrange);
   });
 }
 if (arrangeWorldParentSizeInput) {
   arrangeWorldParentSizeInput.addEventListener("input", () => {
     arrangeWorldParentSizeValue.textContent = normalizeRangeScale(arrangeWorldParentSizeInput.value, 1, 0.3, 2.5).toFixed(2);
+    autoSave("arrange", saveArrange, 350);
+  });
+  arrangeWorldParentSizeInput.addEventListener("change", () => {
+    autoSave("arrange", saveArrange);
   });
 }
+arrangeResizeParentsInput.addEventListener("change", () => {
+  autoSave("arrange", saveArrange);
+});
+arrangeRecursiveInput.addEventListener("change", () => {
+  autoSave("arrange", saveArrange);
+});
 saveArrangeButton.addEventListener("click", () => {
   saveArrange().catch((error) => {
     setSettingsStatus(error.message);
@@ -438,6 +530,20 @@ saveConsoleLogLevelsButton.addEventListener("click", () => {
     setSettingsStatus(error.message);
     console.error(error);
   });
+});
+for (const input of consoleLogLevelInputs) {
+  input.addEventListener("change", () => {
+    autoSave("consoleLogLevels", saveConsoleLogLevels);
+  });
+}
+saveRestartVisibleConsoleButton.addEventListener("click", () => {
+  saveRestartVisibleConsole().catch((error) => {
+    setSettingsStatus(error.message);
+    console.error(error);
+  });
+});
+restartVisibleConsoleInput.addEventListener("change", () => {
+  autoSave("restartVisibleConsole", saveRestartVisibleConsole);
 });
 
 loadSettings().catch((error) => {

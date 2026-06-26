@@ -5,7 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <title>ABC Canvas Settings</title>
     <link rel="icon" href="data:," />
-    <link rel="stylesheet" href="/static/style.css?v=arrange-settings-1" />
+    <link rel="stylesheet" href="/static/style.css?v=settings-autosave-1" />
   </head>
   <body class="settings-page">
     <header class="topbar">
@@ -34,7 +34,7 @@
           <div class="settings-folder-row">
             <input id="soundFolderInput" type="text" autocomplete="off" spellcheck="false" />
             <button id="browseSoundFolderButton" type="button">Browse...</button>
-            <button id="saveSoundFolderButton" type="button">Save Folder</button>
+            <button id="saveSoundFolderButton" type="button" hidden>Save Folder</button>
             <button id="refreshSoundButton" type="button">Refresh</button>
           </div>
         </section>
@@ -48,7 +48,7 @@
             <select id="settingsSoundSelect">
               <option value="">なし</option>
             </select>
-            <button id="saveConversationSoundButton" type="button">Save Sound</button>
+            <button id="saveConversationSoundButton" type="button" hidden>Save Sound</button>
           </div>
         </section>
 
@@ -59,7 +59,7 @@
           </div>
           <div class="settings-volume-row">
             <input id="soundVolumeInput" type="range" min="0" max="1" step="0.01" />
-            <button id="saveSoundVolumeButton" type="button">Save Volume</button>
+            <button id="saveSoundVolumeButton" type="button" hidden>Save Volume</button>
           </div>
         </section>
 
@@ -72,7 +72,7 @@
             <select id="settingsInputSoundSelect">
               <option value="">なし</option>
             </select>
-            <button id="saveInputSoundButton" type="button">Save Sound</button>
+            <button id="saveInputSoundButton" type="button" hidden>Save Sound</button>
           </div>
         </section>
 
@@ -83,7 +83,7 @@
           </div>
           <div class="settings-volume-row">
             <input id="inputSoundVolumeInput" type="range" min="0" max="1" step="0.01" />
-            <button id="saveInputSoundVolumeButton" type="button">Save Volume</button>
+            <button id="saveInputSoundVolumeButton" type="button" hidden>Save Volume</button>
           </div>
         </section>
 
@@ -98,7 +98,7 @@
               <option value="workspace-write">ワークスペース書き込み</option>
               <option value="read-only">読み取り専用</option>
             </select>
-            <button id="saveCodexSandboxButton" type="button">Save Access</button>
+            <button id="saveCodexSandboxButton" type="button" hidden>Save Access</button>
           </div>
         </section>
 
@@ -113,7 +113,20 @@
             <label><input id="arrangeRecursiveInput" type="checkbox" /> 配下も全て整列 <span class="settings-inline-help">見えている階層の下にある子ポワンも並べ直す</span></label>
           </div>
           <div class="settings-action-row">
-            <button id="saveArrangeButton" type="button">Save Arrange Checks</button>
+            <button id="saveArrangeButton" type="button" hidden>Save Arrange Checks</button>
+          </div>
+        </section>
+
+        <section class="settings-section">
+          <div class="settings-section-head">
+            <h2>再起動</h2>
+            <span class="settings-muted">Restartボタンで起動し直す時の表示</span>
+          </div>
+          <div class="settings-check-row">
+            <label><input id="restartVisibleConsoleInput" type="checkbox" /> cmd可視 <span class="settings-inline-help">再起動後にcmdを表示して起動する</span></label>
+          </div>
+          <div class="settings-action-row">
+            <button id="saveRestartVisibleConsoleButton" type="button" hidden>Save Restart</button>
           </div>
         </section>
 
@@ -131,7 +144,7 @@
             <label><input type="checkbox" value="fatal" /> fatal</label>
           </div>
           <div class="settings-action-row">
-            <button id="saveConsoleLogLevelsButton" type="button">Save CMD Logs</button>
+            <button id="saveConsoleLogLevelsButton" type="button" hidden>Save CMD Logs</button>
           </div>
         </section>
 
@@ -139,6 +152,6 @@
       </section>
     </main>
 
-    <script src="/static/settings.js?v=wide-arrange-range-1"></script>
+    <script src="/static/settings.js?v=settings-autosave-1"></script>
   </body>
 </html>

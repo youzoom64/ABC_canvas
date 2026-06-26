@@ -28,6 +28,7 @@ def build_powan_context(
     user_text: str | None = None,
     code_limit: int = DEFAULT_CODE_LIMIT,
     include_meaning_tree: bool = False,
+    include_direct_child_code: bool = False,
     attachments: list[dict[str, Any]] | None = None,
 ) -> dict[str, Any]:
     nodes = valid_nodes(document)
@@ -43,6 +44,9 @@ def build_powan_context(
     }
     if include_meaning_tree:
         context["meaningTree"] = build_meaning_tree_text(document, node_id)
+    if include_direct_child_code:
+        context["codeWriteMode"] = True
+        context["directChildCode"] = summarize_direct_child_code_for_prompt(children, code_limit=code_limit)
     clean_attachments = summarize_attachments_for_prompt(attachments or [])
     if clean_attachments:
         context["attachments"] = clean_attachments
@@ -141,6 +145,29 @@ def summarize_powan_for_prompt(
         "codeLanguage": node.get("codeLanguage") or "",
         "hasCode": bool(code.strip()),
     }
+
+
+def summarize_direct_child_code_for_prompt(
+    children: list[dict[str, Any]],
+    *,
+    code_limit: int = DEFAULT_CODE_LIMIT,
+) -> list[dict[str, Any]]:
+    items: list[dict[str, Any]] = []
+    for child in children:
+        code = str(child.get("code") or "")
+        if not code.strip():
+            continue
+        items.append(
+            {
+                "meaning": meaning_text(child),
+                "title": child.get("title") or "",
+                "body": child.get("body") or "",
+                "powanKind": powan_kind(child),
+                "codeLanguage": child.get("codeLanguage") or "",
+                "code": limit_text(code, code_limit),
+            }
+        )
+    return items
 
 
 def build_meaning_tree_text(document: dict[str, Any], current_node_id: str | None) -> str:
