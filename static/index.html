@@ -5,7 +5,13 @@
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <title>ABC Canvas</title>
     <link rel="icon" href="data:," />
-    <link rel="stylesheet" href="/static/style.css?v=history-tab-1" />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      rel="stylesheet"
+      href="https://fonts.googleapis.com/css2?family=Dela+Gothic+One&family=DotGothic16&family=Hachi+Maru+Pop&family=Kaisei+HarunoUmi&family=Klee+One&family=Mochiy+Pop+One&family=Mochiy+Pop+P+One&family=New+Tegomin&family=Rampart+One&family=Reggae+One&family=RocknRoll+One&family=Shippori+Antique&family=Stick&family=Train+One&family=Yuji+Boku&family=Yuji+Syuku&family=Yusei+Magic&family=Zen+Antique&family=Zen+Kurenaido&display=swap"
+    />
+    <link rel="stylesheet" href="/static/style.css?v=title-style-4" />
   </head>
   <body>
     <header class="topbar">
@@ -193,6 +199,64 @@
               <label><input id="motionInput" type="checkbox" /> Tiny motion</label>
             </div>
             <label class="setting-toggle"><input id="randomColorInput" type="checkbox" /> 新規ポワンをランダム色</label>
+            <div class="panel-setting-group">
+              <div class="world-label">タイトル文字</div>
+              <label>
+                フォント
+                <select id="titleFontFamilySelect">
+                  <option value="">標準</option>
+                  <option value="Dela Gothic One">Dela Gothic One</option>
+                  <option value="Hachi Maru Pop">Hachi Maru Pop</option>
+                  <option value="Klee One">Klee One</option>
+                  <option value="RocknRoll One">RocknRoll One</option>
+                  <option value="New Tegomin">New Tegomin</option>
+                  <option value="Train One">Train One</option>
+                  <option value="DotGothic16">DotGothic16</option>
+                  <option value="Reggae One">Reggae One</option>
+                  <option value="Yuji Syuku">Yuji Syuku</option>
+                  <option value="Yuji Boku">Yuji Boku</option>
+                  <option value="Mochiy Pop One">Mochiy Pop One</option>
+                  <option value="Kaisei HarunoUmi">Kaisei HarunoUmi</option>
+                  <option value="Shippori Antique">Shippori Antique</option>
+                  <option value="Stick">Stick</option>
+                  <option value="Rampart One">Rampart One</option>
+                  <option value="Zen Antique">Zen Antique</option>
+                  <option value="Mochiy Pop P One">Mochiy Pop P One</option>
+                  <option value="Zen Kurenaido">Zen Kurenaido</option>
+                  <option value="Yusei Magic">Yusei Magic</option>
+                </select>
+              </label>
+              <label class="setting-volume">
+                <span>フォントサイズ <span id="titleFontScaleValue">1.00</span></span>
+                <input id="titleFontScaleInput" type="range" min="0.5" max="2.0" step="0.01" />
+              </label>
+              <label class="setting-toggle"><input id="titleOutlineInput" type="checkbox" /> 縁取り</label>
+              <label>
+                縁取り色
+                <input id="titleOutlineColorInput" type="color" />
+              </label>
+              <label class="setting-volume">
+                <span>縁取りの太さ <span id="titleOutlineWidthValue">1.50</span></span>
+                <input id="titleOutlineWidthInput" type="range" min="0" max="6" step="0.1" />
+              </label>
+              <label class="setting-toggle"><input id="titleShadowInput" type="checkbox" /> 影</label>
+              <label>
+                影の色
+                <input id="titleShadowColorInput" type="color" />
+              </label>
+              <label class="setting-volume">
+                <span>影のぼかし <span id="titleShadowBlurValue">4.00</span></span>
+                <input id="titleShadowBlurInput" type="range" min="0" max="18" step="0.1" />
+              </label>
+              <label class="setting-volume">
+                <span>影の横位置 <span id="titleShadowXValue">0.00</span></span>
+                <input id="titleShadowXInput" type="range" min="-12" max="12" step="0.1" />
+              </label>
+              <label class="setting-volume">
+                <span>影の縦位置 <span id="titleShadowYValue">1.00</span></span>
+                <input id="titleShadowYInput" type="range" min="-12" max="12" step="0.1" />
+              </label>
+            </div>
             <label>
               会話サウンド
               <select id="conversationSoundSelect">
@@ -282,6 +346,6 @@
       <button id="pasteWorldMenuButton" type="button">ここに貼り付け</button>
     </nav>
 
-    <script src="/static/app.js?v=stable-nested-wheel-130"></script>
+    <script src="/static/app.js?v=stable-nested-wheel-134"></script>
   </body>
 </html>

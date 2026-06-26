@@ -75,6 +75,90 @@ textarea {
   border-radius: 8px;
 }
 
+#titleFontFamilySelect {
+  font-family: var(--powan-title-font-family, "Segoe UI", "Yu Gothic UI", "Yu Gothic", sans-serif);
+}
+
+#titleFontFamilySelect option[value=""] {
+  font-family: "Segoe UI", "Yu Gothic UI", "Yu Gothic", sans-serif;
+}
+
+#titleFontFamilySelect option[value="Dela Gothic One"] {
+  font-family: "Dela Gothic One", "Segoe UI", "Yu Gothic UI", "Yu Gothic", sans-serif;
+}
+
+#titleFontFamilySelect option[value="Hachi Maru Pop"] {
+  font-family: "Hachi Maru Pop", "Segoe UI", "Yu Gothic UI", "Yu Gothic", sans-serif;
+}
+
+#titleFontFamilySelect option[value="Klee One"] {
+  font-family: "Klee One", "Segoe UI", "Yu Gothic UI", "Yu Gothic", sans-serif;
+}
+
+#titleFontFamilySelect option[value="RocknRoll One"] {
+  font-family: "RocknRoll One", "Segoe UI", "Yu Gothic UI", "Yu Gothic", sans-serif;
+}
+
+#titleFontFamilySelect option[value="New Tegomin"] {
+  font-family: "New Tegomin", "Segoe UI", "Yu Gothic UI", "Yu Gothic", sans-serif;
+}
+
+#titleFontFamilySelect option[value="Train One"] {
+  font-family: "Train One", "Segoe UI", "Yu Gothic UI", "Yu Gothic", sans-serif;
+}
+
+#titleFontFamilySelect option[value="DotGothic16"] {
+  font-family: "DotGothic16", "Segoe UI", "Yu Gothic UI", "Yu Gothic", sans-serif;
+}
+
+#titleFontFamilySelect option[value="Reggae One"] {
+  font-family: "Reggae One", "Segoe UI", "Yu Gothic UI", "Yu Gothic", sans-serif;
+}
+
+#titleFontFamilySelect option[value="Yuji Syuku"] {
+  font-family: "Yuji Syuku", "Segoe UI", "Yu Gothic UI", "Yu Gothic", sans-serif;
+}
+
+#titleFontFamilySelect option[value="Yuji Boku"] {
+  font-family: "Yuji Boku", "Segoe UI", "Yu Gothic UI", "Yu Gothic", sans-serif;
+}
+
+#titleFontFamilySelect option[value="Mochiy Pop One"] {
+  font-family: "Mochiy Pop One", "Segoe UI", "Yu Gothic UI", "Yu Gothic", sans-serif;
+}
+
+#titleFontFamilySelect option[value="Kaisei HarunoUmi"] {
+  font-family: "Kaisei HarunoUmi", "Segoe UI", "Yu Gothic UI", "Yu Gothic", sans-serif;
+}
+
+#titleFontFamilySelect option[value="Shippori Antique"] {
+  font-family: "Shippori Antique", "Segoe UI", "Yu Gothic UI", "Yu Gothic", sans-serif;
+}
+
+#titleFontFamilySelect option[value="Stick"] {
+  font-family: "Stick", "Segoe UI", "Yu Gothic UI", "Yu Gothic", sans-serif;
+}
+
+#titleFontFamilySelect option[value="Rampart One"] {
+  font-family: "Rampart One", "Segoe UI", "Yu Gothic UI", "Yu Gothic", sans-serif;
+}
+
+#titleFontFamilySelect option[value="Zen Antique"] {
+  font-family: "Zen Antique", "Segoe UI", "Yu Gothic UI", "Yu Gothic", sans-serif;
+}
+
+#titleFontFamilySelect option[value="Mochiy Pop P One"] {
+  font-family: "Mochiy Pop P One", "Segoe UI", "Yu Gothic UI", "Yu Gothic", sans-serif;
+}
+
+#titleFontFamilySelect option[value="Zen Kurenaido"] {
+  font-family: "Zen Kurenaido", "Segoe UI", "Yu Gothic UI", "Yu Gothic", sans-serif;
+}
+
+#titleFontFamilySelect option[value="Yusei Magic"] {
+  font-family: "Yusei Magic", "Segoe UI", "Yu Gothic UI", "Yu Gothic", sans-serif;
+}
+
 button {
   padding: 8px 12px;
   cursor: pointer;
@@ -2438,10 +2522,10 @@ body.panning-canvas * {
   box-shadow:
     0 0 14px color-mix(in srgb, var(--accent) 40%, transparent),
     0 6px 16px rgba(62, 129, 158, 0.14);
-  overflow: hidden;
   text-align: center;
   font-size: 11px;
   line-height: 1.15;
+  overflow: visible;
   overflow-wrap: anywhere;
   cursor: default;
   opacity: 0.82;
@@ -2487,7 +2571,7 @@ body.panning-canvas * {
   font-weight: 700;
   line-height: 1;
   opacity: 0.72;
-  overflow: hidden;
+  overflow: visible;
   pointer-events: auto;
   text-align: center;
   cursor: default;
@@ -2621,13 +2705,14 @@ body.panning-canvas * {
   overflow-wrap: anywhere;
   word-break: break-word;
   text-align: center;
-  font-size: var(--powan-body-size, 13px);
+  font-family: var(--powan-title-font-family, "Segoe UI", "Yu Gothic UI", "Yu Gothic", sans-serif);
+  font-size: calc(var(--powan-body-size, 13px) * var(--powan-title-font-scale, 1));
   line-height: 1.45;
   overflow: hidden;
   cursor: text;
-  text-shadow:
-    0 0 2px rgba(255, 255, 255, 0.96),
-    0 1px 4px rgba(255, 255, 255, 0.86);
+  -webkit-text-stroke: var(--powan-title-outline-width, 0) var(--powan-title-outline-color, #ffffff);
+  paint-order: stroke fill;
+  text-shadow: var(--powan-title-shadow, 0 0 2px rgba(255, 255, 255, 0.96), 0 1px 4px rgba(255, 255, 255, 0.86));
   will-change: transform;
 }
 
@@ -2761,13 +2846,13 @@ body.panning-canvas * {
   min-height: 2.8em;
   height: 2.8em;
   color: rgba(35, 66, 78, 0.84);
-  font-size: clamp(6px, calc(var(--powan-body-size, 8px) * 0.92), 22px);
+  font-size: clamp(6px, calc(var(--powan-body-size, 8px) * 0.92 * var(--powan-title-font-scale, 1)), 36px);
   font-weight: 700;
   line-height: 1.25;
   pointer-events: none;
   cursor: default;
   overflow: hidden;
-  text-shadow: none;
+  text-shadow: var(--powan-title-shadow, none);
   will-change: auto;
 }
 
@@ -2784,7 +2869,7 @@ body.panning-canvas * {
   min-height: 0;
   padding: 0;
   color: rgba(35, 66, 78, 0.72);
-  font-size: clamp(4px, calc(var(--powan-body-size, 5px) * 0.58), 10px);
+  font-size: clamp(4px, calc(var(--powan-body-size, 5px) * 0.58 * var(--powan-title-font-scale, 1)), 18px);
   line-height: 1.05;
   white-space: normal;
   display: flex;
@@ -2794,13 +2879,13 @@ body.panning-canvas * {
 
 .nested-preview-simple > .node-body {
   inset: 10% 8%;
-  font-size: clamp(3px, calc(var(--powan-body-size, 5px) * 0.58), 14px);
+  font-size: clamp(3px, calc(var(--powan-body-size, 5px) * 0.58 * var(--powan-title-font-scale, 1)), 22px);
   line-height: 1.02;
 }
 
 .nested-preview-simple[data-preview-depth="2"] > .node-body {
   inset: 4% 4%;
-  font-size: clamp(3px, calc(var(--powan-body-size, 5px) * 0.72), 9px);
+  font-size: clamp(3px, calc(var(--powan-body-size, 5px) * 0.72 * var(--powan-title-font-scale, 1)), 18px);
   line-height: 1;
 }
 
@@ -3128,13 +3213,37 @@ body.panning-canvas * {
 .nested-preview-meaning.has-code::after {
   content: "code";
   position: absolute;
-  top: 13%;
-  right: 12%;
+  top: 7%;
+  right: 10%;
+  z-index: 34;
   color: #d4a300;
   font-size: var(--powan-code-label-size, 10px);
   font-weight: 900;
   line-height: 1;
   pointer-events: none;
+  text-shadow: 0 0 3px rgba(255, 255, 255, 0.92);
+}
+
+.nested-meaning.has-code::after,
+.nested-preview-meaning.has-code::after {
+  top: -8px;
+  right: 8%;
+  font-size: max(10px, var(--powan-code-label-size, 10px));
+}
+
+.nested-preview-simple.has-code::after {
+  top: -7px;
+  right: 6%;
+  font-size: max(9px, var(--powan-code-label-size, 9px));
+}
+
+.node > .node-body,
+.nested-meaning > .node-body,
+.nested-preview-meaning > .node-body,
+.node.softbody-visual > .node-body,
+.nested-meaning.softbody-visual > .node-body,
+.nested-preview-meaning.softbody-visual > .node-body {
+  z-index: 22;
 }
 
 .node::before,

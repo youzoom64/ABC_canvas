@@ -62,6 +62,42 @@ MIN_ARRANGE_SPACING = 0.3
 MAX_ARRANGE_SPACING = 3.0
 MIN_ARRANGE_SIZE = 0.3
 MAX_ARRANGE_SIZE = 2.5
+TITLE_FONT_FAMILIES = {
+    "",
+    "Dela Gothic One",
+    "Hachi Maru Pop",
+    "Klee One",
+    "RocknRoll One",
+    "New Tegomin",
+    "Train One",
+    "DotGothic16",
+    "Reggae One",
+    "Yuji Syuku",
+    "Yuji Boku",
+    "Mochiy Pop One",
+    "Kaisei HarunoUmi",
+    "Shippori Antique",
+    "Stick",
+    "Rampart One",
+    "Zen Antique",
+    "Mochiy Pop P One",
+    "Zen Kurenaido",
+    "Yusei Magic",
+}
+DEFAULT_TITLE_FONT_FAMILY = ""
+DEFAULT_TITLE_FONT_SCALE = 1.0
+MIN_TITLE_FONT_SCALE = 0.5
+MAX_TITLE_FONT_SCALE = 2.0
+DEFAULT_TITLE_OUTLINE_COLOR = "#ffffff"
+DEFAULT_TITLE_OUTLINE_WIDTH = 1.5
+MIN_TITLE_OUTLINE_WIDTH = 0.0
+MAX_TITLE_OUTLINE_WIDTH = 6.0
+DEFAULT_TITLE_SHADOW_COLOR = "#ffffff"
+DEFAULT_TITLE_SHADOW_BLUR = 4.0
+MIN_TITLE_SHADOW_BLUR = 0.0
+MAX_TITLE_SHADOW_BLUR = 18.0
+MIN_TITLE_SHADOW_OFFSET = -12.0
+MAX_TITLE_SHADOW_OFFSET = 12.0
 WORKSPACE_SIZE = 10000
 WORKSPACE_ORIGIN_X = 5000
 WORKSPACE_ORIGIN_Y = 5000
@@ -294,6 +330,19 @@ class ConsoleLogSettingsRequest(BaseModel):
 
 class RestartVisibleConsoleSettingsRequest(BaseModel):
     restartVisibleConsole: bool = False
+
+
+class TitleStyleSettingsRequest(BaseModel):
+    titleFontFamily: str = DEFAULT_TITLE_FONT_FAMILY
+    titleFontScale: float = DEFAULT_TITLE_FONT_SCALE
+    titleOutlineEnabled: bool = False
+    titleOutlineColor: str = DEFAULT_TITLE_OUTLINE_COLOR
+    titleOutlineWidth: float = DEFAULT_TITLE_OUTLINE_WIDTH
+    titleShadowEnabled: bool = True
+    titleShadowColor: str = DEFAULT_TITLE_SHADOW_COLOR
+    titleShadowBlur: float = DEFAULT_TITLE_SHADOW_BLUR
+    titleShadowX: float = 0.0
+    titleShadowY: float = 1.0
 
 
 class ConversationMessageRequest(BaseModel):
@@ -857,6 +906,50 @@ def clamp_nested_layer_scale(value: Any) -> float:
     return min(1.0, max(0.3, number))
 
 
+def normalize_title_font_family(value: Any) -> str:
+    clean = str(value or "").strip()
+    return clean if clean in TITLE_FONT_FAMILIES else DEFAULT_TITLE_FONT_FAMILY
+
+
+def normalize_hex_color(value: Any, fallback: str = "#ffffff") -> str:
+    clean = str(value or "").strip().lower()
+    if len(clean) == 7 and clean.startswith("#") and all(char in "0123456789abcdef" for char in clean[1:]):
+        return clean
+    return fallback
+
+
+def clamp_title_font_scale(value: Any) -> float:
+    try:
+        number = float(value)
+    except (TypeError, ValueError):
+        number = DEFAULT_TITLE_FONT_SCALE
+    return min(MAX_TITLE_FONT_SCALE, max(MIN_TITLE_FONT_SCALE, number))
+
+
+def clamp_title_outline_width(value: Any) -> float:
+    try:
+        number = float(value)
+    except (TypeError, ValueError):
+        number = DEFAULT_TITLE_OUTLINE_WIDTH
+    return min(MAX_TITLE_OUTLINE_WIDTH, max(MIN_TITLE_OUTLINE_WIDTH, number))
+
+
+def clamp_title_shadow_blur(value: Any) -> float:
+    try:
+        number = float(value)
+    except (TypeError, ValueError):
+        number = DEFAULT_TITLE_SHADOW_BLUR
+    return min(MAX_TITLE_SHADOW_BLUR, max(MIN_TITLE_SHADOW_BLUR, number))
+
+
+def clamp_title_shadow_offset(value: Any, fallback: float = 0.0) -> float:
+    try:
+        number = float(value)
+    except (TypeError, ValueError):
+        number = fallback
+    return min(MAX_TITLE_SHADOW_OFFSET, max(MIN_TITLE_SHADOW_OFFSET, number))
+
+
 def normalize_codex_sandbox(value: Any) -> str:
     sandbox = str(value or "").strip()
     return sandbox if sandbox in CODEX_SANDBOXES else DEFAULT_CODEX_SANDBOX
@@ -1042,6 +1135,16 @@ def load_app_settings() -> dict[str, Any]:
         "autoSummaryEnabled": bool(data.get("autoSummaryEnabled", DEFAULT_AUTO_SUMMARY_ENABLED)),
         "autoSummaryTurns": clamp_auto_summary_turns(data.get("autoSummaryTurns", DEFAULT_AUTO_SUMMARY_TURNS)),
         "codexSandbox": normalize_codex_sandbox(data.get("codexSandbox", DEFAULT_CODEX_SANDBOX)),
+        "titleFontFamily": normalize_title_font_family(data.get("titleFontFamily", DEFAULT_TITLE_FONT_FAMILY)),
+        "titleFontScale": clamp_title_font_scale(data.get("titleFontScale", DEFAULT_TITLE_FONT_SCALE)),
+        "titleOutlineEnabled": bool(data.get("titleOutlineEnabled", False)),
+        "titleOutlineColor": normalize_hex_color(data.get("titleOutlineColor", "#ffffff"), "#ffffff"),
+        "titleOutlineWidth": clamp_title_outline_width(data.get("titleOutlineWidth", DEFAULT_TITLE_OUTLINE_WIDTH)),
+        "titleShadowEnabled": bool(data.get("titleShadowEnabled", True)),
+        "titleShadowColor": normalize_hex_color(data.get("titleShadowColor", "#ffffff"), "#ffffff"),
+        "titleShadowBlur": clamp_title_shadow_blur(data.get("titleShadowBlur", DEFAULT_TITLE_SHADOW_BLUR)),
+        "titleShadowX": clamp_title_shadow_offset(data.get("titleShadowX", 0.0), 0.0),
+        "titleShadowY": clamp_title_shadow_offset(data.get("titleShadowY", 1.0), 1.0),
         "arrangeSpacing": clamp_arrange_spacing(data.get("arrangeSpacing", DEFAULT_ARRANGE_SPACING)),
         "arrangeSize": clamp_arrange_size(data.get("arrangeSize", DEFAULT_ARRANGE_SIZE)),
         "arrangeResizeParents": bool(data.get("arrangeResizeParents", True)),
@@ -1094,6 +1197,16 @@ def setting_payload() -> dict[str, Any]:
         "autoSummaryEnabled": settings["autoSummaryEnabled"],
         "autoSummaryTurns": settings["autoSummaryTurns"],
         "codexSandbox": settings["codexSandbox"],
+        "titleFontFamily": settings["titleFontFamily"],
+        "titleFontScale": settings["titleFontScale"],
+        "titleOutlineEnabled": settings["titleOutlineEnabled"],
+        "titleOutlineColor": settings["titleOutlineColor"],
+        "titleOutlineWidth": settings["titleOutlineWidth"],
+        "titleShadowEnabled": settings["titleShadowEnabled"],
+        "titleShadowColor": settings["titleShadowColor"],
+        "titleShadowBlur": settings["titleShadowBlur"],
+        "titleShadowX": settings["titleShadowX"],
+        "titleShadowY": settings["titleShadowY"],
         "arrangeSpacing": settings["arrangeSpacing"],
         "arrangeSize": settings["arrangeSize"],
         "arrangeResizeParents": settings["arrangeResizeParents"],
@@ -1353,6 +1466,33 @@ def save_codex_sandbox(request: CodexSandboxRequest) -> dict[str, Any]:
     settings["codexSandbox"] = normalize_codex_sandbox(request.codexSandbox)
     save_app_settings(settings)
     log_server_event("info", "codex-sandbox-updated", {"codexSandbox": settings["codexSandbox"]})
+    return setting_payload()
+
+
+@app.post("/api/settings/title-style")
+def save_title_style_settings(request: TitleStyleSettingsRequest) -> dict[str, Any]:
+    settings = load_app_settings()
+    settings["titleFontFamily"] = normalize_title_font_family(request.titleFontFamily)
+    settings["titleFontScale"] = clamp_title_font_scale(request.titleFontScale)
+    settings["titleOutlineEnabled"] = bool(request.titleOutlineEnabled)
+    settings["titleOutlineColor"] = normalize_hex_color(request.titleOutlineColor, "#ffffff")
+    settings["titleOutlineWidth"] = clamp_title_outline_width(request.titleOutlineWidth)
+    settings["titleShadowEnabled"] = bool(request.titleShadowEnabled)
+    settings["titleShadowColor"] = normalize_hex_color(request.titleShadowColor, "#ffffff")
+    settings["titleShadowBlur"] = clamp_title_shadow_blur(request.titleShadowBlur)
+    settings["titleShadowX"] = clamp_title_shadow_offset(request.titleShadowX, 0.0)
+    settings["titleShadowY"] = clamp_title_shadow_offset(request.titleShadowY, 1.0)
+    save_app_settings(settings)
+    log_server_event(
+        "info",
+        "title-style-settings-updated",
+        {
+            "font": settings["titleFontFamily"],
+            "scale": settings["titleFontScale"],
+            "outline": settings["titleOutlineEnabled"],
+            "shadow": settings["titleShadowEnabled"],
+        },
+    )
     return setting_payload()
 
 

@@ -1791,6 +1791,7 @@ async function saveConversationAutoSummarySetting() {
   const data = await response.json();
   appSettings.autoSummaryEnabled = data.autoSummaryEnabled !== false;
   appSettings.autoSummaryTurns = normalizeConversationAutoSummaryTurns(data.autoSummaryTurns);
+  applyTitleStyleSettings(data);
   applyArrangeSettings(data);
   syncSettingsInputs();
   saveStoredSettings();
@@ -1818,6 +1819,7 @@ async function refreshConversationSounds() {
     appSettings.restartVisibleConsole = Boolean(data.restartVisibleConsole);
     appSettings.autoSummaryEnabled = data.autoSummaryEnabled !== false;
     appSettings.autoSummaryTurns = normalizeConversationAutoSummaryTurns(data.autoSummaryTurns);
+    applyTitleStyleSettings(data);
     applyArrangeSettings(data);
     stopConversationChunkSound("conversation-settings-refreshed");
     stopInputWaitingSound("input-settings-refreshed");
@@ -1981,6 +1983,7 @@ async function saveConversationSoundSetting(name) {
   appSettings.inputSoundVolume = normalizeConversationSoundVolume(data.inputSoundVolume);
   appSettings.autoSummaryEnabled = data.autoSummaryEnabled !== false;
   appSettings.autoSummaryTurns = normalizeConversationAutoSummaryTurns(data.autoSummaryTurns);
+  applyTitleStyleSettings(data);
   applyArrangeSettings(data);
   stopConversationChunkSound("conversation-sound-saved");
   conversationChunkAudio = null;
@@ -2002,6 +2005,7 @@ async function saveConversationSoundVolumeSetting(value) {
   }
   const data = await response.json();
   appSettings.conversationSoundVolume = normalizeConversationSoundVolume(data.conversationSoundVolume);
+  applyTitleStyleSettings(data);
   syncSettingsInputs();
   saveStoredSettings();
   logEvent("info", "set-conversation-volume-saved", { volume: appSettings.conversationSoundVolume });
@@ -2026,6 +2030,7 @@ async function saveInputSoundSetting(name) {
   appSettings.inputSoundVolume = normalizeConversationSoundVolume(data.inputSoundVolume);
   appSettings.autoSummaryEnabled = data.autoSummaryEnabled !== false;
   appSettings.autoSummaryTurns = normalizeConversationAutoSummaryTurns(data.autoSummaryTurns);
+  applyTitleStyleSettings(data);
   applyArrangeSettings(data);
   stopInputWaitingSound("input-sound-saved");
   inputWaitingAudio = null;
@@ -2047,9 +2052,50 @@ async function saveInputSoundVolumeSetting(value) {
   }
   const data = await response.json();
   appSettings.inputSoundVolume = normalizeConversationSoundVolume(data.inputSoundVolume);
+  applyTitleStyleSettings(data);
   syncSettingsInputs();
   saveStoredSettings();
   logEvent("info", "set-input-volume-saved", { volume: appSettings.inputSoundVolume });
+}
+
+var titleStyleSaveTimer = null;
+
+async function saveTitleStyleSettings(reason = "title-style-settings") {
+  const response = await fetch("/api/settings/title-style", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(titleStylePayload()),
+  });
+  if (!response.ok) {
+    const error = await response.json().catch(() => ({ detail: "title style save failed" }));
+    throw new Error(error.detail || "title style save failed");
+  }
+  const data = await response.json();
+  applyTitleStyleSettings(data);
+  syncSettingsInputs();
+  saveStoredSettings();
+  logEvent("info", "title-style-settings-saved", {
+    message: "title style settings saved",
+    reason,
+    ...titleStylePayload(),
+  });
+}
+
+function updateTitleStyleSettings(reason = "title-style-settings-change", options = {}) {
+  setTitleStyleFromInputs(reason);
+  if (titleStyleSaveTimer) {
+    window.clearTimeout(titleStyleSaveTimer);
+    titleStyleSaveTimer = null;
+  }
+  const delay = Number.isFinite(Number(options.delayMs)) ? Number(options.delayMs) : 220;
+  titleStyleSaveTimer = window.setTimeout(() => {
+    titleStyleSaveTimer = null;
+    saveTitleStyleSettings(reason).catch((error) => {
+      logEvent("error", "title-style-settings-save-error", { message: error.message, reason });
+      console.error(error);
+      refreshConversationSounds();
+    });
+  }, delay);
 }
 
 function arrangeSettingsPayload() {
@@ -2078,6 +2124,7 @@ async function savePanelArrangeSettings(reason = "panel-arrange-settings") {
     throw new Error(error.detail || "arrange save failed");
   }
   const data = await response.json();
+  applyTitleStyleSettings(data);
   applyArrangeSettings(data);
   syncSettingsInputs();
   saveStoredSettings();
@@ -3442,6 +3489,43 @@ blurInput.addEventListener("change", () => powanExplorer.endHistoryGroup());
 motionInput.addEventListener("change", () => powanExplorer.endHistoryGroup());
 if (randomColorInput) {
   randomColorInput.addEventListener("change", () => powanExplorer.setRandomPowanColor(randomColorInput.checked));
+}
+if (titleFontFamilySelect) {
+  titleFontFamilySelect.addEventListener("change", () => updateTitleStyleSettings("title-font-family-change", { delayMs: 0 }));
+}
+if (titleFontScaleInput) {
+  titleFontScaleInput.addEventListener("input", () => updateTitleStyleSettings("title-font-scale-input"));
+  titleFontScaleInput.addEventListener("change", () => updateTitleStyleSettings("title-font-scale-change", { delayMs: 0 }));
+}
+if (titleOutlineInput) {
+  titleOutlineInput.addEventListener("change", () => updateTitleStyleSettings("title-outline-toggle", { delayMs: 0 }));
+}
+if (titleOutlineColorInput) {
+  titleOutlineColorInput.addEventListener("input", () => updateTitleStyleSettings("title-outline-color-input"));
+  titleOutlineColorInput.addEventListener("change", () => updateTitleStyleSettings("title-outline-color-change", { delayMs: 0 }));
+}
+if (titleOutlineWidthInput) {
+  titleOutlineWidthInput.addEventListener("input", () => updateTitleStyleSettings("title-outline-width-input"));
+  titleOutlineWidthInput.addEventListener("change", () => updateTitleStyleSettings("title-outline-width-change", { delayMs: 0 }));
+}
+if (titleShadowInput) {
+  titleShadowInput.addEventListener("change", () => updateTitleStyleSettings("title-shadow-toggle", { delayMs: 0 }));
+}
+if (titleShadowColorInput) {
+  titleShadowColorInput.addEventListener("input", () => updateTitleStyleSettings("title-shadow-color-input"));
+  titleShadowColorInput.addEventListener("change", () => updateTitleStyleSettings("title-shadow-color-change", { delayMs: 0 }));
+}
+if (titleShadowBlurInput) {
+  titleShadowBlurInput.addEventListener("input", () => updateTitleStyleSettings("title-shadow-blur-input"));
+  titleShadowBlurInput.addEventListener("change", () => updateTitleStyleSettings("title-shadow-blur-change", { delayMs: 0 }));
+}
+if (titleShadowXInput) {
+  titleShadowXInput.addEventListener("input", () => updateTitleStyleSettings("title-shadow-x-input"));
+  titleShadowXInput.addEventListener("change", () => updateTitleStyleSettings("title-shadow-x-change", { delayMs: 0 }));
+}
+if (titleShadowYInput) {
+  titleShadowYInput.addEventListener("input", () => updateTitleStyleSettings("title-shadow-y-input"));
+  titleShadowYInput.addEventListener("change", () => updateTitleStyleSettings("title-shadow-y-change", { delayMs: 0 }));
 }
 if (conversationSoundSelect) {
   conversationSoundSelect.addEventListener("change", () => {

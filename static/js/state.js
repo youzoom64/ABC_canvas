@@ -113,6 +113,21 @@ var glowInput = document.querySelector("#glowInput");
 var blurInput = document.querySelector("#blurInput");
 var motionInput = document.querySelector("#motionInput");
 var randomColorInput = document.querySelector("#randomColorInput");
+var titleFontFamilySelect = document.querySelector("#titleFontFamilySelect");
+var titleFontScaleInput = document.querySelector("#titleFontScaleInput");
+var titleFontScaleValue = document.querySelector("#titleFontScaleValue");
+var titleOutlineInput = document.querySelector("#titleOutlineInput");
+var titleOutlineColorInput = document.querySelector("#titleOutlineColorInput");
+var titleOutlineWidthInput = document.querySelector("#titleOutlineWidthInput");
+var titleOutlineWidthValue = document.querySelector("#titleOutlineWidthValue");
+var titleShadowInput = document.querySelector("#titleShadowInput");
+var titleShadowColorInput = document.querySelector("#titleShadowColorInput");
+var titleShadowBlurInput = document.querySelector("#titleShadowBlurInput");
+var titleShadowBlurValue = document.querySelector("#titleShadowBlurValue");
+var titleShadowXInput = document.querySelector("#titleShadowXInput");
+var titleShadowXValue = document.querySelector("#titleShadowXValue");
+var titleShadowYInput = document.querySelector("#titleShadowYInput");
+var titleShadowYValue = document.querySelector("#titleShadowYValue");
 var conversationSoundSelect = document.querySelector("#conversationSoundSelect");
 var conversationVolumeInput = document.querySelector("#conversationVolumeInput");
 var conversationVolumeValue = document.querySelector("#conversationVolumeValue");
@@ -211,6 +226,16 @@ var appSettings = {
   restartVisibleConsole: false,
   autoSummaryEnabled: true,
   autoSummaryTurns: 50,
+  titleFontFamily: "",
+  titleFontScale: 1,
+  titleOutlineEnabled: false,
+  titleOutlineColor: "#ffffff",
+  titleOutlineWidth: 1.5,
+  titleShadowEnabled: true,
+  titleShadowColor: "#ffffff",
+  titleShadowBlur: 4,
+  titleShadowX: 0,
+  titleShadowY: 1,
   arrangeSpacing: 1,
   arrangeSize: 1,
   arrangeResizeParents: true,
@@ -267,6 +292,41 @@ var MAX_CONVERSATION_AUTO_SUMMARY_TURNS = 500;
 var DEFAULT_CONVERSATION_FONT_SIZE = 13;
 var MIN_CONVERSATION_FONT_SIZE = 11;
 var MAX_CONVERSATION_FONT_SIZE = 22;
+var TITLE_FONT_FAMILY_VALUES = new Set([
+  "",
+  "Dela Gothic One",
+  "Hachi Maru Pop",
+  "Klee One",
+  "RocknRoll One",
+  "New Tegomin",
+  "Train One",
+  "DotGothic16",
+  "Reggae One",
+  "Yuji Syuku",
+  "Yuji Boku",
+  "Mochiy Pop One",
+  "Kaisei HarunoUmi",
+  "Shippori Antique",
+  "Stick",
+  "Rampart One",
+  "Zen Antique",
+  "Mochiy Pop P One",
+  "Zen Kurenaido",
+  "Yusei Magic",
+]);
+var DEFAULT_TITLE_FONT_STACK = '"Segoe UI", "Yu Gothic UI", "Yu Gothic", sans-serif';
+var DEFAULT_TITLE_OUTLINE_WIDTH = 1.5;
+var DEFAULT_TITLE_FONT_SCALE = 1;
+var MIN_TITLE_FONT_SCALE = 0.5;
+var MAX_TITLE_FONT_SCALE = 2.0;
+var MIN_TITLE_OUTLINE_WIDTH = 0;
+var MAX_TITLE_OUTLINE_WIDTH = 6;
+var DEFAULT_TITLE_SHADOW_BLUR = 4;
+var MIN_TITLE_SHADOW_BLUR = 0;
+var MAX_TITLE_SHADOW_BLUR = 18;
+var DEFAULT_TITLE_SHADOW_OFFSET = 0;
+var MIN_TITLE_SHADOW_OFFSET = -12;
+var MAX_TITLE_SHADOW_OFFSET = 12;
 var DEFAULT_ARRANGE_SPACING = 1;
 var MIN_ARRANGE_SPACING = 0.3;
 var MAX_ARRANGE_SPACING = 3.0;
@@ -579,12 +639,109 @@ function loadStoredSettings() {
   appSettings.restartVisibleConsole = Boolean(stored.restartVisibleConsole);
   appSettings.autoSummaryEnabled = stored.autoSummaryEnabled !== false;
   appSettings.autoSummaryTurns = normalizeConversationAutoSummaryTurns(stored.autoSummaryTurns);
+  applyTitleStyleSettings(stored);
   applyArrangeSettings(stored);
   syncSettingsInputs();
 }
 
 function saveStoredSettings() {
   localStorage.setItem(APP_SETTINGS_STORAGE_KEY, JSON.stringify(appSettings));
+}
+
+function normalizeTitleFontFamily(value) {
+  const clean = String(value || "").trim();
+  return TITLE_FONT_FAMILY_VALUES.has(clean) ? clean : "";
+}
+
+function titleFontFamilyCss(value) {
+  const family = normalizeTitleFontFamily(value);
+  if (!family) {
+    return DEFAULT_TITLE_FONT_STACK;
+  }
+  return `"${family.replaceAll("\"", "\\\"")}", ${DEFAULT_TITLE_FONT_STACK}`;
+}
+
+function applyTitleFontOptionStyles() {
+  if (!titleFontFamilySelect) {
+    return;
+  }
+  for (const option of titleFontFamilySelect.options) {
+    option.style.fontFamily = titleFontFamilyCss(option.value);
+  }
+  titleFontFamilySelect.style.fontFamily = titleFontFamilyCss(titleFontFamilySelect.value);
+}
+
+function normalizeTitleFontScale(value) {
+  return clampNumber(value, DEFAULT_TITLE_FONT_SCALE, MIN_TITLE_FONT_SCALE, MAX_TITLE_FONT_SCALE);
+}
+
+function normalizeHexColor(value, fallback = "#ffffff") {
+  const clean = String(value || "").trim();
+  return /^#[0-9a-fA-F]{6}$/.test(clean) ? clean.toLowerCase() : fallback;
+}
+
+function clampNumber(value, fallback, min, max) {
+  const number = Number(value);
+  if (!Number.isFinite(number)) {
+    return fallback;
+  }
+  return Math.min(max, Math.max(min, number));
+}
+
+function normalizeTitleOutlineWidth(value) {
+  return clampNumber(value, DEFAULT_TITLE_OUTLINE_WIDTH, MIN_TITLE_OUTLINE_WIDTH, MAX_TITLE_OUTLINE_WIDTH);
+}
+
+function normalizeTitleShadowBlur(value) {
+  return clampNumber(value, DEFAULT_TITLE_SHADOW_BLUR, MIN_TITLE_SHADOW_BLUR, MAX_TITLE_SHADOW_BLUR);
+}
+
+function normalizeTitleShadowOffset(value, fallback = DEFAULT_TITLE_SHADOW_OFFSET) {
+  return clampNumber(value, fallback, MIN_TITLE_SHADOW_OFFSET, MAX_TITLE_SHADOW_OFFSET);
+}
+
+function titleStylePayload() {
+  return {
+    titleFontFamily: appSettings.titleFontFamily,
+    titleFontScale: appSettings.titleFontScale,
+    titleOutlineEnabled: appSettings.titleOutlineEnabled,
+    titleOutlineColor: appSettings.titleOutlineColor,
+    titleOutlineWidth: appSettings.titleOutlineWidth,
+    titleShadowEnabled: appSettings.titleShadowEnabled,
+    titleShadowColor: appSettings.titleShadowColor,
+    titleShadowBlur: appSettings.titleShadowBlur,
+    titleShadowX: appSettings.titleShadowX,
+    titleShadowY: appSettings.titleShadowY,
+  };
+}
+
+function applyTitleStyleSettings(data = {}) {
+  appSettings.titleFontFamily = normalizeTitleFontFamily(data.titleFontFamily ?? appSettings.titleFontFamily);
+  appSettings.titleFontScale = normalizeTitleFontScale(data.titleFontScale ?? appSettings.titleFontScale);
+  appSettings.titleOutlineEnabled = Boolean(data.titleOutlineEnabled ?? appSettings.titleOutlineEnabled);
+  appSettings.titleOutlineColor = normalizeHexColor(data.titleOutlineColor ?? appSettings.titleOutlineColor, "#ffffff");
+  appSettings.titleOutlineWidth = normalizeTitleOutlineWidth(data.titleOutlineWidth ?? appSettings.titleOutlineWidth);
+  appSettings.titleShadowEnabled = data.titleShadowEnabled == null
+    ? Boolean(appSettings.titleShadowEnabled)
+    : Boolean(data.titleShadowEnabled);
+  appSettings.titleShadowColor = normalizeHexColor(data.titleShadowColor ?? appSettings.titleShadowColor, "#ffffff");
+  appSettings.titleShadowBlur = normalizeTitleShadowBlur(data.titleShadowBlur ?? appSettings.titleShadowBlur);
+  appSettings.titleShadowX = normalizeTitleShadowOffset(data.titleShadowX ?? appSettings.titleShadowX, 0);
+  appSettings.titleShadowY = normalizeTitleShadowOffset(data.titleShadowY ?? appSettings.titleShadowY, 1);
+
+  const outlineWidth = appSettings.titleOutlineEnabled ? appSettings.titleOutlineWidth : 0;
+  const halfBlur = Math.max(0, appSettings.titleShadowBlur / 2);
+  const shadow = appSettings.titleShadowEnabled
+    ? `0 0 ${halfBlur.toFixed(2)}px ${appSettings.titleShadowColor}, ${appSettings.titleShadowX.toFixed(2)}px ${appSettings.titleShadowY.toFixed(2)}px ${appSettings.titleShadowBlur.toFixed(2)}px ${appSettings.titleShadowColor}`
+    : "none";
+  document.documentElement.style.setProperty("--powan-title-font-family", titleFontFamilyCss(appSettings.titleFontFamily));
+  document.documentElement.style.setProperty("--powan-title-font-scale", appSettings.titleFontScale.toFixed(2));
+  document.documentElement.style.setProperty("--powan-title-outline-width", `${outlineWidth.toFixed(2)}px`);
+  document.documentElement.style.setProperty("--powan-title-outline-color", appSettings.titleOutlineColor);
+  document.documentElement.style.setProperty("--powan-title-shadow", shadow);
+  if (titleFontFamilySelect) {
+    titleFontFamilySelect.style.fontFamily = titleFontFamilyCss(appSettings.titleFontFamily);
+  }
 }
 
 function applyArrangeSettings(data = {}) {
@@ -629,6 +786,7 @@ function syncSettingsInputs() {
   if (conversationAutoSummaryTurnsInput) {
     conversationAutoSummaryTurnsInput.value = String(appSettings.autoSummaryTurns);
   }
+  syncTitleStyleInputs();
   syncArrangePanelInputs();
 }
 
@@ -638,6 +796,41 @@ function setRangeControl(input, output, value) {
   }
   if (output) {
     output.textContent = Number(value).toFixed(2);
+  }
+}
+
+function syncTitleStyleInputs() {
+  applyTitleStyleSettings(appSettings);
+  if (titleFontFamilySelect) {
+    titleFontFamilySelect.value = appSettings.titleFontFamily;
+    applyTitleFontOptionStyles();
+  }
+  setRangeControl(titleFontScaleInput, titleFontScaleValue, appSettings.titleFontScale);
+  if (titleOutlineInput) {
+    titleOutlineInput.checked = Boolean(appSettings.titleOutlineEnabled);
+  }
+  if (titleOutlineColorInput) {
+    titleOutlineColorInput.value = appSettings.titleOutlineColor;
+    titleOutlineColorInput.disabled = !appSettings.titleOutlineEnabled;
+  }
+  setRangeControl(titleOutlineWidthInput, titleOutlineWidthValue, appSettings.titleOutlineWidth);
+  if (titleOutlineWidthInput) {
+    titleOutlineWidthInput.disabled = !appSettings.titleOutlineEnabled;
+  }
+  if (titleShadowInput) {
+    titleShadowInput.checked = Boolean(appSettings.titleShadowEnabled);
+  }
+  if (titleShadowColorInput) {
+    titleShadowColorInput.value = appSettings.titleShadowColor;
+    titleShadowColorInput.disabled = !appSettings.titleShadowEnabled;
+  }
+  setRangeControl(titleShadowBlurInput, titleShadowBlurValue, appSettings.titleShadowBlur);
+  setRangeControl(titleShadowXInput, titleShadowXValue, appSettings.titleShadowX);
+  setRangeControl(titleShadowYInput, titleShadowYValue, appSettings.titleShadowY);
+  for (const input of [titleShadowBlurInput, titleShadowXInput, titleShadowYInput]) {
+    if (input) {
+      input.disabled = !appSettings.titleShadowEnabled;
+    }
   }
 }
 
@@ -756,6 +949,23 @@ function setConversationAutoSummary(enabled, turns, reason = "set-conversation-a
     enabled: appSettings.autoSummaryEnabled,
     turns: appSettings.autoSummaryTurns,
   });
+}
+
+function setTitleStyleFromInputs(reason = "set-title-style") {
+  appSettings.titleFontFamily = normalizeTitleFontFamily(titleFontFamilySelect?.value);
+  appSettings.titleFontScale = normalizeTitleFontScale(titleFontScaleInput?.value);
+  appSettings.titleOutlineEnabled = Boolean(titleOutlineInput?.checked);
+  appSettings.titleOutlineColor = normalizeHexColor(titleOutlineColorInput?.value, appSettings.titleOutlineColor);
+  appSettings.titleOutlineWidth = normalizeTitleOutlineWidth(titleOutlineWidthInput?.value);
+  appSettings.titleShadowEnabled = Boolean(titleShadowInput?.checked);
+  appSettings.titleShadowColor = normalizeHexColor(titleShadowColorInput?.value, appSettings.titleShadowColor);
+  appSettings.titleShadowBlur = normalizeTitleShadowBlur(titleShadowBlurInput?.value);
+  appSettings.titleShadowX = normalizeTitleShadowOffset(titleShadowXInput?.value, 0);
+  appSettings.titleShadowY = normalizeTitleShadowOffset(titleShadowYInput?.value, 1);
+  applyTitleStyleSettings(appSettings);
+  syncTitleStyleInputs();
+  saveStoredSettings();
+  logEvent("info", reason, titleStylePayload());
 }
 
 function defaultNode({ title = "", x = null, y = null, parent = null, attachment = null } = {}) {
