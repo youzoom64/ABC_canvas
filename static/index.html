@@ -99,40 +99,48 @@
       <aside id="panel" class="panel">
         <button id="panelToggleButton" class="side-collapse-button panel-collapse-button" type="button" title="右メニューをしまう" aria-label="右メニューをしまう">›</button>
         <div id="panelResizeHandle" class="panel-resize-handle" aria-hidden="true"></div>
+        <div id="panelTabs" class="panel-tabs" role="tablist" aria-label="右メニュー">
+          <button id="panelWorldTab" class="panel-tab active" type="button" role="tab" aria-selected="true" aria-controls="panelWorldPane">今いる世界</button>
+          <button id="panelSettingsTab" class="panel-tab" type="button" role="tab" aria-selected="false" aria-controls="panelSettingsPane">設定</button>
+          <button id="panelCodeTab" class="panel-tab" type="button" role="tab" aria-selected="false" aria-controls="codePanel">コード</button>
+        </div>
         <div id="normalPanel" class="normal-panel">
-          <div class="panel-section world-status">
+          <div id="panelWorldPane" class="panel-tab-pane" role="tabpanel" aria-labelledby="panelWorldTab">
+            <div class="panel-section world-status">
             <div class="world-label">今いる世界</div>
             <div id="worldName" class="world-name">外側の世界</div>
             <div id="worldPath" class="world-path">外側</div>
+            </div>
+
+            <div class="panel-section">
+              <label>
+                Title
+                <input id="titleInput" type="text" />
+              </label>
+              <label>
+                Body
+                <textarea id="bodyInput" rows="6"></textarea>
+              </label>
+              <label>
+                種類
+                <select id="powanKindInput">
+                  <option value="nerve">神経</option>
+                  <option value="organ">臓器</option>
+                </select>
+              </label>
+            </div>
+
+            <div class="panel-section controls">
+              <button id="backButton" type="button" disabled>上の階層へ</button>
+              <button id="addNodeButton" type="button">Add Child</button>
+              <button id="addRootButton" type="button">Add Free Node</button>
+              <button id="panelArrangeWorldButton" type="button">この世界を整列</button>
+              <button id="deleteButton" type="button">Delete</button>
+            </div>
           </div>
 
-          <div class="panel-section">
-            <label>
-              Title
-              <input id="titleInput" type="text" />
-            </label>
-            <label>
-              Body
-              <textarea id="bodyInput" rows="6"></textarea>
-            </label>
-            <label>
-              種類
-              <select id="powanKindInput">
-                <option value="nerve">神経</option>
-                <option value="organ">臓器</option>
-              </select>
-            </label>
-          </div>
-
-          <div class="panel-section controls">
-            <button id="backButton" type="button" disabled>上の階層へ</button>
-            <button id="addNodeButton" type="button">Add Child</button>
-            <button id="addRootButton" type="button">Add Free Node</button>
-            <button id="panelArrangeWorldButton" type="button">この世界を整列</button>
-            <button id="deleteButton" type="button">Delete</button>
-          </div>
-
-          <div class="panel-section app-settings">
+          <div id="panelSettingsPane" class="panel-tab-pane" role="tabpanel" aria-labelledby="panelSettingsTab" hidden>
+            <div class="panel-section app-settings">
             <div class="world-label">設定</div>
             <div class="panel-setting-group">
               <div class="world-label">整列</div>
@@ -197,10 +205,11 @@
               <span>入力中音量 <span id="inputVolumeValue">55%</span></span>
               <input id="inputVolumeInput" type="range" min="0" max="1" step="0.01" />
             </label>
+            </div>
           </div>
         </div>
 
-        <div id="codePanel" class="code-panel" hidden>
+        <div id="codePanel" class="code-panel panel-tab-pane" role="tabpanel" aria-labelledby="panelCodeTab" hidden>
           <div class="code-editor-head">
             <div>
               <div class="code-editor-label">Code</div>
@@ -246,6 +255,6 @@
       <button id="pasteWorldMenuButton" type="button">ここに貼り付け</button>
     </nav>
 
-    <script src="/static/app.js?v=stable-nested-wheel-112"></script>
+    <script src="/static/app.js?v=stable-nested-wheel-113"></script>
   </body>
 </html>

@@ -511,7 +511,11 @@ var powanExplorer = {
       this.endHistoryGroup(`code-language:${codePanelNodeId}`);
     }
     codePanelNodeId = null;
-    syncCodePanel();
+    if (activePanelTab === "code" && typeof setPanelTab === "function") {
+      setPanelTab("world", { reason: `${reason}-tab` });
+    } else {
+      syncCodePanel();
+    }
   },
   setWorld(parentId, reason = "set-world") {
     openParentId = parentId;

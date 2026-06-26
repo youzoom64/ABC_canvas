@@ -16,8 +16,8 @@ function selectNode(id) {
   if (!node) {
     return;
   }
-  if (codePanelNodeId && codePanelNodeId !== id) {
-    powanExplorer.setCodeNode(null, "selection-closes-code");
+  if (activePanelTab === "code" && codePanelNodeId !== id) {
+    powanExplorer.setCodeNode(id, "selection-updates-code");
   }
   titleInput.value = node.title || "";
   bodyInput.value = node.body || "";

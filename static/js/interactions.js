@@ -2012,6 +2012,16 @@ codeInput.addEventListener("keydown", (event) => {
   codeInput.dispatchEvent(new Event("input", { bubbles: true }));
 });
 closeCodeButton.addEventListener("click", () => powanExplorer.closeCodeEditor());
+
+if (panelWorldTab) {
+  panelWorldTab.addEventListener("click", () => setPanelTab("world", { reason: "panel-world-tab-click" }));
+}
+if (panelSettingsTab) {
+  panelSettingsTab.addEventListener("click", () => setPanelTab("settings", { reason: "panel-settings-tab-click" }));
+}
+if (panelCodeTab) {
+  panelCodeTab.addEventListener("click", () => setPanelTab("code", { reason: "panel-code-tab-click" }));
+}
 if (conversationPanel) {
   conversationPanel.addEventListener("click", (event) => {
     if (!conversationPanelCollapsed) {

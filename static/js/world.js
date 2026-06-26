@@ -1,3 +1,52 @@
+function panelTabEntries() {
+  return [
+    { id: "world", button: panelWorldTab, pane: panelWorldPane },
+    { id: "settings", button: panelSettingsTab, pane: panelSettingsPane },
+    { id: "code", button: panelCodeTab, pane: codePanel },
+  ];
+}
+
+function normalizePanelTab(tab) {
+  return ["world", "settings", "code"].includes(tab) ? tab : "world";
+}
+
+function syncPanelTabs({ focus = false } = {}) {
+  activePanelTab = normalizePanelTab(activePanelTab);
+  const codeActive = activePanelTab === "code";
+  if (panel) {
+    panel.classList.remove("code-mode");
+  }
+  if (normalPanel) {
+    normalPanel.hidden = codeActive;
+  }
+  for (const entry of panelTabEntries()) {
+    const active = entry.id === activePanelTab;
+    if (entry.button) {
+      entry.button.classList.toggle("active", active);
+      entry.button.setAttribute("aria-selected", active ? "true" : "false");
+      entry.button.tabIndex = active ? 0 : -1;
+      if (active && focus) {
+        entry.button.focus();
+      }
+    }
+    if (entry.pane) {
+      entry.pane.hidden = !active;
+    }
+  }
+}
+
+function setPanelTab(tab, { focus = false, reason = "set-panel-tab" } = {}) {
+  activePanelTab = normalizePanelTab(tab);
+  if (activePanelTab === "code" && nodeById(selectedId) && codePanelNodeId !== selectedId) {
+    powanExplorer.setCodeNode(selectedId, `${reason}-code-node`);
+  }
+  syncPanelTabs({ focus });
+  if (activePanelTab === "code") {
+    syncCodePanel();
+  }
+  logEvent("debug", reason, { tab: activePanelTab });
+}
+
 function openCodeEditor(nodeId) {
   const node = nodeById(nodeId);
   if (!node) {
@@ -8,7 +57,7 @@ function openCodeEditor(nodeId) {
   powanExplorer.setCodeNode(node.id, "open-code-set-node");
   powanExplorer.setSelected(node.id, "open-code-select");
   selectNode(node.id);
-  syncCodePanel();
+  setPanelTab("code", { reason: "open-code-tab" });
   requestAnimationFrame(() => {
     const editor = ensureCodeEditor();
     if (editor?.then) {
@@ -33,15 +82,27 @@ function closeCodeEditor() {
 }
 
 function syncCodePanel() {
+  if (activePanelTab === "code" && !nodeById(codePanelNodeId) && nodeById(selectedId)) {
+    codePanelNodeId = selectedId;
+  }
   const codeNode = nodeById(codePanelNodeId);
-  const isOpen = Boolean(codeNode);
-  panel.classList.toggle("code-mode", isOpen);
-  normalPanel.hidden = isOpen;
-  codePanel.hidden = !isOpen;
+  syncPanelTabs();
   if (!codeNode) {
+    codeEditorNodeName.textContent = "ポワン未選択";
+    codeLanguageSelect.disabled = true;
+    codeInput.disabled = true;
+    if (codeInput.value !== "") {
+      codeInput.value = "";
+    }
+    if (codeEditor) {
+      setCodeEditorValue(codeEditor, "");
+    }
+    updateCodeLineNumbers();
     return;
   }
-  const editor = ensureCodeEditor();
+  codeLanguageSelect.disabled = false;
+  codeInput.disabled = false;
+  const editor = activePanelTab === "code" ? ensureCodeEditor() : codeEditor;
   codeEditorNodeName.textContent = meaningName(codeNode);
   codeLanguageSelect.value = codeNode.codeLanguage || "auto";
   const code = codeNode.code || "";
