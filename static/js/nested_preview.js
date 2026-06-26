@@ -1,4 +1,4 @@
-var NESTED_PREVIEW_MAX_DEPTH = 1;
+var NESTED_PREVIEW_MAX_DEPTH = 2;
 
 function appendNestedMeaningPreview(container, parent, placement, depth = 1) {
   const children = meaningChildren(parent);
@@ -7,7 +7,9 @@ function appendNestedMeaningPreview(container, parent, placement, depth = 1) {
   }
   const width = Number(placement?.width || container.offsetWidth || 0);
   const height = Number(placement?.height || container.offsetHeight || 0);
-  if (width < 42 || height < 26) {
+  const minWidth = depth <= 1 ? 42 : 8;
+  const minHeight = depth <= 1 ? 26 : 5;
+  if (width < minWidth || height < minHeight) {
     return;
   }
   const layer = document.createElement("div");
@@ -67,6 +69,7 @@ function nestedPreviewChildSize(cellWidth, cellHeight, depth) {
 function renderNestedPreviewMeaning(node, placement, depth) {
   const element = createPowanSurfaceWithoutSoftBody(node, placement, { mode: "preview", depth });
   element.classList.add("nested-preview-simple");
+  element.dataset.previewDepth = String(depth);
   element.addEventListener("pointerdown", (event) => {
     logNestedPointerDebug("nested-preview-pointerdown-capture", event, node, element, { depth });
   }, true);

@@ -1821,28 +1821,28 @@ body.panel-collapsed .panel.code-mode {
 
 .node.drag-softbody::before,
 .node.drag-softbody::after,
-.node.drag-softbody .node-body,
-.node.drag-softbody .powan-face-button,
+.node.drag-softbody > .node-body,
+.node.drag-softbody > .powan-face-button,
 .nested-meaning.drag-softbody::before,
 .nested-meaning.drag-softbody::after,
-.nested-meaning.drag-softbody .node-body,
-.nested-meaning.drag-softbody .powan-face-button,
+.nested-meaning.drag-softbody > .node-body,
+.nested-meaning.drag-softbody > .powan-face-button,
 .nested-preview-meaning.drag-softbody::before,
 .nested-preview-meaning.drag-softbody::after,
-.nested-preview-meaning.drag-softbody .node-body,
-.nested-preview-meaning.drag-softbody .powan-face-button,
+.nested-preview-meaning.drag-softbody > .node-body,
+.nested-preview-meaning.drag-softbody > .powan-face-button,
 .node.softbody-visual::before,
 .node.softbody-visual::after,
-.node.softbody-visual .node-body,
-.node.softbody-visual .powan-face-button,
+.node.softbody-visual > .node-body,
+.node.softbody-visual > .powan-face-button,
 .nested-meaning.softbody-visual::before,
 .nested-meaning.softbody-visual::after,
-.nested-meaning.softbody-visual .node-body,
-.nested-meaning.softbody-visual .powan-face-button,
+.nested-meaning.softbody-visual > .node-body,
+.nested-meaning.softbody-visual > .powan-face-button,
 .nested-preview-meaning.softbody-visual::before,
 .nested-preview-meaning.softbody-visual::after,
-.nested-preview-meaning.softbody-visual .node-body,
-.nested-preview-meaning.softbody-visual .powan-face-button {
+.nested-preview-meaning.softbody-visual > .node-body,
+.nested-preview-meaning.softbody-visual > .powan-face-button {
   transform: translate(var(--powan-visual-content-x, 0), var(--powan-visual-content-y, 0));
 }
 
@@ -2281,14 +2281,14 @@ body.panel-collapsed .panel.code-mode {
   pointer-events: none;
   z-index: 3;
   overflow: visible;
-  transform: scale(var(--nested-layer-scale, 0.5)) !important;
+  transform: translate(var(--powan-visual-content-x, 0), var(--powan-visual-content-y, 0)) scale(var(--nested-layer-scale, 0.5)) !important;
   transform-origin: center center;
 }
 
 .node.dragging > .nested-layer,
 .node.drag-softbody > .nested-layer,
 .node.softbody-visual > .nested-layer {
-  transform: scale(var(--nested-layer-scale, 0.5)) !important;
+  transform: translate(var(--powan-visual-content-x, 0), var(--powan-visual-content-y, 0)) scale(var(--nested-layer-scale, 0.5)) !important;
   transform-origin: center center;
 }
 
@@ -2296,7 +2296,7 @@ body.panel-collapsed .panel.code-mode {
   background: color-mix(in srgb, var(--node-color) 55%, transparent);
 }
 
-.node.has-nested-meanings .node-body {
+.node.has-nested-meanings > .node-body {
   opacity: 0.78;
   position: relative;
   z-index: 6;
@@ -2355,6 +2355,8 @@ body.panel-collapsed .panel.code-mode {
   inset: 0;
   z-index: 2;
   pointer-events: none;
+  transform: translate(var(--powan-visual-content-x, 0), var(--powan-visual-content-y, 0));
+  transform-origin: center center;
 }
 
 .nested-preview-meaning {
@@ -2663,17 +2665,31 @@ body.panel-collapsed .panel.code-mode {
 }
 
 .nested-preview-meaning > .node-body {
-  height: 2.4em;
-  min-height: 2.4em;
+  position: absolute;
+  inset: 12% 10% 10%;
+  width: auto;
+  height: auto;
+  min-height: 0;
+  padding: 0;
   color: rgba(35, 66, 78, 0.72);
   font-size: clamp(4px, calc(var(--powan-body-size, 5px) * 0.58), 10px);
-  line-height: 1.12;
+  line-height: 1.05;
   white-space: normal;
+  display: flex;
+  align-items: center;
+  justify-content: center;
 }
 
 .nested-preview-simple > .node-body {
-  font-size: clamp(2px, calc(var(--powan-body-size, 5px) * 0.52), 14px);
-  line-height: 1.08;
+  inset: 10% 8%;
+  font-size: clamp(3px, calc(var(--powan-body-size, 5px) * 0.58), 14px);
+  line-height: 1.02;
+}
+
+.nested-preview-simple[data-preview-depth="2"] > .node-body {
+  inset: 4% 4%;
+  font-size: clamp(3px, calc(var(--powan-body-size, 5px) * 0.72), 9px);
+  line-height: 1;
 }
 
 .nested-preview-simple .powan-face-button {

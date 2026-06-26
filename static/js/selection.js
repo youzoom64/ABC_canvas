@@ -178,6 +178,15 @@ function applySelectionFromEvent(nodeId, event, { scope = "canvas" } = {}) {
   });
 }
 
+function clearSelection(reason = "clear-selection") {
+  return applySelection([], {
+    primaryId: null,
+    anchorId: null,
+    reason,
+    updatePanel: false,
+  });
+}
+
 function selectionClientRect(startX, startY, endX, endY) {
   const left = Math.min(startX, endX);
   const top = Math.min(startY, endY);

@@ -395,14 +395,12 @@ var powanDragDeform = {
   },
 
   nestedLayerOffset(active) {
-    return active.contentFollowsVisualCenter
-      ? this.softBodySelfOffset(active)
-      : { x: 0, y: 0 };
+    return { x: 0, y: 0 };
   },
 
   applyNestedLayerOffset(active, offset) {
     if (active.contentLayer) {
-      active.contentLayer.style.transform = `translate(${offset.x.toFixed(2)}px, ${offset.y.toFixed(2)}px)`;
+      active.contentLayer.style.removeProperty("transform");
     }
   },
 

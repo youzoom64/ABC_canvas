@@ -742,7 +742,10 @@ window.addEventListener("pointerup", (event) => {
     return;
   }
   if (pan) {
-    finishPan();
+    const finishedPan = finishPan();
+    if (!finishedPan?.moved && isCanvasSpace(event.target)) {
+      clearSelection("canvas-space-click-clear-selection");
+    }
     return;
   }
   if (panIntent) {

@@ -411,10 +411,10 @@ function renderNode(node) {
     logEvent("debug", "meaning-editor-close-node", { nodeId: node.id });
   });
 
-  element.append(body);
   const nestedLayer = document.createElement("div");
   nestedLayer.className = "nested-layer";
   element.append(nestedLayer);
+  element.append(body);
   element.addEventListener("pointerdown", (event) => {
     if (event.target?.closest?.(".powan-face-button")) {
       return;

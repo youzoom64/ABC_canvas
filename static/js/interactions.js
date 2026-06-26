@@ -1314,12 +1314,12 @@ async function savePanelArrangeSettings(reason = "panel-arrange-settings") {
 function updatePanelArrangeSettings(reason = "panel-arrange-settings-change") {
   appSettings.arrangeResizeParents = panelArrangeResizeParentsInput ? panelArrangeResizeParentsInput.checked : appSettings.arrangeResizeParents;
   appSettings.arrangeRecursive = panelArrangeRecursiveInput ? panelArrangeRecursiveInput.checked : appSettings.arrangeRecursive;
-  appSettings.arrangeWorldParentSpacing = normalizeArrangeSpacing(panelArrangeChildSpacingInput?.value);
-  appSettings.arrangeWorldParentSize = normalizeArrangeSize(panelArrangeChildSizeInput?.value);
+  appSettings.arrangeChildSpacing = normalizeArrangeSpacing(panelArrangeChildSpacingInput?.value);
+  appSettings.arrangeChildSize = normalizeArrangeSize(panelArrangeChildSizeInput?.value);
+  appSettings.arrangeWorldParentSpacing = appSettings.arrangeChildSpacing;
+  appSettings.arrangeWorldParentSize = appSettings.arrangeChildSize;
   appSettings.arrangeNestedChildSize = normalizeArrangeSize(panelArrangeNestedChildSizeInput?.value);
   appSettings.nestedLayerScale = normalizeNestedLayerScale(panelNestedLayerScaleInput?.value);
-  appSettings.arrangeChildSpacing = normalizeArrangeSpacing(panelArrangeWorldParentSpacingInput?.value);
-  appSettings.arrangeChildSize = normalizeArrangeSize(panelArrangeWorldParentSizeInput?.value);
   document.documentElement.style.setProperty("--nested-layer-scale", appSettings.nestedLayerScale.toFixed(2));
   appSettings.arrangeSpacing = appSettings.arrangeChildSpacing;
   appSettings.arrangeSize = appSettings.arrangeChildSize;
@@ -2199,8 +2199,6 @@ for (const input of [
   panelArrangeChildSizeInput,
   panelArrangeNestedChildSizeInput,
   panelNestedLayerScaleInput,
-  panelArrangeWorldParentSpacingInput,
-  panelArrangeWorldParentSizeInput,
 ]) {
   if (!input) {
     continue;
