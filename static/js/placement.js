@@ -21,6 +21,32 @@ var powanPlacement = {
     };
   },
 
+  scaleRectFromCenter(rect, factor, limits = {}) {
+    const center = this.rectCenter(rect);
+    const scale = this.number(factor, 1);
+    const minWidth = this.number(limits.minWidth, 1);
+    const minHeight = this.number(limits.minHeight, 1);
+    const maxWidth = this.number(limits.maxWidth, Number.POSITIVE_INFINITY);
+    const maxHeight = this.number(limits.maxHeight, Number.POSITIVE_INFINITY);
+    const width = this.clamp(this.number(rect?.width, 1) * scale, minWidth, maxWidth);
+    const height = this.clamp(this.number(rect?.height, 1) * scale, minHeight, maxHeight);
+    return this.rectFromCenter(center, { width, height });
+  },
+
+  moveRectFromAreaCenter(rect, area, factor) {
+    const rectCenter = this.rectCenter(rect);
+    const areaCenter = this.rectCenter(area);
+    const scale = this.number(factor, 1);
+    const nextCenter = {
+      x: areaCenter.x + (rectCenter.x - areaCenter.x) * scale,
+      y: areaCenter.y + (rectCenter.y - areaCenter.y) * scale,
+    };
+    return this.rectFromCenter(nextCenter, {
+      width: this.number(rect?.width, 1),
+      height: this.number(rect?.height, 1),
+    });
+  },
+
   rectFromCenter(center, size, bounds = null) {
     const width = Math.round(Math.max(1, this.number(size?.width, 1)));
     const height = Math.round(Math.max(1, this.number(size?.height, 1)));
@@ -140,16 +166,9 @@ var powanPlacement = {
       return [{ x: 0.5, y: 0.5 }];
     }
     const spacingScale = this.clamp(this.number(spacing, 1), 0.3, 3);
-    if (count === 2) {
-      const offset = this.clamp(0.18 * spacingScale, 0.08, 0.86);
-      return [
-        { x: 0.5 - offset, y: 0.5 },
-        { x: 0.5 + offset, y: 0.5 },
-      ];
-    }
     const radius = this.clamp((count <= 4 ? 0.34 : 0.38) * spacingScale, 0.12, 0.86);
     return Array.from({ length: count }, (_, index) => {
-      const angle = -Math.PI / 2 + (Math.PI * 2 * index) / count;
+      const angle = -Math.PI / 2 - Math.PI / count + (Math.PI * 2 * index) / count;
       return {
         x: 0.5 + Math.cos(angle) * radius,
         y: 0.5 + Math.sin(angle) * radius,
@@ -163,6 +182,26 @@ var powanPlacement = {
     const centerX = area.x + area.width * anchor.x;
     const centerY = area.y + area.height * anchor.y;
     return this.rectFromCenter({ x: centerX, y: centerY }, { width, height }, area);
+  },
+
+  arrangeRadially(area, items, size, spacing = 1) {
+    const anchors = this.anchors(items.length, spacing);
+    return items.map((item, index) => ({
+      item,
+      layout: (() => {
+        const anchor = anchors[index] || { x: 0.5, y: 0.5 };
+        const width = this.number(size?.width, 1);
+        const height = this.number(size?.height, 1);
+        const centerX = area.x + area.width * anchor.x;
+        const centerY = area.y + area.height * anchor.y;
+        return {
+          x: Math.round(centerX - width / 2),
+          y: Math.round(centerY - height / 2),
+          width: Math.round(width),
+          height: Math.round(height),
+        };
+      })(),
+    }));
   },
 
   fallbackOffset(anchor, width, height) {

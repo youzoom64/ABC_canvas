@@ -2811,11 +2811,12 @@ canvas.addEventListener(
     event.preventDefault();
     const factor = Math.exp(-event.deltaY * ZOOM_STEP);
     if (event.ctrlKey) {
-      powanExplorer.resizeSelectedByWheel(factor);
+      const resizeFactor = event.deltaY < 0 ? 1.08 : 0.92;
+      powanExplorer.resizeSelectedByWheel(resizeFactor);
       return;
     }
     if (event.shiftKey) {
-      powanExplorer.spreadSelectedFromOriginByWheel(factor);
+      powanExplorer.spreadSelectedNestedPowansFromParentCenter(factor);
       return;
     }
     zoomAt(event.clientX, event.clientY, viewport.scale * factor);

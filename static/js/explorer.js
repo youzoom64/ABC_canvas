@@ -513,30 +513,9 @@ var powanExplorer = {
     return plans;
   },
   ensureParentSizeForArrangedChildren(parent, childCount, reason = "arrange-parent-size") {
-    if (!appSettings.arrangeResizeParents || !parent || childCount <= 0) {
-      return parent;
-    }
-    const layout = powanPlacement.nodeLayout(parent);
-    const minimum = powanPlacement.minimumParentSizeForChildren(
+    logEvent("debug", `${reason}-disabled`, {
+      parentId: parent?.id || null,
       childCount,
-      appSettings.arrangeNestedChildSize,
-      1,
-    );
-    const nextWidth = Math.min(NODE_LIMITS.maxWidth, Math.max(layout.width, minimum.width, NODE_LIMITS.minWidth));
-    const nextHeight = Math.min(NODE_LIMITS.maxHeight, Math.max(layout.height, minimum.height, NODE_LIMITS.minHeight));
-    if (Math.round(nextWidth) === Math.round(layout.width) && Math.round(nextHeight) === Math.round(layout.height)) {
-      return parent;
-    }
-    const center = powanPlacement.rectCenter(layout);
-    parent.userSized = true;
-    const nextLayout = powanPlacement.rectFromCenter(center, { width: nextWidth, height: nextHeight });
-    this.syncChildCoordinatesFromWorld(parent.id, parent.parent || null, nextLayout, `${reason}-layout`);
-    logEvent("debug", reason, {
-      parentId: parent.id,
-      childCount,
-      previous: layout,
-      next: parent.layout,
-      minimum,
     });
     return parent;
   },
@@ -546,30 +525,26 @@ var powanExplorer = {
       return [];
     }
     const updateWorld = options.updateWorld !== false;
-    if (updateWorld) {
-      this.ensureParentSizeForArrangedChildren(parent, children.length, `${reason}-parent-size`);
-    }
-    const worldPlans = powanPlacement.planParentChildren(parent, children, {
-      spacing: options.spacing ?? appSettings.arrangeChildSpacing,
-      worldSizeScale: options.worldSizeScale ?? appSettings.arrangeChildSize,
-      nestedSizeScale: appSettings.arrangeNestedChildSize,
-    });
-    const nestedPlans = powanPlacement.planParentChildren(parent, children, {
-      spacing: 1,
-      worldSizeScale: options.worldSizeScale ?? appSettings.arrangeChildSize,
-      nestedSizeScale: options.nestedSizeScale ?? appSettings.arrangeNestedChildSize,
-    });
-    const changedIds = [];
     const updateNested = options.updateNested !== false;
-    for (const [index, plan] of worldPlans.entries()) {
-      const child = plan.node;
-      const nestedPlan = nestedPlans[index] || plan;
+    const spacing = options.spacing ?? appSettings.arrangeChildSpacing;
+    const worldArea = parent ? powanPlacement.parentWorldArea(parent) : powanPlacement.rootWorldArea();
+    const worldSize = powanPlacement.worldChildSize(children.length, options.worldSizeScale ?? appSettings.arrangeChildSize);
+    const nestedArea = parent ? powanPlacement.parentNestedArea(parent) : null;
+    const nestedSize = parent
+      ? powanPlacement.nestedChildSize(children.length, options.nestedSizeScale ?? appSettings.arrangeNestedChildSize)
+      : null;
+    const worldPlacements = powanPlacement.arrangeRadially(worldArea, children, worldSize, spacing);
+    const nestedPlacements = parent
+      ? powanPlacement.arrangeRadially(nestedArea, children, nestedSize, spacing)
+      : [];
+    const changedIds = [];
+    for (const [index, child] of children.entries()) {
       if (updateWorld) {
         child.userSized = true;
-        this.setNodeLayout(child.id, plan.worldLayout, `${reason}-world`);
+        this.setNodeLayout(child.id, worldPlacements[index].layout, `${reason}-world`);
       }
-      if (updateNested) {
-        this.setNestedLayout(child.id, parent.id, nestedPlan.nestedLayout, `${reason}-nested`);
+      if (parent && updateNested) {
+        this.setNestedLayout(child.id, parent.id, nestedPlacements[index].layout, `${reason}-nested`);
       }
       changedIds.push(child.id);
     }
@@ -586,15 +561,18 @@ var powanExplorer = {
       logEvent("debug", "arrange-root-children-empty");
       return [];
     }
-    const plans = powanPlacement.planRootChildren(roots, {
-      spacing: appSettings.arrangeWorldParentSpacing,
-      worldSizeScale: appSettings.arrangeWorldParentSize,
-    });
+    const worldArea = powanPlacement.rootWorldArea();
+    const worldSize = powanPlacement.worldChildSize(roots.length, appSettings.arrangeWorldParentSize);
+    const placements = powanPlacement.arrangeRadially(
+      worldArea,
+      roots,
+      worldSize,
+      appSettings.arrangeWorldParentSpacing,
+    );
     const changedIds = [];
-    for (const plan of plans) {
-      const child = plan.node;
+    for (const [index, child] of roots.entries()) {
       child.userSized = true;
-      this.setNodeLayout(child.id, plan.worldLayout, `${reason}-world`);
+      this.setNodeLayout(child.id, placements[index].layout, `${reason}-world`);
       changedIds.push(child.id);
     }
     logEvent("debug", reason, {
@@ -619,22 +597,27 @@ var powanExplorer = {
     this.recordHistory(reason);
     const parents = [];
     const changedIds = [];
-    const visit = (parent) => {
+    const visit = (parent, options) => {
       const children = this.childrenOf(parent);
       if (!children.length) {
         return;
       }
       parents.push(parent.id);
-      changedIds.push(...this.arrangeParentChildren(parent, reason));
-      if (!appSettings.arrangeRecursive) {
-        return;
-      }
+      changedIds.push(...this.arrangeParentChildren(parent, reason, options));
       for (const child of children) {
-        visit(child);
+        visit(child, {
+          spacing: appSettings.arrangeWorldParentSpacing,
+          worldSizeScale: appSettings.arrangeWorldParentSize,
+          nestedSizeScale: appSettings.arrangeWorldParentSize,
+        });
       }
     };
     for (const root of roots) {
-      visit(root);
+      visit(root, {
+        spacing: appSettings.arrangeWorldParentSpacing,
+        worldSizeScale: appSettings.arrangeWorldParentSize,
+        nestedSizeScale: appSettings.arrangeNestedChildSize,
+      });
     }
     this.touchPowans([...rootIds, ...changedIds], `${reason}-touch`);
     setDirty();
@@ -657,27 +640,31 @@ var powanExplorer = {
       }
       this.recordHistory(reason);
       const changedIds = [];
-      const parents = [parent.id];
-      changedIds.push(...this.arrangeParentChildren(parent, reason, {
+      const parents = [];
+      const visit = (worldParent, options) => {
+        const worldChildren = this.childrenOf(worldParent);
+        if (!worldChildren.length) {
+          return;
+        }
+        parents.push(worldParent.id);
+        changedIds.push(...this.arrangeParentChildren(worldParent, reason, options));
+        for (const child of worldChildren) {
+          visit(child, {
+            spacing: appSettings.arrangeWorldParentSpacing,
+            worldSizeScale: appSettings.arrangeWorldParentSize,
+            nestedSizeScale: appSettings.arrangeWorldParentSize,
+          });
+        }
+      };
+      visit(parent, {
         spacing: appSettings.arrangeWorldParentSpacing,
         worldSizeScale: appSettings.arrangeWorldParentSize,
         nestedSizeScale: appSettings.arrangeNestedChildSize,
-      }));
-      for (const child of children) {
-        if (!this.childrenOf(child).length) {
-          continue;
-        }
-        parents.push(child.id);
-        changedIds.push(...this.arrangeParentChildren(child, reason, {
-          spacing: appSettings.arrangeWorldParentSpacing,
-          worldSizeScale: appSettings.arrangeWorldParentSize,
-          nestedSizeScale: appSettings.arrangeWorldParentSize,
-          updateWorld: false,
-        }));
-      }
+      });
       this.touchPowans(changedIds, `${reason}-touch`);
       setDirty();
       render();
+      focusViewportOnRect(powanPlacement.parentWorldArea(parent), 64);
       logEvent("info", reason, {
         worldParentId: parent.id,
         parentCount: parents.length,
@@ -694,21 +681,28 @@ var powanExplorer = {
     const changedIds = [];
     const parents = [];
     changedIds.push(...this.arrangeRootChildren(reason));
-    for (const root of roots) {
-      if (!this.childrenOf(root).length) {
-        continue;
+    const visit = (worldParent) => {
+      const worldChildren = this.childrenOf(worldParent);
+      if (!worldChildren.length) {
+        return;
       }
-      parents.push(root.id);
-      changedIds.push(...this.arrangeParentChildren(root, reason, {
+      parents.push(worldParent.id);
+      changedIds.push(...this.arrangeParentChildren(worldParent, reason, {
         spacing: appSettings.arrangeWorldParentSpacing,
         worldSizeScale: appSettings.arrangeWorldParentSize,
         nestedSizeScale: appSettings.arrangeWorldParentSize,
-        updateWorld: false,
       }));
+      for (const child of worldChildren) {
+        visit(child);
+      }
+    };
+    for (const root of roots) {
+      visit(root);
     }
     this.touchPowans(changedIds, `${reason}-touch`);
     setDirty();
     render();
+    focusViewportOnRect(powanPlacement.rootWorldArea(), 64);
     logEvent("info", reason, {
       worldParentId: null,
       rootCount: roots.length,
@@ -740,13 +734,10 @@ var powanExplorer = {
       logEvent("warn", "sync-child-from-nested-missing-node", { childId, parentId, reason });
       return null;
     }
-    const previous = child.nestedLayoutByParent?.[parent.id] || {};
-    const nestedLayout = {
-      ...previous,
-      ...nestedPatch,
-    };
-    this.setNestedLayout(child.id, parent.id, nestedLayout, `${reason}-nested`);
-    this.setNodeLayout(child.id, powanPlacement.worldLayoutFromNested(parent, child, nestedLayout), `${reason}-world`);
+    const layerSize = powanPlacement.parentNestedArea(parent);
+    const nextLayout = powanPlacement.worldLayoutFromNestedView(parent, child, nestedPatch, layerSize);
+    this.setNodeLayout(child.id, nextLayout, `${reason}-world`);
+    logEvent("debug", reason, { childId, parentId, nestedPatch, layout: nextLayout });
     return child;
   },
   focusViewportOnNode(nodeId, reason = "focus-node") {
@@ -760,14 +751,17 @@ var powanExplorer = {
     return true;
   },
   resizeSelectedByWheel(factor) {
+    return this.scaleSelectedPowansFromCenter(factor, "resize-selected");
+  },
+  scaleSelectedPowansFromCenter(factor, reason = "scale-selected-from-center") {
     const ids = selectedNodeIds();
     if (!ids.length) {
-      logEvent("debug", "resize-selected-missing-node", { selectedId, selectedIds: ids });
+      logEvent("debug", `${reason}-missing-node`, { selectedId, selectedIds: ids });
       return false;
     }
-    this.touchPowans(ids, "resize-selected-touch");
-    this.recordHistory(ids.length > 1 ? "resize-selected-nodes" : "resize-selected", {
-      groupKey: `resize:${ids.join("|")}`,
+    this.touchPowans(ids, `${reason}-touch`);
+    this.recordHistory(ids.length > 1 ? `${reason}-nodes` : reason, {
+      groupKey: `${reason}:${ids.join("|")}`,
     });
     let resizedCount = 0;
     const missingIds = [];
@@ -778,9 +772,7 @@ var powanExplorer = {
         missingIds.push(nodeId);
         continue;
       }
-      const resized = (element.classList.contains("nested-meaning") || element.classList.contains("nested-preview-meaning")) && node.parent
-        ? this.resizeNestedMeaningByFactor(node, element, factor, { renderAfter: false })
-        : this.resizeMeaningByFactor(node, element, factor, { renderAfter: false });
+      const resized = this.scalePowanFromCenter(node, element, factor, { renderAfter: false, reason });
       if (resized) {
         resizedCount += 1;
       }
@@ -789,13 +781,83 @@ var powanExplorer = {
       setDirty();
       render();
     }
-    logEvent(resizedCount > 0 ? "debug" : "warn", "resize-selected-complete", {
+    logEvent(resizedCount > 0 ? "debug" : "warn", `${reason}-complete`, {
       selectedIds: ids,
       resizedCount,
       missingIds,
       factor,
     });
     return resizedCount > 0;
+  },
+  scalePowanFromCenter(node, element, factor, { renderAfter = true, reason = "scale-powan-from-center" } = {}) {
+    if (!node) {
+      return false;
+    }
+    const layout = powanPlacement.nodeLayout(node);
+    const previousLayout = { ...(node.layout || {}), ...layout };
+    const nextLayout = powanPlacement.scaleRectFromCenter(layout, factor, {
+      minWidth: NODE_LIMITS.minWidth,
+      minHeight: NODE_LIMITS.minHeight,
+      maxWidth: NODE_LIMITS.maxWidth,
+      maxHeight: NODE_LIMITS.maxHeight,
+    });
+    node.userSized = true;
+    this.syncChildCoordinatesFromWorld(
+      node.id,
+      node.parent || null,
+      nextLayout,
+      reason,
+    );
+    this.preserveChildrenInsideResizedParent(node, previousLayout, nextLayout, `${reason}-children`);
+    if (renderAfter) {
+      setDirty();
+      render();
+    }
+    return true;
+  },
+  spreadSelectedNestedPowansFromParentCenter(factor, reason = "spread-selected-nested-from-parent-center") {
+    const ids = selectedNodeIds();
+    if (!ids.length) {
+      logEvent("debug", `${reason}-missing-node`, { selectedId, selectedIds: ids });
+      return false;
+    }
+    this.touchPowans(ids, `${reason}-touch`);
+    this.recordHistory(ids.length > 1 ? `${reason}-nodes` : reason, {
+      groupKey: `${reason}:${ids.join("|")}`,
+    });
+    let movedCount = 0;
+    const missingIds = [];
+    for (const nodeId of ids) {
+      const node = nodeById(nodeId);
+      const parent = node ? nodeById(node.parent) : null;
+      if (!node || !parent) {
+        missingIds.push(nodeId);
+        continue;
+      }
+      const nextLayout = powanPlacement.moveRectFromAreaCenter(
+        powanPlacement.nodeLayout(node),
+        powanPlacement.parentWorldArea(parent),
+        factor,
+      );
+      this.syncChildCoordinatesFromWorld(
+        node.id,
+        parent.id,
+        nextLayout,
+        reason,
+      );
+      movedCount += 1;
+    }
+    if (movedCount > 0) {
+      setDirty();
+      render();
+    }
+    logEvent(movedCount > 0 ? "debug" : "warn", `${reason}-complete`, {
+      selectedIds: ids,
+      movedCount,
+      missingIds,
+      factor,
+    });
+    return movedCount > 0;
   },
   spreadSelectedFromOriginByWheel(factor) {
     const ids = selectedNodeIds();
@@ -818,12 +880,7 @@ var powanExplorer = {
       }
       const element = visualElementById(node.id);
       if (element && (element.classList.contains("nested-meaning") || element.classList.contains("nested-preview-meaning")) && node.parent) {
-        const spread = this.spreadNestedMeaningByFactor(node, element, factor, { renderAfter: false });
-        if (spread) {
-          movedCount += 1;
-        } else {
-          missingIds.push(nodeId);
-        }
+        logEvent("debug", "spread-nested-disabled", { nodeId: node.id, factor });
         continue;
       }
       const layout = powanPlacement.nodeLayout(node);
@@ -892,142 +949,32 @@ var powanExplorer = {
     if (!local) {
       return false;
     }
-    const frame = powanPlacement.dragFrameForNestedLayer(local.layer, element);
-    const storedLayout = powanPlacement.nestedLayoutFromDragFrame(local.parent, node, frame, localRect);
-    this.syncChildCoordinatesFromNested(node.id, local.parent.id, storedLayout, reason);
+    this.syncChildCoordinatesFromNested(node.id, local.parent.id, localRect, reason);
     return true;
   },
   syncNestedElementRectPreserveStoredCenter(node, element, localRect, reason = "sync-nested-element-rect-center") {
-    const local = this.nestedLocalRectForElement(node, element);
-    if (!local) {
-      return false;
-    }
-    const frame = powanPlacement.dragFrameForNestedLayer(local.layer, element);
-    if (frame.type !== "preview") {
-      return this.syncNestedElementRect(node, element, localRect, reason);
-    }
-    const current = node.nestedLayoutByParent?.[local.parent.id] || {};
-    const currentWidth = Number(current.width || localRect.width || local.width);
-    const currentHeight = Number(current.height || localRect.height || local.height);
-    const storedCenterX = Number.isFinite(Number(current.x))
-      ? Number(current.x) + currentWidth / 2
-      : powanPlacement.parentNestedArea(local.parent).x + powanPlacement.parentNestedArea(local.parent).width / 2;
-    const storedCenterY = Number.isFinite(Number(current.y))
-      ? Number(current.y) + currentHeight / 2
-      : powanPlacement.parentNestedArea(local.parent).y + powanPlacement.parentNestedArea(local.parent).height / 2;
-    const sizeLayout = powanPlacement.nestedLayoutFromDragFrame(local.parent, node, frame, localRect);
-    this.syncChildCoordinatesFromNested(
-      node.id,
-      local.parent.id,
-      {
-        x: storedCenterX - Number(sizeLayout.width || currentWidth) / 2,
-        y: storedCenterY - Number(sizeLayout.height || currentHeight) / 2,
-        width: sizeLayout.width,
-        height: sizeLayout.height,
-      },
-      reason,
-    );
-    return true;
+    return this.syncNestedElementRect(node, element, localRect, reason);
   },
   spreadNestedMeaningByFactor(node, element, factor, { renderAfter = true } = {}) {
-    const local = this.nestedLocalRectForElement(node, element);
-    if (!local) {
-      return false;
-    }
-    const current = node.nestedLayoutByParent?.[local.parent.id] || powanPlacement.nestedLayoutFromWorld(local.parent, node);
-    const width = Number(current.width || local.width);
-    const height = Number(current.height || local.height);
-    const center = {
-      x: Number(current.x || 0) + width / 2,
-      y: Number(current.y || 0) + height / 2,
-    };
-    const area = powanPlacement.parentNestedArea(local.parent);
-    const origin = powanPlacement.rectCenter(area);
-    const nextCenter = {
-      x: origin.x + (center.x - origin.x) * factor,
-      y: origin.y + (center.y - origin.y) * factor,
-    };
-    this.syncChildCoordinatesFromNested(
-      node.id,
-      local.parent.id,
-      {
-        x: nextCenter.x - width / 2,
-        y: nextCenter.y - height / 2,
-        width: Math.round(width),
-        height: Math.round(height),
-      },
-      "spread-selected-nested",
-    );
-    if (renderAfter) {
-      setDirty();
-      render();
-    }
-    return true;
+    logEvent("debug", "spread-nested-disabled", { nodeId: node?.id || null, factor });
+    return false;
   },
   resizeMeaningByFactor(node, element, factor, { renderAfter = true } = {}) {
-    const layout = node.layout || {};
-    const width = Number(layout.width || 260);
-    const height = Number(layout.height || 150);
-    const nextWidth = Math.max(NODE_LIMITS.minWidth, Math.min(NODE_LIMITS.maxWidth, width * factor));
-    const nextHeight = Math.max(NODE_LIMITS.minHeight, Math.min(NODE_LIMITS.maxHeight, height * factor));
-    const visualRect = element?.getBoundingClientRect?.();
-    const visualCenter = visualRect?.width && visualRect?.height
-      ? screenToWorld(visualRect.left + visualRect.width / 2, visualRect.top + visualRect.height / 2)
-      : null;
-    const origin = currentWorldOrigin();
-    const centerX = visualCenter ? origin.x + visualCenter.x : Number(layout.x || 0) + width / 2;
-    const centerY = visualCenter ? origin.y + visualCenter.y : Number(layout.y || 0) + height / 2;
-    const previousLayout = {
-      ...(node.layout || {}),
-      x: Number(layout.x || 0),
-      y: Number(layout.y || 0),
-      width,
-      height,
-    };
-    const nextLayout = {
-      x: Math.round(centerX - nextWidth / 2),
-      y: Math.round(centerY - nextHeight / 2),
-      width: Math.round(nextWidth),
-      height: Math.round(nextHeight),
-    };
-    node.userSized = true;
-    this.syncChildCoordinatesFromWorld(
-      node.id,
-      node.parent || null,
-      nextLayout,
-      "resize-focused-node",
-    );
-    this.preserveChildrenInsideResizedParent(node, previousLayout, nextLayout, "resize-focused-node-children");
-    if (renderAfter) {
-      setDirty();
-      render();
-    }
-    return true;
+    return this.scalePowanFromCenter(node, element, factor, { renderAfter, reason: "resize-focused-node" });
   },
   resizeNestedMeaningByFactor(node, element, factor, { renderAfter = true } = {}) {
     const local = this.nestedLocalRectForElement(node, element);
     if (!local) {
       return false;
     }
-    const isPreview = element.classList.contains("nested-preview-meaning");
-    const minWidth = isPreview ? NESTED_PREVIEW_NODE_LIMITS.minWidth : NESTED_NODE_LIMITS.minWidth;
-    const minHeight = isPreview ? NESTED_PREVIEW_NODE_LIMITS.minHeight : NESTED_NODE_LIMITS.minHeight;
-    const nextWidth = Math.max(minWidth, Math.min(NODE_LIMITS.maxWidth, local.width * factor));
-    const nextHeight = Math.max(minHeight, Math.min(NODE_LIMITS.maxHeight, local.height * factor));
+    const nextRect = powanPlacement.scaleRectFromCenter(local, factor, {
+      minWidth: NESTED_PREVIEW_NODE_LIMITS.minWidth,
+      minHeight: NESTED_PREVIEW_NODE_LIMITS.minHeight,
+      maxWidth: NODE_LIMITS.maxWidth,
+      maxHeight: NODE_LIMITS.maxHeight,
+    });
     const previousContentLayout = { ...(node.layout || {}) };
-    const centerX = local.x + local.width / 2;
-    const centerY = local.y + local.height / 2;
-    const synced = this.syncNestedElementRectPreserveStoredCenter(
-      node,
-      element,
-      {
-        x: Math.round(centerX - nextWidth / 2),
-        y: Math.round(centerY - nextHeight / 2),
-        width: Math.round(nextWidth),
-        height: Math.round(nextHeight),
-      },
-      "resize-focused-nested-node",
-    );
+    const synced = this.syncNestedElementRect(node, element, nextRect, "resize-focused-nested-node");
     if (!synced) {
       return false;
     }
@@ -1297,7 +1244,7 @@ var powanExplorer = {
   powanDeformProfile(element) {
     const isPowan = this.isPowanElement(element);
     const contentLayer = isPowan ? this.powanChildLayer(element) : null;
-    const childEls = isPowan ? this.powanChildrenInElement(element, contentLayer) : [];
+    const childEls = [];
     return {
       isPowan,
       contentLayer,
@@ -1351,7 +1298,6 @@ var powanExplorer = {
     nestedDrag.moved = true;
     nestedDrag.lastLocalRect = localRect;
     nestedDrag.lastPointerLocalRect = pointerLocalRect;
-    const storedLayout = powanNestedDrag.storedLayout(parent, node, nestedDrag, localRect);
     logEvent("trace", "nested-drag-move", {
       nodeId: node.id,
       parentId: parent.id,
@@ -1374,12 +1320,12 @@ var powanExplorer = {
         height: Math.round(pointerLocalRect.height),
       },
       deformActive: Boolean(deformRect),
-      storedLayout,
+      nestedViewRect: localRect,
     });
     this.syncChildCoordinatesFromNested(
       node.id,
       parent.id,
-      storedLayout,
+      localRect,
       "nested-drag-layout",
     );
     updateCoordinateBadge(node);
@@ -1398,8 +1344,7 @@ var powanExplorer = {
       return;
     }
     const localRect = powanNestedDrag.clampInside(dragState);
-    const storedLayout = powanNestedDrag.storedLayout(parent, node, dragState, localRect);
-    this.syncChildCoordinatesFromNested(node.id, parent.id, storedLayout, "nested-drag-clamp-inside");
+    this.syncChildCoordinatesFromNested(node.id, parent.id, localRect, "nested-drag-clamp-inside");
   },
   detachNestedDragToWorld(dragState) {
     const node = nodeById(dragState.id);

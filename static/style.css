@@ -2289,6 +2289,15 @@ body.panel-collapsed .panel.code-mode {
   pointer-events: none;
   z-index: 3;
   overflow: visible;
+  transform: scale(0.5) !important;
+  transform-origin: center center;
+}
+
+.node.dragging > .nested-layer,
+.node.drag-softbody > .nested-layer,
+.node.softbody-visual > .nested-layer {
+  transform: scale(0.5) !important;
+  transform-origin: center center;
 }
 
 .node.has-nested-meanings {

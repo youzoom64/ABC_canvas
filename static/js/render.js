@@ -706,51 +706,30 @@ function divideMeaningDisplaySizeByMeaningCount(count) {
 }
 
 function arrangeHeldMeaningsEvenly(parent, children, scale, { expanded = false } = {}) {
-  return powanPlacement.planParentChildren(parent, children).map((plan) => {
+  return children.map((child) => {
     if (expanded) {
       return {
-        node: plan.node,
-        ...powanPlacement.worldRectToInteriorRect(parent, plan.worldLayout),
+        node: child,
+        ...powanPlacement.worldRectToInteriorRect(parent, powanPlacement.nodeLayout(child)),
       };
     }
-    return nestedPlacementFromLayout(parent, plan.node, plan.nestedLayout);
+    return nestedPlacementFromLayout(parent, child);
   });
 }
 
-function nestedPlacementFromLayout(parent, child, fallbackPlacement) {
+function nestedPlacementFromLayout(parent, child) {
   const parentLayout = parent.layout || {};
-  const nestedLayout = child.nestedLayoutByParent?.[parent.id];
   const parentWidth = Number(parentLayout.width || NODE_LIMITS.minWidth);
   const parentHeight = Number(parentLayout.height || NODE_LIMITS.minHeight);
-  const nestedX = Number(nestedLayout?.x);
-  const nestedY = Number(nestedLayout?.y);
-  if (!Number.isFinite(nestedX) || !Number.isFinite(nestedY)) {
-    return {
-      node: child,
-      ...fallbackPlacement,
-    };
-  }
   const layerInset = 14;
-  const savedWidth = Number(nestedLayout?.width);
-  const savedHeight = Number(nestedLayout?.height);
-  const maxNestedWidth = Math.max(NESTED_NODE_LIMITS.minWidth, Math.min(NESTED_NODE_LIMITS.maxWidth, parentWidth - layerInset * 2));
-  const maxNestedHeight = Math.max(NESTED_NODE_LIMITS.minHeight, Math.min(NESTED_NODE_LIMITS.maxHeight, parentHeight - layerInset * 2));
-  const width = Number.isFinite(savedWidth)
-    ? Math.max(NESTED_NODE_LIMITS.minWidth, Math.min(maxNestedWidth, savedWidth))
-    : fallbackPlacement.width;
-  const height = Number.isFinite(savedHeight)
-    ? Math.max(NESTED_NODE_LIMITS.minHeight, Math.min(maxNestedHeight, savedHeight))
-    : fallbackPlacement.height;
-  const minX = 0;
-  const minY = 0;
-  const maxX = Math.max(0, parentWidth - layerInset * 2 - width);
-  const maxY = Math.max(0, parentHeight - layerInset * 2 - height);
+  const layerSize = {
+    width: Math.max(1, parentWidth - layerInset * 2),
+    height: Math.max(1, parentHeight - layerInset * 2),
+  };
+  const rect = powanPlacement.nestedViewRect(parent, child, layerSize);
   return {
     node: child,
-    x: Math.min(maxX, Math.max(minX, nestedX)),
-    y: Math.min(maxY, Math.max(minY, nestedY)),
-    width,
-    height,
+    ...rect,
   };
 }
 

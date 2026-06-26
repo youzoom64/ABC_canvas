@@ -35,63 +35,25 @@ function nestedPreviewArea(width, height, depth) {
 }
 
 function arrangeNestedPreviewChildren(parent, children, area, containerWidth, containerHeight, depth) {
-  const columns = Math.ceil(Math.sqrt(children.length));
-  const rows = Math.ceil(children.length / columns);
-  const cellWidth = area.width / columns;
-  const cellHeight = area.height / rows;
-  return children.map((child, index) => {
-    const column = index % columns;
-    const row = Math.floor(index / columns);
-    const size = nestedPreviewChildSize(cellWidth, cellHeight, depth);
-    const savedPlacement = nestedPreviewPlacementFromLayout(parent, child, area, size);
-    if (savedPlacement) {
-      return savedPlacement;
-    }
+  return children.map((child) => {
+    const rect = nestedPreviewPlacementFromWorld(parent, child, area);
     return {
       node: child,
-      x: area.x + column * cellWidth + (cellWidth - size.width) / 2,
-      y: area.y + row * cellHeight + (cellHeight - size.height) / 2,
-      width: size.width,
-      height: size.height,
+      ...rect,
     };
   });
 }
 
-function nestedPreviewPlacementFromLayout(parent, child, area, size) {
-  const nestedLayout = child.nestedLayoutByParent?.[parent.id];
-  const savedX = Number(nestedLayout?.x);
-  const savedY = Number(nestedLayout?.y);
-  if (!Number.isFinite(savedX) || !Number.isFinite(savedY)) {
-    return null;
-  }
-  const sourceArea = powanPlacement.parentNestedArea(parent);
-  const savedWidth = Math.max(8, Number(nestedLayout?.width || size.width));
-  const savedHeight = Math.max(6, Number(nestedLayout?.height || size.height));
-  const sourceCenterX = savedX + savedWidth / 2;
-  const sourceCenterY = savedY + savedHeight / 2;
-  const anchor = {
-    x: (sourceCenterX - sourceArea.x) / Math.max(1, sourceArea.width),
-    y: (sourceCenterY - sourceArea.y) / Math.max(1, sourceArea.height),
-  };
-  const defaultStoredSize = powanPlacement.nestedChildSize(Math.max(1, meaningChildren(parent).length), 1);
-  const savedScale = powanPlacement.clamp(
-    ((savedWidth / Math.max(1, defaultStoredSize.width)) + (savedHeight / Math.max(1, defaultStoredSize.height))) / 2,
-    0.3,
-    2.5,
-  );
-  const displaySize = {
-    width: Math.min(Math.max(8, area.width), size.width * savedScale),
-    height: Math.min(Math.max(6, area.height), size.height * savedScale),
-  };
-  const placement = {
-    x: Math.round(area.x + area.width * anchor.x - displaySize.width / 2),
-    y: Math.round(area.y + area.height * anchor.y - displaySize.height / 2),
-    width: Math.round(displaySize.width),
-    height: Math.round(displaySize.height),
-  };
+function nestedPreviewPlacementFromWorld(parent, child, area) {
+  const rect = powanPlacement.nestedViewRect(parent, child, {
+    width: area.width,
+    height: area.height,
+  });
   return {
-    node: child,
-    ...placement,
+    x: Math.round(area.x + rect.x),
+    y: Math.round(area.y + rect.y),
+    width: Math.max(8, Math.round(rect.width)),
+    height: Math.max(5, Math.round(rect.height)),
   };
 }
 
