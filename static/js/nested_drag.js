@@ -47,6 +47,16 @@ var powanNestedDrag = {
     return rect.width / Math.max(1, dragState.layer.offsetWidth);
   },
 
+  visualFrame(dragState) {
+    const rect = dragState.layer?.getBoundingClientRect?.();
+    const scale = this.layerScale(dragState);
+    return {
+      width: Math.max(1, (rect?.width || dragState.layer?.offsetWidth || 1) / Math.max(0.01, scale)),
+      height: Math.max(1, (rect?.height || dragState.layer?.offsetHeight || 1) / Math.max(0.01, scale)),
+      scale,
+    };
+  },
+
   localRectFromPointer(dragState, clientX, clientY) {
     const layerRect = dragState.layer.getBoundingClientRect();
     const scale = this.layerScale(dragState);
@@ -130,11 +140,27 @@ var powanNestedDrag = {
       return false;
     }
     const center = powanPlacement.rectCenter(localRect);
+    const frame = this.visualFrame(dragState);
     return (
       center.x < 0 ||
       center.y < 0 ||
-      center.x > dragState.layer.clientWidth ||
-      center.y > dragState.layer.clientHeight
+      center.x > frame.width ||
+      center.y > frame.height
+    );
+  },
+
+  screenRectOutsideParent(dragState, screenRect) {
+    const layerRect = dragState.layer?.getBoundingClientRect?.();
+    if (!layerRect || !screenRect) {
+      return null;
+    }
+    const centerX = screenRect.left + screenRect.width / 2;
+    const centerY = screenRect.top + screenRect.height / 2;
+    return (
+      centerX < layerRect.left ||
+      centerY < layerRect.top ||
+      centerX > layerRect.right ||
+      centerY > layerRect.bottom
     );
   },
 
@@ -161,11 +187,12 @@ var powanNestedDrag = {
         return;
       }
       const nextScreenRect = screenRect || this.screenRectFromLocalRect(dragState, localRect);
+      const screenOutside = this.screenRectOutsideParent(dragState, nextScreenRect);
       candidates.push({
         source,
         localRect,
         screenRect: nextScreenRect,
-        outside: this.rectOutsideParent(dragState, localRect),
+        outside: screenOutside == null ? this.rectOutsideParent(dragState, localRect) : screenOutside,
         center: powanPlacement.rectCenter(localRect),
       });
     };

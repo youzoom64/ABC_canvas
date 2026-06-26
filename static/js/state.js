@@ -42,6 +42,8 @@ var panelArrangeChildSizeInput = document.querySelector("#panelArrangeChildSizeI
 var panelArrangeChildSizeValue = document.querySelector("#panelArrangeChildSizeValue");
 var panelArrangeNestedChildSizeInput = document.querySelector("#panelArrangeNestedChildSizeInput");
 var panelArrangeNestedChildSizeValue = document.querySelector("#panelArrangeNestedChildSizeValue");
+var panelNestedLayerScaleInput = document.querySelector("#panelNestedLayerScaleInput");
+var panelNestedLayerScaleValue = document.querySelector("#panelNestedLayerScaleValue");
 var panelArrangeWorldParentSpacingInput = document.querySelector("#panelArrangeWorldParentSpacingInput");
 var panelArrangeWorldParentSpacingValue = document.querySelector("#panelArrangeWorldParentSpacingValue");
 var panelArrangeWorldParentSizeInput = document.querySelector("#panelArrangeWorldParentSizeInput");
@@ -187,6 +189,7 @@ var appSettings = {
   arrangeChildSpacing: 1,
   arrangeChildSize: 1,
   arrangeNestedChildSize: 1,
+  nestedLayerScale: 0.5,
   arrangeWorldParentSpacing: 1,
   arrangeWorldParentSize: 1,
 };
@@ -507,8 +510,10 @@ function applyArrangeSettings(data = {}) {
   appSettings.arrangeChildSpacing = normalizeArrangeSpacing(data.arrangeChildSpacing ?? data.arrangeSpacing);
   appSettings.arrangeChildSize = normalizeArrangeSize(data.arrangeChildSize ?? data.arrangeSize);
   appSettings.arrangeNestedChildSize = normalizeArrangeSize(data.arrangeNestedChildSize ?? data.arrangeSize);
+  appSettings.nestedLayerScale = normalizeNestedLayerScale(data.nestedLayerScale ?? appSettings.nestedLayerScale);
   appSettings.arrangeWorldParentSpacing = normalizeArrangeSpacing(data.arrangeWorldParentSpacing ?? data.arrangeSpacing);
   appSettings.arrangeWorldParentSize = normalizeArrangeSize(data.arrangeWorldParentSize ?? data.arrangeSize);
+  document.documentElement.style.setProperty("--nested-layer-scale", appSettings.nestedLayerScale.toFixed(2));
 }
 
 function syncSettingsInputs() {
@@ -561,6 +566,7 @@ function syncArrangePanelInputs() {
   setRangeControl(panelArrangeChildSpacingInput, panelArrangeChildSpacingValue, appSettings.arrangeWorldParentSpacing);
   setRangeControl(panelArrangeChildSizeInput, panelArrangeChildSizeValue, appSettings.arrangeWorldParentSize);
   setRangeControl(panelArrangeNestedChildSizeInput, panelArrangeNestedChildSizeValue, appSettings.arrangeNestedChildSize);
+  setRangeControl(panelNestedLayerScaleInput, panelNestedLayerScaleValue, appSettings.nestedLayerScale);
   setRangeControl(panelArrangeWorldParentSpacingInput, panelArrangeWorldParentSpacingValue, appSettings.arrangeChildSpacing);
   setRangeControl(panelArrangeWorldParentSizeInput, panelArrangeWorldParentSizeValue, appSettings.arrangeChildSize);
 }
@@ -603,6 +609,14 @@ function normalizeArrangeSize(value) {
     return DEFAULT_ARRANGE_SIZE;
   }
   return Math.min(MAX_ARRANGE_SIZE, Math.max(MIN_ARRANGE_SIZE, number));
+}
+
+function normalizeNestedLayerScale(value) {
+  const number = Number(value);
+  if (!Number.isFinite(number)) {
+    return 0.5;
+  }
+  return Math.min(1.0, Math.max(0.3, number));
 }
 
 function normalizeConversationAutoSummaryTurns(value) {

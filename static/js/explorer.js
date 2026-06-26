@@ -1017,25 +1017,27 @@ var powanExplorer = {
     const previousArea = this.nestedLocalAreaForLayout(previousLayout);
     const nextArea = this.nestedLocalAreaForLayout(nextLayout);
     const previousParent = { ...parent, layout: previousLayout };
+    const previousCenter = powanPlacement.rectCenter(previousArea);
+    const nextCenter = powanPlacement.rectCenter(nextArea);
+    const scaleX = nextArea.width / Math.max(1, previousArea.width);
+    const scaleY = nextArea.height / Math.max(1, previousArea.height);
     for (const child of children) {
-      const fallback = powanPlacement.nestedLayoutFromWorld(previousParent, child);
-      const current = child.nestedLayoutByParent?.[parent.id] || fallback;
-      const size = this.nestedSizeWithinArea(current, nextArea, fallback);
-      const previousSize = this.nestedSizeWithinArea(current, previousArea, fallback);
-      const currentX = Number.isFinite(Number(current.x)) ? Number(current.x) : Number(fallback.x || 0);
-      const currentY = Number.isFinite(Number(current.y)) ? Number(current.y) : Number(fallback.y || 0);
-      const centerX = currentX + previousSize.width / 2;
-      const centerY = currentY + previousSize.height / 2;
-      const anchor = {
-        x: powanPlacement.clamp((centerX - previousArea.x) / Math.max(1, previousArea.width), 0, 1),
-        y: powanPlacement.clamp((centerY - previousArea.y) / Math.max(1, previousArea.height), 0, 1),
-      };
-      const nextNested = powanPlacement.rectAtAnchor(nextArea, size, anchor);
+      const current = powanPlacement.nestedViewRect(previousParent, child, previousArea);
+      const currentCenter = powanPlacement.rectCenter(current);
+      const size = this.nestedSizeWithinArea(current, nextArea, current);
+      const nextNested = powanPlacement.rectFromCenter(
+        {
+          x: nextCenter.x + (currentCenter.x - previousCenter.x) * scaleX,
+          y: nextCenter.y + (currentCenter.y - previousCenter.y) * scaleY,
+        },
+        size,
+      );
       this.syncChildCoordinatesFromNested(child.id, parent.id, nextNested, reason);
       logEvent("trace", "resize-parent-child-position-preserved", {
         parentId: parent.id,
         childId: child.id,
-        anchor,
+        scaleX,
+        scaleY,
         previous: current,
         next: nextNested,
       });
@@ -1482,6 +1484,15 @@ var powanExplorer = {
     }
     return null;
   },
+  nestedDragCenterInsideOriginalParent(dragState, releaseRect) {
+    const parentElement = visualElementById(dragState.parentId);
+    if (!parentElement || !releaseRect) {
+      return false;
+    }
+    const centerX = releaseRect.left + releaseRect.width / 2;
+    const centerY = releaseRect.top + releaseRect.height / 2;
+    return this.screenPointInsidePowanElement(parentElement, centerX, centerY);
+  },
   clampReleasedLayoutToVisibleWorld(layout) {
     const canvasRect = canvas.getBoundingClientRect();
     const topLeft = screenToWorld(canvasRect.left, canvasRect.top);
@@ -1530,7 +1541,9 @@ var powanExplorer = {
     const layerRect = rectSnapshot(dragState.layer?.getBoundingClientRect());
     const releaseParentId = powanNestedDrag.releaseParentId(dragState);
     const ancestorReleaseParentId = this.releaseAncestorParentIdForNestedDrag(dragState, rect);
-    const outsideParent = releaseSnapshot.outside;
+    const rawOutsideParent = releaseSnapshot.outside;
+    const insideOriginalParent = this.nestedDragCenterInsideOriginalParent(dragState, rect);
+    const outsideParent = rawOutsideParent && !insideOriginalParent;
     const releaseDecision = dropTarget
       ? "attach-drop-target"
       : (outsideParent
@@ -1545,6 +1558,8 @@ var powanExplorer = {
       releaseParentId,
       ancestorReleaseParentId,
       outsideParent,
+      rawOutsideParent,
+      insideOriginalParent,
       outsideParentSource: releaseSnapshot.decidedBy,
       releaseRectSource: releaseSnapshot.releaseSource,
       decision: dragState.moved ? releaseDecision : "no-move",

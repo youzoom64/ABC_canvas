@@ -1285,6 +1285,7 @@ function arrangeSettingsPayload() {
     arrangeChildSpacing: appSettings.arrangeChildSpacing,
     arrangeChildSize: appSettings.arrangeChildSize,
     arrangeNestedChildSize: appSettings.arrangeNestedChildSize,
+    nestedLayerScale: appSettings.nestedLayerScale,
     arrangeWorldParentSpacing: appSettings.arrangeWorldParentSpacing,
     arrangeWorldParentSize: appSettings.arrangeWorldParentSize,
   };
@@ -1316,8 +1317,10 @@ function updatePanelArrangeSettings(reason = "panel-arrange-settings-change") {
   appSettings.arrangeWorldParentSpacing = normalizeArrangeSpacing(panelArrangeChildSpacingInput?.value);
   appSettings.arrangeWorldParentSize = normalizeArrangeSize(panelArrangeChildSizeInput?.value);
   appSettings.arrangeNestedChildSize = normalizeArrangeSize(panelArrangeNestedChildSizeInput?.value);
+  appSettings.nestedLayerScale = normalizeNestedLayerScale(panelNestedLayerScaleInput?.value);
   appSettings.arrangeChildSpacing = normalizeArrangeSpacing(panelArrangeWorldParentSpacingInput?.value);
   appSettings.arrangeChildSize = normalizeArrangeSize(panelArrangeWorldParentSizeInput?.value);
+  document.documentElement.style.setProperty("--nested-layer-scale", appSettings.nestedLayerScale.toFixed(2));
   appSettings.arrangeSpacing = appSettings.arrangeChildSpacing;
   appSettings.arrangeSize = appSettings.arrangeChildSize;
   syncArrangePanelInputs();
@@ -2195,6 +2198,7 @@ for (const input of [
   panelArrangeChildSpacingInput,
   panelArrangeChildSizeInput,
   panelArrangeNestedChildSizeInput,
+  panelNestedLayerScaleInput,
   panelArrangeWorldParentSpacingInput,
   panelArrangeWorldParentSizeInput,
 ]) {

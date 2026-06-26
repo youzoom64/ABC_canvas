@@ -256,6 +256,7 @@ class ArrangeSettingsRequest(BaseModel):
     arrangeNestedChildSize: float | None = None
     arrangeWorldParentSpacing: float | None = None
     arrangeWorldParentSize: float | None = None
+    nestedLayerScale: float | None = None
 
 
 class ConsoleLogSettingsRequest(BaseModel):
@@ -622,6 +623,14 @@ def clamp_arrange_size(value: Any) -> float:
     return min(MAX_ARRANGE_SIZE, max(MIN_ARRANGE_SIZE, number))
 
 
+def clamp_nested_layer_scale(value: Any) -> float:
+    try:
+        number = float(value)
+    except (TypeError, ValueError):
+        number = 0.5
+    return min(1.0, max(0.3, number))
+
+
 def normalize_codex_sandbox(value: Any) -> str:
     sandbox = str(value or "").strip()
     return sandbox if sandbox in CODEX_SANDBOXES else DEFAULT_CODEX_SANDBOX
@@ -816,6 +825,7 @@ def load_app_settings() -> dict[str, Any]:
         "arrangeNestedChildSize": clamp_arrange_size(data.get("arrangeNestedChildSize", data.get("arrangeSize", DEFAULT_ARRANGE_SIZE))),
         "arrangeWorldParentSpacing": clamp_arrange_spacing(data.get("arrangeWorldParentSpacing", data.get("arrangeSpacing", DEFAULT_ARRANGE_SPACING))),
         "arrangeWorldParentSize": clamp_arrange_size(data.get("arrangeWorldParentSize", data.get("arrangeSize", DEFAULT_ARRANGE_SIZE))),
+        "nestedLayerScale": clamp_nested_layer_scale(data.get("nestedLayerScale", 0.5)),
         "consoleLogLevels": normalize_console_log_levels(data.get("consoleLogLevels")),
     }
 
@@ -866,6 +876,7 @@ def setting_payload() -> dict[str, Any]:
         "arrangeNestedChildSize": settings["arrangeNestedChildSize"],
         "arrangeWorldParentSpacing": settings["arrangeWorldParentSpacing"],
         "arrangeWorldParentSize": settings["arrangeWorldParentSize"],
+        "nestedLayerScale": settings["nestedLayerScale"],
         "consoleLogLevels": settings["consoleLogLevels"],
         "sounds": sounds,
     }
@@ -1131,6 +1142,7 @@ def save_arrange_settings(request: ArrangeSettingsRequest) -> dict[str, Any]:
         request.arrangeWorldParentSpacing if request.arrangeWorldParentSpacing is not None else request.arrangeSpacing
     )
     settings["arrangeWorldParentSize"] = clamp_arrange_size(request.arrangeWorldParentSize if request.arrangeWorldParentSize is not None else request.arrangeSize)
+    settings["nestedLayerScale"] = clamp_nested_layer_scale(request.nestedLayerScale if request.nestedLayerScale is not None else 0.5)
     save_app_settings(settings)
     log_server_event(
         "info",
@@ -1143,6 +1155,7 @@ def save_arrange_settings(request: ArrangeSettingsRequest) -> dict[str, Any]:
             "nestedSize": settings["arrangeNestedChildSize"],
             "worldSpacing": settings["arrangeWorldParentSpacing"],
             "worldSize": settings["arrangeWorldParentSize"],
+            "nestedLayerScale": settings["nestedLayerScale"],
         },
     )
     return setting_payload()

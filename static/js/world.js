@@ -419,6 +419,7 @@ function beginPointerIntent(event, node, element) {
     pointerId: event.pointerId,
     startX: event.clientX,
     startY: event.clientY,
+    selectionApplied: true,
   };
   element.setPointerCapture(event.pointerId);
   logEvent("trace", "drag-intent-start", {
@@ -756,7 +757,9 @@ window.addEventListener("pointerup", (event) => {
     const intent = pointerIntent;
     pointerIntent = null;
     if (classifyPointerIntent(intent, event) === "click") {
-      applySelectionFromEvent(intent.id, event, { scope: "canvas" });
+      if (!intent.selectionApplied) {
+        applySelectionFromEvent(intent.id, event, { scope: "canvas" });
+      }
       logEvent("trace", "drag-intent-click", {
         nodeId: intent.id,
         pointerId: intent.pointerId,

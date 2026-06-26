@@ -354,7 +354,7 @@ function createPowanSurfaceWithoutSoftBody(node, layout, options = {}) {
   return createPowanSurface(node, layout, {
     ...options,
     softBody: false,
-    staticSkin: true,
+    staticSkin: false,
   });
 }
 
