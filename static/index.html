@@ -36,7 +36,7 @@
         <button id="treePanelToggleButton" class="side-collapse-button tree-collapse-button" type="button" title="左ツリーをしまう" aria-label="左ツリーをしまう">‹</button>
         <div class="tree-panel-head">意味ツリー</div>
         <div class="tree-actions" aria-label="選択操作">
-          <button id="treeCopyButton" type="button" disabled>Copy</button>
+          <button id="treeCopyButton" type="button" disabled>メタ込Copy</button>
           <button id="treeDeleteButton" type="button" disabled>Delete</button>
         </div>
         <button id="rootWorldButton" class="root-world-button" type="button">最上位の世界</button>
@@ -87,6 +87,7 @@
             </div>
             <button id="newConversationButton" class="conversation-head-button" type="button">新規</button>
             <button id="summarizeConversationButton" class="conversation-head-button" type="button">要約</button>
+            <button id="copyAllConversationButton" class="conversation-head-button" type="button">全会話Copy</button>
             <button id="closeConversationButton" class="conversation-head-button" type="button">Close</button>
           </div>
         </div>
@@ -268,7 +269,8 @@
       <button id="openCodeMenuButton" type="button">コードを開く</button>
       <button id="arrangePowanMenuButton" type="button">整列</button>
       <button id="selectChildPowansMenuButton" type="button">中の子ポワン全選択</button>
-      <button id="copySelectionMenuButton" type="button">選択をコピー</button>
+      <button id="copyTitleMenuButton" type="button">タイトルだけコピー</button>
+      <button id="copySelectionMenuButton" type="button">選択をメタ情報込みでコピー</button>
       <button id="deleteSelectionMenuButton" type="button">選択を削除</button>
       <button id="exportPowanMenuButton" type="button">powanをエクスポート</button>
       <button id="importPowanMenuButton" type="button">powanファイルをこのポワンの下に呼ぶ</button>
@@ -280,6 +282,6 @@
       <button id="pasteWorldMenuButton" type="button">ここに貼り付け</button>
     </nav>
 
-    <script src="/static/app.js?v=stable-nested-wheel-127"></script>
+    <script src="/static/app.js?v=stable-nested-wheel-130"></script>
   </body>
 </html>

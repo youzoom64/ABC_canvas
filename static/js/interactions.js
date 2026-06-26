@@ -1197,6 +1197,16 @@ function conversationRoleClass(role) {
   return "system";
 }
 
+function conversationRoleLabel(role) {
+  if (role === "assistant" || role === "ai") {
+    return "ポワン";
+  }
+  if (role === "user") {
+    return "ユーザー";
+  }
+  return "システム";
+}
+
 function formatConversationText(role, text = "") {
   if (role !== "assistant" && role !== "ai") {
     return text;
@@ -2307,12 +2317,32 @@ function startConversationWorkPolling(afterSequence = conversationWorkEventSeque
   }, 500);
 }
 
+async function writeTextToClipboard(text) {
+  if (navigator.clipboard?.writeText) {
+    await navigator.clipboard.writeText(text);
+    return;
+  }
+  const textarea = document.createElement("textarea");
+  textarea.value = text;
+  textarea.setAttribute("readonly", "");
+  textarea.style.position = "fixed";
+  textarea.style.left = "-9999px";
+  textarea.style.top = "0";
+  document.body.appendChild(textarea);
+  textarea.select();
+  const copied = document.execCommand("copy");
+  textarea.remove();
+  if (!copied) {
+    throw new Error("copy failed");
+  }
+}
+
 function copyConversationMessage(message, button) {
   const text = message.dataset.copyText || message.querySelector(".conversation-message-body")?.textContent || "";
   if (!text) {
     return;
   }
-  navigator.clipboard.writeText(text).then(() => {
+  writeTextToClipboard(text).then(() => {
     const previous = button.textContent;
     button.textContent = "Copied";
     window.setTimeout(() => {
@@ -2321,6 +2351,46 @@ function copyConversationMessage(message, button) {
     logEvent("debug", "conversation-copy-reply", { nodeId: conversationNodeId, length: text.length });
   }).catch((error) => {
     logEvent("error", "conversation-copy-error", { nodeId: conversationNodeId, message: error.message });
+  });
+}
+
+function conversationAllCopyText() {
+  if (!conversationLog) {
+    return "";
+  }
+  return [...conversationLog.querySelectorAll(".conversation-message")]
+    .map((message) => {
+      const text = message.dataset.copyText || message.querySelector(".conversation-message-body")?.textContent || "";
+      if (!text.trim()) {
+        return "";
+      }
+      return `${conversationRoleLabel(message.dataset.role)}:\n${text}`;
+    })
+    .filter(Boolean)
+    .join("\n\n");
+}
+
+function copyAllConversationMessages(button) {
+  const text = conversationAllCopyText();
+  if (!text) {
+    saveState.textContent = "copy empty";
+    logEvent("debug", "conversation-copy-all-empty", { nodeId: conversationNodeId });
+    return;
+  }
+  writeTextToClipboard(text).then(() => {
+    const previous = button.textContent;
+    button.textContent = "Copied";
+    window.setTimeout(() => {
+      button.textContent = previous;
+    }, 900);
+    logEvent("debug", "conversation-copy-all", {
+      nodeId: conversationNodeId,
+      length: text.length,
+      count: conversationLog.querySelectorAll(".conversation-message").length,
+    });
+  }).catch((error) => {
+    saveState.textContent = "copy error";
+    logEvent("error", "conversation-copy-all-error", { nodeId: conversationNodeId, message: error.message });
   });
 }
 
@@ -2422,14 +2492,13 @@ function appendConversationMessage(role, text = "", options = {}) {
   message.appendChild(body);
   setConversationMessageText(message, role, text);
   appendConversationAttachmentViews(message, attachments);
-  if (roleClass === "ai") {
-    const copyButton = document.createElement("button");
-    copyButton.type = "button";
-    copyButton.className = "conversation-copy-button";
-    copyButton.textContent = "Copy";
-    copyButton.addEventListener("click", () => copyConversationMessage(message, copyButton));
-    message.appendChild(copyButton);
-  }
+  const copyButton = document.createElement("button");
+  copyButton.type = "button";
+  copyButton.className = "conversation-copy-button";
+  copyButton.textContent = "Copy";
+  copyButton.title = "この発言をコピー";
+  copyButton.addEventListener("click", () => copyConversationMessage(message, copyButton));
+  message.appendChild(copyButton);
   conversationLog.appendChild(message);
   if (shouldFollow) {
     followConversationBottom();
@@ -2920,6 +2989,9 @@ if (summarizeConversationButton) {
     }
   });
 }
+if (copyAllConversationButton) {
+  copyAllConversationButton.addEventListener("click", () => copyAllConversationMessages(copyAllConversationButton));
+}
 if (conversationSessionSelect) {
   conversationSessionSelect.addEventListener("change", () => {
     if (!conversationNodeId || !conversationSessionSelect.value) {
@@ -3113,6 +3185,30 @@ importPowanMenuButton.addEventListener("click", () => {
   }
   powanExplorer.choosePowanImportTarget(nodeId);
 });
+if (copyTitleMenuButton) {
+  copyTitleMenuButton.addEventListener("click", () => {
+    const nodeId = nodeContextMenuNodeId;
+    const node = nodeById(nodeId);
+    powanExplorer.closeNodeMenu("copy-title-menu-close");
+    if (!node) {
+      saveState.textContent = "copy title missing";
+      logEvent("warn", "copy-title-missing-node", { nodeId });
+      return;
+    }
+    const title = meaningName(node);
+    copyTextToClipboard(title).then((copied) => {
+      if (!copied) {
+        throw new Error("copy failed");
+      }
+      saveState.textContent = "title copied";
+      logEvent("info", "copy-title-complete", { nodeId: node.id, title });
+    }).catch((error) => {
+      saveState.textContent = "copy title error";
+      logEvent("error", "copy-title-error", { nodeId: node.id, message: error.message });
+      console.error(error);
+    });
+  });
+}
 if (copySelectionMenuButton) {
   copySelectionMenuButton.addEventListener("click", () => {
     powanExplorer.closeNodeMenu("copy-selection-menu-close");
@@ -3443,6 +3539,44 @@ function isUndoRedoTextTarget(target) {
   return tag === "input" || tag === "textarea" || tag === "select" || Boolean(target.closest?.(".cm-editor"));
 }
 
+function eventTargetElement(target) {
+  if (!target) {
+    return null;
+  }
+  return target.nodeType === 1 ? target : target.parentElement || null;
+}
+
+function selectedTextTouchesConversationPanel() {
+  if (!conversationPanel || conversationPanel.hidden || !window.getSelection) {
+    return false;
+  }
+  const selection = window.getSelection();
+  if (!selection || selection.isCollapsed) {
+    return false;
+  }
+  for (let index = 0; index < selection.rangeCount; index += 1) {
+    const range = selection.getRangeAt(index);
+    const element = eventTargetElement(range.commonAncestorContainer);
+    if (element && conversationPanel.contains(element)) {
+      return true;
+    }
+  }
+  return false;
+}
+
+function conversationOwnsKeyboardEvent(event) {
+  if (!conversationPanel || conversationPanel.hidden) {
+    return false;
+  }
+  const target = eventTargetElement(event.target);
+  const active = eventTargetElement(document.activeElement);
+  return Boolean(
+    (target && conversationPanel.contains(target))
+    || (active && conversationPanel.contains(active))
+    || selectedTextTouchesConversationPanel()
+  );
+}
+
 addNodeButton.addEventListener("click", () => powanExplorer.createChild());
 addRootButton.addEventListener("click", () => powanExplorer.createRoot());
 deleteButton.addEventListener("click", () => powanExplorer.deleteSelected());
@@ -3688,6 +3822,9 @@ window.addEventListener("pointerdown", (event) => {
   }
 });
 window.addEventListener("keydown", (event) => {
+  if (conversationOwnsKeyboardEvent(event)) {
+    return;
+  }
   if ((event.ctrlKey || event.metaKey) && !isUndoRedoTextTarget(event.target)) {
     const key = event.key.toLowerCase();
     if (key === "z") {
