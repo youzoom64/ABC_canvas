@@ -2,12 +2,13 @@ function panelTabEntries() {
   return [
     { id: "world", button: panelWorldTab, pane: panelWorldPane },
     { id: "settings", button: panelSettingsTab, pane: panelSettingsPane },
+    { id: "history", button: panelHistoryTab, pane: panelHistoryPane },
     { id: "code", button: panelCodeTab, pane: codePanel },
   ];
 }
 
 function normalizePanelTab(tab) {
-  return ["world", "settings", "code"].includes(tab) ? tab : "world";
+  return ["world", "settings", "history", "code"].includes(tab) ? tab : "world";
 }
 
 function syncPanelTabs({ focus = false } = {}) {
@@ -43,6 +44,8 @@ function setPanelTab(tab, { focus = false, reason = "set-panel-tab" } = {}) {
   syncPanelTabs({ focus });
   if (activePanelTab === "code") {
     syncCodePanel();
+  } else if (activePanelTab === "history" && typeof refreshConversationHistory === "function") {
+    refreshConversationHistory({ reason });
   }
   logEvent("debug", reason, { tab: activePanelTab });
 }

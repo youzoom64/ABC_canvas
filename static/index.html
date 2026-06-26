@@ -5,7 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <title>ABC Canvas</title>
     <link rel="icon" href="data:," />
-    <link rel="stylesheet" href="/static/style.css?v=settings-autosave-1" />
+    <link rel="stylesheet" href="/static/style.css?v=history-tab-1" />
   </head>
   <body>
     <header class="topbar">
@@ -108,6 +108,7 @@
         <div id="panelTabs" class="panel-tabs" role="tablist" aria-label="右メニュー">
           <button id="panelWorldTab" class="panel-tab active" type="button" role="tab" aria-selected="true" aria-controls="panelWorldPane">今いる世界</button>
           <button id="panelSettingsTab" class="panel-tab" type="button" role="tab" aria-selected="false" aria-controls="panelSettingsPane">設定</button>
+          <button id="panelHistoryTab" class="panel-tab" type="button" role="tab" aria-selected="false" aria-controls="panelHistoryPane">会話履歴</button>
           <button id="panelCodeTab" class="panel-tab" type="button" role="tab" aria-selected="false" aria-controls="codePanel">コード</button>
         </div>
         <div id="normalPanel" class="normal-panel">
@@ -213,6 +214,23 @@
             </label>
             </div>
           </div>
+
+          <div id="panelHistoryPane" class="panel-tab-pane" role="tabpanel" aria-labelledby="panelHistoryTab" hidden>
+            <div class="panel-section conversation-history-panel">
+              <div class="conversation-history-head">
+                <div class="world-label">会話履歴</div>
+                <button id="conversationHistoryRefreshButton" type="button">更新</button>
+              </div>
+              <label>
+                並び順
+                <select id="conversationHistorySortSelect">
+                  <option value="newest">新しい会話順</option>
+                  <option value="tree">ポワンの階層順</option>
+                </select>
+              </label>
+              <div id="conversationHistoryList" class="conversation-history-list"></div>
+            </div>
+          </div>
         </div>
 
         <div id="codePanel" class="code-panel panel-tab-pane" role="tabpanel" aria-labelledby="panelCodeTab" hidden>
@@ -246,6 +264,7 @@
       <button id="editMeaningMenuButton" type="button">意味を入力</button>
       <button id="talkToPowanButton" type="button">ポワンに話しかける</button>
       <button id="talkToPowanNewTabButton" type="button">新規タブで話しかける</button>
+      <button id="bulkCommandMenuButton" type="button">一括指示ウインドウで話しかける</button>
       <button id="openCodeMenuButton" type="button">コードを開く</button>
       <button id="arrangePowanMenuButton" type="button">整列</button>
       <button id="selectChildPowansMenuButton" type="button">中の子ポワン全選択</button>
@@ -261,6 +280,6 @@
       <button id="pasteWorldMenuButton" type="button">ここに貼り付け</button>
     </nav>
 
-    <script src="/static/app.js?v=stable-nested-wheel-120"></script>
+    <script src="/static/app.js?v=stable-nested-wheel-127"></script>
   </body>
 </html>

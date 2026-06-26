@@ -320,11 +320,29 @@ class CommandChildrenRequest(BaseModel):
     file: str = DEFAULT_FILE
     instruction: str = ""
     instructions: list[ChildCommandRequest] = Field(default_factory=list)
+    bulkHistoryId: str = ""
     includeMeaningTree: bool = False
     continueOnError: bool = True
     parallel: bool = True
     maxParallel: int = 3
     staggerMs: int = 1000
+
+
+class BulkCommandHistoryMessage(BaseModel):
+    role: str = "system"
+    text: str = ""
+    createdAt: str = ""
+
+
+class BulkCommandHistoryRequest(BaseModel):
+    project: str
+    file: str = DEFAULT_FILE
+    id: str
+    targetIds: list[str] = Field(default_factory=list)
+    targetNames: list[str] = Field(default_factory=list)
+    messages: list[BulkCommandHistoryMessage] = Field(default_factory=list)
+    createdAt: str = ""
+    updatedAt: str = ""
 
 
 def base_model_payload(model: BaseModel) -> dict[str, Any]:
@@ -1651,6 +1669,20 @@ def run_powan_codex_message(
         "user",
         conversation_record_text(text, materialized_attachments),
     )
+    log_server_event(
+        "info",
+        "powan-user-message-appended",
+        {
+            "project": STORE.safe_project_name(project),
+            "file": STORE.safe_powan_name(file),
+            "nodeId": node_id,
+            "conversationId": conversation["id"],
+            "messageId": user_message.get("id"),
+            "source": source,
+            "senderNodeId": sender_node_id,
+            "messageLength": len(text.strip()),
+        },
+    )
     messages = STORE.list_conversation_messages(project, file, node_id)["messages"]
     project_root_path = STORE.project_root(project)
     settings = load_app_settings()
@@ -2006,6 +2038,33 @@ def child_command_jobs(document: dict[str, Any], parent_id: str, request: Comman
     return jobs
 
 
+@app.get("/api/conversation-history")
+def list_conversation_history(project: str, file: str = DEFAULT_FILE) -> dict[str, Any]:
+    STORE.load_document(project, file)
+    return STORE.list_document_conversation_sessions(project, file)
+
+
+@app.get("/api/bulk-conversation-history")
+def list_bulk_conversation_history(project: str, file: str = DEFAULT_FILE) -> dict[str, Any]:
+    STORE.load_document(project, file)
+    return STORE.list_bulk_command_sessions(project, file)
+
+
+@app.post("/api/bulk-conversation-history")
+def upsert_bulk_conversation_history(request: BulkCommandHistoryRequest) -> dict[str, Any]:
+    STORE.load_document(request.project, request.file)
+    return STORE.upsert_bulk_command_session(
+        request.project,
+        request.file,
+        request.id,
+        request.targetIds,
+        request.targetNames,
+        [base_model_payload(message) for message in request.messages],
+        created_at=request.createdAt,
+        updated_at=request.updatedAt,
+    )
+
+
 @app.get("/api/conversations/{node_id}")
 def list_conversation_messages(node_id: str, project: str, file: str = DEFAULT_FILE) -> dict[str, Any]:
     ensure_powan_exists(project, file, node_id)
@@ -2248,6 +2307,28 @@ def command_child_powans(node_id: str, request: CommandChildrenRequest) -> dict[
         parent_label = powan_label(parent)
         jobs = child_command_jobs(document, node_id, request)
         job_count = len(jobs)
+        log_server_event(
+            "info",
+            "command-child-powans-jobs-prepared",
+            {
+                "console": True,
+                "project": STORE.safe_project_name(request.project),
+                "file": STORE.safe_powan_name(request.file),
+                "nodeId": node_id,
+                "meaning": parent_label,
+                "jobCount": job_count,
+                "jobs": [
+                    {
+                        "index": index,
+                        "nodeId": job["nodeId"],
+                        "meaning": job["meaning"],
+                        "instructionLength": len(job["instruction"]),
+                        "renderedTextLength": len(job["text"]),
+                    }
+                    for index, job in enumerate(jobs)
+                ],
+            },
+        )
         max_parallel = max(1, min(int(request.maxParallel or 1), 8))
         stagger_ms = max(0, min(int(request.staggerMs or 0), 60000))
         run_parallel = bool(request.parallel) and request.continueOnError and len(jobs) > 1 and max_parallel > 1
@@ -2309,6 +2390,25 @@ def command_child_powans(node_id: str, request: CommandChildrenRequest) -> dict[
                 },
             )
             try:
+                log_server_event(
+                    "info",
+                    "command-child-powan-before-run",
+                    {
+                        "project": STORE.safe_project_name(request.project),
+                        "file": STORE.safe_powan_name(request.file),
+                        "parentId": node_id,
+                        "parentMeaning": parent_label,
+                        "nodeId": job["nodeId"],
+                        "meaning": job["meaning"],
+                        "index": index,
+                        "delayMs": delay_ms,
+                        "renderedTextLength": len(job["text"]),
+                        "instructionLength": len(job["instruction"]),
+                        "parallel": run_parallel,
+                        "maxParallel": max_parallel,
+                        "staggerMs": stagger_ms,
+                    },
+                )
                 result = run_powan_codex_message(
                     job["nodeId"],
                     project=request.project,

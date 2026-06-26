@@ -12,6 +12,7 @@ var worldContextMenu = document.querySelector("#worldContextMenu");
 var editMeaningMenuButton = document.querySelector("#editMeaningMenuButton");
 var talkToPowanButton = document.querySelector("#talkToPowanButton");
 var talkToPowanNewTabButton = document.querySelector("#talkToPowanNewTabButton");
+var bulkCommandMenuButton = document.querySelector("#bulkCommandMenuButton");
 var openCodeMenuButton = document.querySelector("#openCodeMenuButton");
 var arrangePowanMenuButton = document.querySelector("#arrangePowanMenuButton");
 var selectChildPowansMenuButton = document.querySelector("#selectChildPowansMenuButton");
@@ -80,9 +81,14 @@ var normalPanel = document.querySelector("#normalPanel");
 var panelTabs = document.querySelector("#panelTabs");
 var panelWorldTab = document.querySelector("#panelWorldTab");
 var panelSettingsTab = document.querySelector("#panelSettingsTab");
+var panelHistoryTab = document.querySelector("#panelHistoryTab");
 var panelCodeTab = document.querySelector("#panelCodeTab");
 var panelWorldPane = document.querySelector("#panelWorldPane");
 var panelSettingsPane = document.querySelector("#panelSettingsPane");
+var panelHistoryPane = document.querySelector("#panelHistoryPane");
+var conversationHistorySortSelect = document.querySelector("#conversationHistorySortSelect");
+var conversationHistoryRefreshButton = document.querySelector("#conversationHistoryRefreshButton");
+var conversationHistoryList = document.querySelector("#conversationHistoryList");
 var titleInput = document.querySelector("#titleInput");
 var bodyInput = document.querySelector("#bodyInput");
 var powanKindInput = document.querySelector("#powanKindInput");
@@ -140,6 +146,8 @@ var conversationNodeId = null;
 var conversationTypingTimer = null;
 var conversationTypingNodeId = null;
 var conversationTypingMouthOpen = false;
+var conversationBackgroundSpeakingTimers = new Map();
+var conversationBackgroundSpeakingMouthOpenByNode = new Map();
 var conversationRequestAbortController = null;
 var conversationRequestNodeId = null;
 var conversationPendingMessage = null;
@@ -156,6 +164,13 @@ var conversationTabs = [];
 var conversationTabStates = new Map();
 var activeConversationTabId = null;
 var conversationTabSerial = 0;
+var bulkCommandTargetIds = [];
+var bulkCommandSending = false;
+var conversationHistoryItems = [];
+var conversationHistoryServerItems = [];
+var conversationHistoryBulkServerItems = [];
+var conversationHistorySort = "newest";
+var conversationHistoryLoading = false;
 var conversationPanelCollapsed = false;
 var treePanelCollapsed = false;
 var panelCollapsed = false;
@@ -263,6 +278,7 @@ var POWAN_FACE_CYCLE_MS = 30 * 1000;
 var POWAN_FACE_MINUTE_MS = 60 * 1000;
 var LAYOUT_STORAGE_KEY = "abc-canvas-layout";
 var APP_SETTINGS_STORAGE_KEY = "abc-canvas-settings";
+var BULK_COMMAND_HISTORY_STORAGE_PREFIX = "abc-canvas-bulk-command-history";
 var LOG_LEVELS = {
   trace: 0,
   debug: 10,
@@ -282,6 +298,7 @@ var FOCUSED_CLIENT_LOG_ACTIONS = new Set([
   "arrange-current-world-skip-revisited",
 ]);
 var FOCUSED_CLIENT_LOG_PREFIXES = [
+  "bulk-command-",
   "client-unhandled-",
 ];
 var INTERIOR_STAGE = {

@@ -405,6 +405,16 @@ function showNodeContextMenu(clientX, clientY) {
     const parent = nodeById(nodeContextMenuNodeId);
     selectChildPowansMenuButton.disabled = !parent || !powanExplorer.childrenOf(parent).length;
   }
+  if (bulkCommandMenuButton) {
+    const targetIds = selectedNodeIds();
+    const groups = bulkCommandGroupsForIds(targetIds);
+    bulkCommandMenuButton.disabled = targetIds.length < 2 || !groups.groups.length || bulkCommandSending;
+    bulkCommandMenuButton.title = targetIds.length < 2
+      ? "複数選択してから使う"
+      : groups.groups.length
+        ? `${targetIds.length}件へ一括指示`
+        : "親ポワンがない選択には使えない";
+  }
   nodeContextMenu.hidden = false;
   const rect = nodeContextMenu.getBoundingClientRect();
   const left = Math.min(window.innerWidth - rect.width - margin, Math.max(margin, clientX));
@@ -437,6 +447,742 @@ function hideWorldContextMenu() {
   }
   worldContextMenu.hidden = true;
   worldContextMenuOpen = false;
+}
+
+function bulkCommandGroupsForIds(ids) {
+  const nodes = uniqueActiveNodeIds(ids).map((id) => nodeById(id)).filter(Boolean);
+  const groupsByParent = new Map();
+  const skipped = [];
+  for (const node of nodes) {
+    const parentId = node.parent || null;
+    const parent = parentId ? nodeById(parentId) : null;
+    if (!parent) {
+      skipped.push({
+        nodeId: node.id,
+        name: meaningName(node),
+        reason: parentId ? "missing-parent" : "root-node",
+      });
+      continue;
+    }
+    if (!groupsByParent.has(parent.id)) {
+      groupsByParent.set(parent.id, {
+        parent,
+        nodes: [],
+      });
+    }
+    groupsByParent.get(parent.id).nodes.push(node);
+  }
+  return {
+    nodes,
+    groups: [...groupsByParent.values()],
+    skipped,
+  };
+}
+
+function isBulkCommandTab(tab = activeConversationTab()) {
+  return tab?.kind === "bulk-command";
+}
+
+function activeBulkCommandState() {
+  const tab = activeConversationTab();
+  if (!isBulkCommandTab(tab)) {
+    return null;
+  }
+  return conversationTabState(tab.id);
+}
+
+function bulkCommandTargetSummary(nodes) {
+  const names = nodes.map(meaningName);
+  return `${nodes.length}件: ${names.join(" / ")}`;
+}
+
+function historyTextPreview(value, limit = 30) {
+  const text = String(value || "").replace(/\s+/g, " ").trim();
+  if (!text) {
+    return "";
+  }
+  const chars = [...text];
+  return chars.length > limit ? `${chars.slice(0, limit).join("")}...` : text;
+}
+
+function historyIsoNow() {
+  return new Date().toISOString();
+}
+
+function nodeHistoryPath(nodeId) {
+  const path = [];
+  const seen = new Set();
+  let node = nodeById(nodeId);
+  while (node && !seen.has(node.id)) {
+    seen.add(node.id);
+    path.unshift(meaningName(node));
+    node = node.parent ? nodeById(node.parent) : null;
+  }
+  return path.length ? path : ["外側"];
+}
+
+function nodeTreeSortKey(nodeId) {
+  const nodes = Array.isArray(doc?.nodes) ? doc.nodes.filter((node) => node && !node.archived) : [];
+  const orderById = new Map(nodes.map((node, index) => [node.id, index]));
+  const parts = [];
+  const seen = new Set();
+  let node = nodeById(nodeId);
+  while (node && !seen.has(node.id)) {
+    seen.add(node.id);
+    const siblings = nodes.filter((item) => (item.parent || null) === (node.parent || null));
+    const siblingIndex = Math.max(0, siblings.findIndex((item) => item.id === node.id));
+    const originalIndex = orderById.get(node.id) ?? siblingIndex;
+    parts.unshift(`${String(siblingIndex).padStart(5, "0")}:${String(originalIndex).padStart(5, "0")}:${meaningName(node)}`);
+    node = node.parent ? nodeById(node.parent) : null;
+  }
+  return parts.join("/");
+}
+
+function bulkCommandHistoryStorageKey() {
+  return `${BULK_COMMAND_HISTORY_STORAGE_PREFIX}:${projectName || "default"}:${documentName || "project.powan"}`;
+}
+
+function makeBulkCommandHistoryId() {
+  if (typeof crypto !== "undefined" && crypto.randomUUID) {
+    return `bulk-${crypto.randomUUID()}`;
+  }
+  conversationTabSerial += 1;
+  return `bulk-${Date.now().toString(36)}-${conversationTabSerial}`;
+}
+
+function loadStoredBulkCommandHistories() {
+  try {
+    const rows = JSON.parse(localStorage.getItem(bulkCommandHistoryStorageKey()) || "[]");
+    return Array.isArray(rows) ? rows.filter((row) => row && row.id) : [];
+  } catch {
+    return [];
+  }
+}
+
+function saveStoredBulkCommandHistories(rows) {
+  const clean = Array.isArray(rows) ? rows.filter((row) => row && row.id).slice(0, 80) : [];
+  localStorage.setItem(bulkCommandHistoryStorageKey(), JSON.stringify(clean));
+}
+
+function storedBulkCommandHistoryItem(row) {
+  const targetIds = Array.isArray(row.targetIds) ? row.targetIds : [];
+  const targetNames = Array.isArray(row.targetNames) ? row.targetNames : [];
+  const messages = Array.isArray(row.messages)
+    ? row.messages.filter((message) => message && typeof message.role === "string").map((message) => ({
+      role: message.role,
+      text: String(message.text || ""),
+      createdAt: message.createdAt || row.updatedAt || row.createdAt || "",
+    }))
+    : [];
+  const lastResultMessage = [...messages].reverse().find((message) => String(message.text || "").startsWith("送信完了:"));
+  const lastUserMessage = [...messages].reverse().find((message) => message.role === "user");
+  const lastMessage = lastResultMessage || lastUserMessage || messages[messages.length - 1] || null;
+  const sortKeys = targetIds.map(nodeTreeSortKey).filter(Boolean).sort();
+  const sortKey = sortKeys[0] || "zzzzz";
+  return {
+    type: "bulk",
+    key: `bulk:${row.id}`,
+    id: row.id,
+    bulkHistoryId: row.id,
+    createdAt: row.createdAt || row.updatedAt || "",
+    updatedAt: row.updatedAt || row.createdAt || "",
+    targetIds,
+    targetNames,
+    messages,
+    title: "一括送信",
+    pathText: targetNames.length ? targetNames.join(" / ") : targetIds.join(" / "),
+    preview: historyTextPreview(lastMessage?.text || "", 42),
+    treeSortKey: `${sortKey}/bulk`,
+  };
+}
+
+function upsertStoredBulkCommandHistory(item) {
+  const rows = loadStoredBulkCommandHistories();
+  const index = rows.findIndex((row) => row.id === item.id);
+  if (index >= 0) {
+    rows[index] = item;
+  } else {
+    rows.unshift(item);
+  }
+  rows.sort((left, right) => String(right.updatedAt || "").localeCompare(String(left.updatedAt || "")));
+  saveStoredBulkCommandHistories(rows);
+}
+
+function saveBulkCommandHistoryToServer(item) {
+  if (!projectName || !documentName || !item?.id) {
+    return;
+  }
+  fetch("/api/bulk-conversation-history", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({
+      project: projectName,
+      file: documentName,
+      id: item.id,
+      targetIds: item.targetIds || [],
+      targetNames: item.targetNames || [],
+      messages: item.messages || [],
+      createdAt: item.createdAt || "",
+      updatedAt: item.updatedAt || "",
+    }),
+  }).then((response) => {
+    if (!response.ok) {
+      throw new Error(`bulk history save failed: ${response.status}`);
+    }
+    return response.json();
+  }).then((data) => {
+    conversationHistoryBulkServerItems = [
+      ...conversationHistoryBulkServerItems.filter((row) => row.id !== data.id),
+      storedBulkCommandHistoryItem(data),
+    ];
+    mergeConversationHistoryItems();
+  }).catch((error) => {
+    logEvent("warn", "bulk-history-save-error", { message: error.message, bulkHistoryId: item.id });
+  });
+}
+
+function persistBulkCommandTab(tab = activeConversationTab()) {
+  if (!isBulkCommandTab(tab)) {
+    return;
+  }
+  const state = conversationTabState(tab.id);
+  if (!state.bulkHistoryId) {
+    state.bulkHistoryId = makeBulkCommandHistoryId();
+  }
+  const now = historyIsoNow();
+  state.bulkCreatedAt = state.bulkCreatedAt || now;
+  state.bulkUpdatedAt = now;
+  const item = {
+    id: state.bulkHistoryId,
+    projectName,
+    documentName,
+    createdAt: state.bulkCreatedAt,
+    updatedAt: state.bulkUpdatedAt,
+    targetIds: Array.isArray(state.bulkTargetIds) ? state.bulkTargetIds : [],
+    targetNames: Array.isArray(state.bulkTargetNames) ? state.bulkTargetNames : [],
+    messages: Array.isArray(state.bulkMessages) ? state.bulkMessages : [],
+  };
+  upsertStoredBulkCommandHistory(item);
+  saveBulkCommandHistoryToServer(item);
+  mergeConversationHistoryItems();
+}
+
+function normalizeConversationHistorySession(session) {
+  const node = nodeById(session.powanId);
+  const path = nodeHistoryPath(session.powanId);
+  const preview = historyTextPreview(session.firstUserText || session.lastMessageText || session.title || "", 42);
+  return {
+    type: "powan",
+    key: `powan:${session.powanId}:${session.id}`,
+    id: normalizeConversationId(session.id),
+    conversationId: normalizeConversationId(session.id),
+    nodeId: session.powanId,
+    active: Boolean(session.active),
+    title: node ? meaningName(node) : session.powanId,
+    pathText: path.join(" / "),
+    preview,
+    messageCount: Number(session.messageCount) || 0,
+    createdAt: session.createdAt || "",
+    updatedAt: session.updatedAt || session.createdAt || "",
+    treeSortKey: node ? nodeTreeSortKey(session.powanId) : "zzzzz",
+  };
+}
+
+function sortedConversationHistoryItems(items) {
+  const list = [...items];
+  if (conversationHistorySort === "tree") {
+    list.sort((left, right) => {
+      const tree = String(left.treeSortKey || "").localeCompare(String(right.treeSortKey || ""), "ja");
+      if (tree) {
+        return tree;
+      }
+      return String(right.updatedAt || "").localeCompare(String(left.updatedAt || ""));
+    });
+    return list;
+  }
+  list.sort((left, right) => String(right.updatedAt || "").localeCompare(String(left.updatedAt || "")));
+  return list;
+}
+
+function mergeConversationHistoryItems() {
+  const bulkById = new Map();
+  for (const item of conversationHistoryBulkServerItems) {
+    bulkById.set(item.id, item);
+  }
+  for (const item of loadStoredBulkCommandHistories().map(storedBulkCommandHistoryItem)) {
+    const current = bulkById.get(item.id);
+    if (!current || String(item.updatedAt || "") >= String(current.updatedAt || "")) {
+      bulkById.set(item.id, item);
+    }
+  }
+  conversationHistoryItems = sortedConversationHistoryItems([...conversationHistoryServerItems, ...bulkById.values()]);
+  renderConversationHistoryList();
+}
+
+async function requestConversationHistory() {
+  const response = await fetch(
+    `/api/conversation-history?project=${encodeURIComponent(projectName)}&file=${encodeURIComponent(documentName)}`,
+  );
+  if (!response.ok) {
+    const body = await response.json().catch(() => ({ detail: `history failed: ${response.status}` }));
+    throw new Error(body.detail || `history failed: ${response.status}`);
+  }
+  return response.json();
+}
+
+async function requestBulkConversationHistory() {
+  const response = await fetch(
+    `/api/bulk-conversation-history?project=${encodeURIComponent(projectName)}&file=${encodeURIComponent(documentName)}`,
+  );
+  if (!response.ok) {
+    const body = await response.json().catch(() => ({ detail: `bulk history failed: ${response.status}` }));
+    throw new Error(body.detail || `bulk history failed: ${response.status}`);
+  }
+  return response.json();
+}
+
+async function refreshConversationHistory({ includeServer = true, reason = "conversation-history-refresh" } = {}) {
+  if (!conversationHistoryList || !projectName || !documentName) {
+    return;
+  }
+  conversationHistorySort = conversationHistorySortSelect?.value || conversationHistorySort || "newest";
+  if (!includeServer) {
+    mergeConversationHistoryItems();
+    return;
+  }
+  conversationHistoryLoading = true;
+  renderConversationHistoryList();
+  try {
+    const [data, bulkData] = await Promise.all([
+      requestConversationHistory(),
+      requestBulkConversationHistory(),
+    ]);
+    conversationHistoryServerItems = (data.sessions || []).map(normalizeConversationHistorySession);
+    conversationHistoryBulkServerItems = (bulkData.sessions || []).map(storedBulkCommandHistoryItem);
+    logEvent("debug", reason, {
+      normalCount: conversationHistoryServerItems.length,
+      bulkCount: conversationHistoryBulkServerItems.length,
+      localBulkCount: loadStoredBulkCommandHistories().length,
+    });
+  } catch (error) {
+    saveState.textContent = "history error";
+    logEvent("error", "conversation-history-refresh-error", { message: error.message });
+  } finally {
+    conversationHistoryLoading = false;
+    mergeConversationHistoryItems();
+  }
+}
+
+function renderConversationHistoryList() {
+  if (!conversationHistoryList) {
+    return;
+  }
+  conversationHistoryList.innerHTML = "";
+  if (conversationHistoryLoading && !conversationHistoryItems.length) {
+    const loading = document.createElement("div");
+    loading.className = "conversation-history-loading";
+    loading.textContent = "読み込み中";
+    conversationHistoryList.appendChild(loading);
+    return;
+  }
+  if (!conversationHistoryItems.length) {
+    const empty = document.createElement("div");
+    empty.className = "conversation-history-empty";
+    empty.textContent = "履歴なし";
+    conversationHistoryList.appendChild(empty);
+    return;
+  }
+  for (const item of conversationHistoryItems) {
+    const button = document.createElement("button");
+    button.type = "button";
+    button.className = "conversation-history-item";
+    button.dataset.historyKey = item.key;
+    button.title = item.pathText || item.title;
+    const title = document.createElement("div");
+    title.className = "conversation-history-title";
+    title.textContent = item.type === "bulk" ? item.title : `${item.title} #${item.conversationId || "-"}`;
+    const meta = document.createElement("div");
+    meta.className = "conversation-history-meta";
+    meta.textContent = item.type === "bulk"
+      ? `${item.pathText || "対象なし"}`
+      : `${item.pathText} / ${item.messageCount}件`;
+    const preview = document.createElement("div");
+    preview.className = "conversation-history-preview";
+    preview.textContent = item.preview || " ";
+    button.append(title, meta, preview);
+    button.addEventListener("click", () => openConversationHistoryItem(item));
+    conversationHistoryList.appendChild(button);
+  }
+}
+
+function findOpenPowanConversationHistoryTab(item) {
+  return conversationTabs.find((tab) => {
+    if (isBulkCommandTab(tab) || tab.nodeId !== item.nodeId) {
+      return false;
+    }
+    const state = conversationTabState(tab.id);
+    return normalizeConversationId(state.viewingSessionId) === normalizeConversationId(item.conversationId);
+  }) || null;
+}
+
+function findOpenBulkConversationHistoryTab(item) {
+  return conversationTabs.find((tab) => {
+    if (!isBulkCommandTab(tab)) {
+      return false;
+    }
+    const state = conversationTabState(tab.id);
+    return state.bulkHistoryId === item.bulkHistoryId;
+  }) || null;
+}
+
+function openPowanConversationHistoryItem(item) {
+  const node = nodeById(item.nodeId);
+  if (!node) {
+    saveState.textContent = "history missing";
+    logEvent("warn", "conversation-history-open-missing-node", { nodeId: item.nodeId, conversationId: item.conversationId });
+    return;
+  }
+  if (activeConversationTabId) {
+    rememberConversationTabState(activeConversationTabId);
+  }
+  const existing = findOpenPowanConversationHistoryTab(item);
+  if (existing) {
+    switchConversationTab(existing.id, "conversation-history-focus-open-tab");
+    return;
+  }
+  const tab = createConversationTab(item.nodeId, "conversation-history-tab-created");
+  const state = conversationTabState(tab.id);
+  state.viewingSessionId = normalizeConversationId(item.conversationId);
+  state.viewingAllSessions = false;
+  openConversationPanel(item.nodeId, { tabMode: "activate", tabId: tab.id, reason: "conversation-history-open" });
+}
+
+function openBulkConversationHistoryItem(item) {
+  if (activeConversationTabId) {
+    rememberConversationTabState(activeConversationTabId);
+  }
+  const existing = findOpenBulkConversationHistoryTab(item);
+  if (existing) {
+    showBulkCommandTab(existing, "bulk-history-focus-open-tab");
+    return;
+  }
+  const tab = createConversationTab(null, "bulk-history-tab-created", { kind: "bulk-command" });
+  const state = conversationTabState(tab.id);
+  state.bulkHistoryId = item.bulkHistoryId;
+  state.bulkCreatedAt = item.createdAt || historyIsoNow();
+  state.bulkUpdatedAt = item.updatedAt || state.bulkCreatedAt;
+  state.bulkTargetIds = Array.isArray(item.targetIds) ? item.targetIds : [];
+  state.bulkTargetNames = Array.isArray(item.targetNames) ? item.targetNames : [];
+  state.bulkMessages = Array.isArray(item.messages) ? item.messages : [];
+  bulkCommandTargetIds = state.bulkTargetIds;
+  showBulkCommandTab(tab, "bulk-history-open");
+}
+
+function openConversationHistoryItem(item) {
+  if (item.type === "bulk") {
+    openBulkConversationHistoryItem(item);
+  } else {
+    openPowanConversationHistoryItem(item);
+  }
+  logEvent("info", "conversation-history-open-item", {
+    type: item.type,
+    key: item.key,
+    nodeId: item.nodeId || null,
+    conversationId: item.conversationId || null,
+    bulkHistoryId: item.bulkHistoryId || null,
+  });
+}
+
+function renderBulkCommandMessages(tab) {
+  const state = conversationTabState(tab.id);
+  conversationLog.innerHTML = "";
+  for (const message of state.bulkMessages || []) {
+    appendConversationMessage(message.role, message.text, { forceFollow: false });
+  }
+  if (Number.isFinite(Number(state.scrollTop))) {
+    conversationLog.scrollTop = Number(state.scrollTop);
+  } else {
+    followConversationBottom();
+  }
+}
+
+function appendBulkCommandMessage(role, text, options = {}) {
+  const state = activeBulkCommandState();
+  if (state) {
+    if (!Array.isArray(state.bulkMessages)) {
+      state.bulkMessages = [];
+    }
+    state.bulkMessages.push({ role, text, createdAt: historyIsoNow() });
+    persistBulkCommandTab(activeConversationTab());
+  }
+  return appendConversationMessage(role, text, options);
+}
+
+function showBulkCommandTab(tab, reason = "bulk-command-tab-show") {
+  if (activeConversationTabId && activeConversationTabId !== tab.id) {
+    rememberConversationTabState(activeConversationTabId);
+  }
+  activeConversationTabId = tab.id;
+  tab.nodeId = null;
+  tab.kind = "bulk-command";
+  conversationNodeId = null;
+  conversationActiveSessionId = null;
+  conversationViewingSessionId = null;
+  conversationViewingAllSessions = false;
+  conversationSessionList = [];
+  conversationPendingAttachments = [];
+  conversationPanel.hidden = false;
+  setConversationPanelCollapsed(false, `${reason}-expand`);
+  conversationNodeName.textContent = "一括指示";
+  conversationInput.value = conversationTabState(tab.id).draft || "";
+  conversationInput.placeholder = "選択したポワンに一括で話しかける";
+  renderConversationAttachmentTray();
+  renderConversationSessions([]);
+  renderBulkCommandMessages(tab);
+  updateConversationSessionMode();
+  renderConversationTabs();
+  focusConversationInputIfOpen();
+  logEvent("info", reason, {
+    tabId: tab.id,
+    targetIds: conversationTabState(tab.id).bulkTargetIds || [],
+  });
+}
+
+function openBulkCommandDialog() {
+  const targetIds = selectedNodeIds();
+  const grouped = bulkCommandGroupsForIds(targetIds);
+  logEvent("info", "bulk-command-tab-open-request", {
+    selectedIds: targetIds,
+    selectedCount: targetIds.length,
+    eligibleCount: grouped.groups.reduce((count, group) => count + group.nodes.length, 0),
+    skipped: grouped.skipped,
+    groups: grouped.groups.map((group) => ({
+      parentId: group.parent.id,
+      parentName: meaningName(group.parent),
+      childIds: group.nodes.map((node) => node.id),
+      childNames: group.nodes.map(meaningName),
+    })),
+  });
+  if (targetIds.length < 2 || !grouped.groups.length) {
+    saveState.textContent = "bulk unavailable";
+    logEvent("warn", "bulk-command-tab-open-rejected", {
+      selectedIds: targetIds,
+      selectedCount: targetIds.length,
+      skipped: grouped.skipped,
+    });
+    return;
+  }
+  const eligibleNodes = grouped.groups.flatMap((group) => group.nodes);
+  const names = eligibleNodes.map(meaningName);
+  if (activeConversationTabId) {
+    rememberConversationTabState(activeConversationTabId);
+  }
+  const tab = createConversationTab(null, "bulk-command-tab-created", { kind: "bulk-command" });
+  const state = conversationTabState(tab.id);
+  state.bulkHistoryId = makeBulkCommandHistoryId();
+  state.bulkCreatedAt = historyIsoNow();
+  state.bulkUpdatedAt = state.bulkCreatedAt;
+  state.bulkTargetIds = eligibleNodes.map((node) => node.id);
+  state.bulkTargetNames = names;
+  state.bulkMessages = [
+    {
+      role: "system",
+      text: `一括指示の対象: ${bulkCommandTargetSummary(eligibleNodes)}`,
+      createdAt: state.bulkCreatedAt,
+    },
+  ];
+  if (grouped.skipped.length) {
+    state.bulkMessages.push({
+      role: "system",
+      text: `送らない対象: ${grouped.skipped.map((item) => item.name).join(" / ")}`,
+      createdAt: state.bulkCreatedAt,
+    });
+  }
+  bulkCommandTargetIds = state.bulkTargetIds;
+  persistBulkCommandTab(tab);
+  showBulkCommandTab(tab, "bulk-command-tab-opened");
+  logEvent("info", "bulk-command-tab-ready", {
+    tabId: tab.id,
+    targetIds: state.bulkTargetIds,
+    targetNames: names,
+    skipped: grouped.skipped,
+  });
+}
+
+function parseJsonResponseText(text) {
+  if (!text) {
+    return {};
+  }
+  try {
+    return JSON.parse(text);
+  } catch {
+    return { raw: text };
+  }
+}
+
+function shortBulkReplyPreview(result, limit = 30) {
+  const text = String(result?.assistantMessage?.text || result?.error || "").replace(/\s+/g, " ").trim();
+  if (!text) {
+    return "";
+  }
+  const chars = [...text];
+  return chars.length > limit ? `${chars.slice(0, limit).join("")}...` : text;
+}
+
+function bulkResultLine(result) {
+  const name = result?.meaning || result?.nodeId || "名前のないポワン";
+  const status = result?.status || "unknown";
+  const preview = shortBulkReplyPreview(result);
+  return preview ? `${name}: ${status} / ${preview}` : `${name}: ${status}`;
+}
+
+async function sendBulkCommandToSelected() {
+  if (bulkCommandSending) {
+    logEvent("warn", "bulk-command-submit-ignored-sending", { targetIds: bulkCommandTargetIds });
+    return;
+  }
+  const bulkState = activeBulkCommandState();
+  if (!bulkState) {
+    logEvent("warn", "bulk-command-submit-no-active-tab", { targetIds: bulkCommandTargetIds });
+    return;
+  }
+  const inputElement = conversationInput;
+  const targetIds = bulkState.bulkTargetIds || [];
+  const instruction = (inputElement?.value || "").trim();
+  if (!instruction) {
+    logEvent("warn", "bulk-command-submit-empty", { targetIds });
+    return;
+  }
+  const grouped = bulkCommandGroupsForIds(targetIds);
+  const eligibleCount = grouped.groups.reduce((count, group) => count + group.nodes.length, 0);
+  if (!eligibleCount) {
+    logEvent("warn", "bulk-command-submit-no-targets", {
+      targetIds,
+      skipped: grouped.skipped,
+    });
+    return;
+  }
+  bulkCommandSending = true;
+  setConversationSending(true);
+  inputElement.value = "";
+  bulkState.draft = "";
+  appendBulkCommandMessage("user", instruction, { forceFollow: true });
+  appendBulkCommandMessage("system", `一括指示を開始: ${eligibleCount}件`, { forceFollow: true });
+  saveState.textContent = "bulk sending";
+  logEvent("info", "bulk-command-submit-start", {
+    targetIds: grouped.nodes.map((node) => node.id),
+    eligibleCount,
+    skipped: grouped.skipped,
+    groupCount: grouped.groups.length,
+    instructionLength: instruction.length,
+    includeMeaningTree: Boolean(conversationTreeContextInput?.checked),
+  });
+  const allResults = [];
+  try {
+    for (const group of grouped.groups) {
+      const payload = {
+        project: projectName,
+        file: documentName,
+        instruction: "",
+        bulkHistoryId: bulkState.bulkHistoryId || "",
+        instructions: group.nodes.map((node) => ({
+          childId: node.id,
+          title: node.title || "",
+          body: node.body || "",
+          instruction,
+        })),
+        includeMeaningTree: Boolean(conversationTreeContextInput?.checked),
+        continueOnError: true,
+        parallel: true,
+        maxParallel: 3,
+        staggerMs: 1000,
+      };
+      if (bulkState) {
+        appendBulkCommandMessage("system", `送信開始: ${meaningName(group.parent)} -> ${group.nodes.map(meaningName).join(" / ")}`);
+      }
+      logEvent("info", "bulk-command-group-fetch-start", {
+        parentId: group.parent.id,
+        parentName: meaningName(group.parent),
+        childIds: group.nodes.map((node) => node.id),
+        childNames: group.nodes.map(meaningName),
+        instructionLength: instruction.length,
+        parallel: payload.parallel,
+        maxParallel: payload.maxParallel,
+        staggerMs: payload.staggerMs,
+      });
+      const response = await fetch(
+        `/api/ai/powans/${encodeURIComponent(group.parent.id)}/actions/command-children`,
+        {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(payload),
+        },
+      );
+      const responseText = await response.text();
+      const data = parseJsonResponseText(responseText);
+      if (!response.ok) {
+        logEvent("error", "bulk-command-group-fetch-failed", {
+          parentId: group.parent.id,
+          status: response.status,
+          response: data,
+        });
+        throw new Error(data?.detail || data?.error || `一括指示に失敗した: ${response.status}`);
+      }
+      const results = data.results || [];
+      allResults.push(...results);
+      if (bulkState) {
+        appendBulkCommandMessage(
+          "system",
+          `送信完了: ${meaningName(group.parent)}\n${results.map(bulkResultLine).join("\n")}`,
+        );
+      }
+      logEvent("info", "bulk-command-group-fetch-complete", {
+        parentId: group.parent.id,
+        parentName: meaningName(group.parent),
+        resultCount: results.length,
+        results: results.map((result) => ({
+          nodeId: result.nodeId,
+          meaning: result.meaning,
+          status: result.status,
+          conversationId: result.conversationId || null,
+          assistantMessageId: result.assistantMessage?.id || null,
+          replyPreview: shortBulkReplyPreview(result),
+          error: result.error || "",
+        })),
+      });
+    }
+    appendBulkCommandMessage("assistant", `一括指示が完了したよ。\n${allResults.length}件の結果を受け取った。`, { forceFollow: true });
+    saveState.textContent = "bulk done";
+    logEvent("info", "bulk-command-submit-complete", {
+      resultCount: allResults.length,
+      results: allResults.map((result) => ({
+        nodeId: result.nodeId,
+        status: result.status,
+        conversationId: result.conversationId || null,
+      })),
+    });
+    const activeNodeNeedsRefresh = conversationNodeId && targetIds.includes(conversationNodeId);
+    if (activeNodeNeedsRefresh) {
+      await loadConversationMessages(conversationNodeId);
+      logEvent("debug", "bulk-command-active-conversation-refreshed", { nodeId: conversationNodeId });
+    }
+  } catch (error) {
+    appendBulkCommandMessage("system", `一括指示エラー: ${error.message}`, { forceFollow: true });
+    saveState.textContent = "bulk error";
+    logEvent("error", "bulk-command-submit-error", {
+      targetIds,
+      message: error.message,
+      error: clientErrorLogPayload(error),
+    });
+    console.error(error);
+  } finally {
+    bulkCommandSending = false;
+    setConversationSending(false);
+    persistBulkCommandTab(activeConversationTab());
+    if (activePanelTab === "history") {
+      refreshConversationHistory({ reason: "bulk-command-refresh-history-after-send" });
+    }
+  }
 }
 
 var conversationLoadSerial = 0;
@@ -488,15 +1234,16 @@ function cloneConversationAttachments(attachments) {
     : [];
 }
 
-function createConversationTab(nodeId = null, reason = "conversation-tab-created") {
+function createConversationTab(nodeId = null, reason = "conversation-tab-created", options = {}) {
   const tab = {
     id: nextConversationTabId(),
     nodeId,
+    kind: options.kind || "powan",
     openedAt: Date.now(),
   };
   conversationTabs.push(tab);
   conversationTabStates.set(tab.id, {});
-  logEvent("debug", reason, { tabId: tab.id, nodeId, name: nodeId ? meaningName(nodeById(nodeId)) : "新規タブ" });
+  logEvent("debug", reason, { tabId: tab.id, nodeId, kind: tab.kind, name: conversationTabLabel(tab) });
   return tab;
 }
 
@@ -520,12 +1267,15 @@ function rememberConversationTabState(tabId = activeConversationTabId) {
 }
 
 function conversationTabLabel(tab) {
+  if (isBulkCommandTab(tab)) {
+    return "一括送信";
+  }
   const node = tab?.nodeId ? nodeById(tab.nodeId) : null;
   return node ? meaningName(node) : "新規タブ";
 }
 
 function cleanupConversationTabs() {
-  conversationTabs = conversationTabs.filter((tab) => !tab.nodeId || nodeById(tab.nodeId));
+  conversationTabs = conversationTabs.filter((tab) => isBulkCommandTab(tab) || !tab.nodeId || nodeById(tab.nodeId));
   const ids = new Set(conversationTabs.map((tab) => tab.id));
   for (const tabId of [...conversationTabStates.keys()]) {
     if (!ids.has(tabId)) {
@@ -549,6 +1299,7 @@ function renderConversationTabs() {
     item.className = "conversation-tab";
     item.classList.toggle("active", tab.id === activeConversationTabId);
     item.classList.toggle("blank", !tab.nodeId);
+    item.classList.toggle("bulk", isBulkCommandTab(tab));
     item.role = "tab";
     item.ariaSelected = tab.id === activeConversationTabId ? "true" : "false";
     item.title = conversationTabLabel(tab);
@@ -648,6 +1399,10 @@ function switchConversationTab(tabId, reason = "conversation-tab-switch") {
     return;
   }
   if (!tab.nodeId) {
+    if (isBulkCommandTab(tab)) {
+      showBulkCommandTab(tab, reason);
+      return;
+    }
     showBlankConversationTab(tab, reason);
     return;
   }
@@ -682,6 +1437,9 @@ function closeConversationTab(tabId, reason = "conversation-tab-close") {
 }
 
 function conversationCanEditSession() {
+  if (isBulkCommandTab(activeConversationTab())) {
+    return true;
+  }
   if (!conversationNodeId) {
     return false;
   }
@@ -732,7 +1490,9 @@ function renderConversationSessions(sessions = [], selectedId = null) {
 function updateConversationSessionMode() {
   const canEdit = conversationCanEditSession();
   if (conversationInput) {
-    conversationInput.placeholder = !conversationNodeId
+    conversationInput.placeholder = isBulkCommandTab(activeConversationTab())
+      ? "選択したポワンに一括で話しかける"
+      : !conversationNodeId
       ? "ポワンを選ぶ"
       : canEdit
         ? "ポワンに話しかける"
@@ -1344,20 +2104,21 @@ function updatePanelArrangeSettings(reason = "panel-arrange-settings-change") {
 function setConversationSending(enabled) {
   conversationSending = Boolean(enabled);
   const hasNode = Boolean(conversationNodeId);
+  const hasBulkTab = isBulkCommandTab(activeConversationTab());
   const canEdit = conversationCanEditSession();
-  sendConversationButton.disabled = !hasNode || conversationSending || !canEdit;
+  sendConversationButton.disabled = (!hasNode && !hasBulkTab) || conversationSending || !canEdit;
   if (sendCodeConversationButton) {
     sendCodeConversationButton.disabled = !hasNode || conversationSending || !canEdit;
   }
-  conversationInput.disabled = !hasNode || conversationSending || !canEdit;
+  conversationInput.disabled = (!hasNode && !hasBulkTab) || conversationSending || !canEdit;
   if (newConversationButton) {
-    newConversationButton.disabled = !hasNode || conversationSending;
+    newConversationButton.disabled = !hasNode || conversationSending || hasBulkTab;
   }
   if (summarizeConversationButton) {
-    summarizeConversationButton.disabled = !hasNode || conversationSending || conversationAutoSummaryInFlight || !canEdit;
+    summarizeConversationButton.disabled = !hasNode || conversationSending || conversationAutoSummaryInFlight || !canEdit || hasBulkTab;
   }
   if (conversationSessionSelect) {
-    conversationSessionSelect.disabled = !hasNode || conversationSending || Boolean(conversationTypingNodeId);
+    conversationSessionSelect.disabled = !hasNode || conversationSending || Boolean(conversationTypingNodeId) || hasBulkTab;
   }
   if (saveButton) {
     saveButton.disabled = conversationSending;
@@ -1380,7 +2141,7 @@ function updateConversationCancelButton() {
   cancelConversationButton.hidden = !canCancel;
   cancelConversationButton.disabled = !canCancel;
   if (conversationSessionSelect) {
-    conversationSessionSelect.disabled = !conversationNodeId || conversationSending || Boolean(conversationTypingNodeId);
+    conversationSessionSelect.disabled = !conversationNodeId || conversationSending || Boolean(conversationTypingNodeId) || isBulkCommandTab(activeConversationTab());
   }
 }
 
@@ -1734,6 +2495,67 @@ function setPowanMouthFrame(nodeId, open) {
   }
 }
 
+function clearBackgroundSpeaking(nodeId) {
+  const timer = conversationBackgroundSpeakingTimers.get(nodeId);
+  if (timer) {
+    window.clearTimeout(timer);
+  }
+  conversationBackgroundSpeakingTimers.delete(nodeId);
+  conversationBackgroundSpeakingMouthOpenByNode.delete(nodeId);
+  for (const element of powanSpeakingElements(nodeId)) {
+    element.classList.remove("speaking", "mouth-open", "mouth-closed");
+    updatePowanFaceButton(element);
+  }
+}
+
+function setBackgroundSpeakingFrame(nodeId, open) {
+  conversationBackgroundSpeakingMouthOpenByNode.set(nodeId, Boolean(open));
+  for (const element of powanSpeakingElements(nodeId)) {
+    element.classList.add("speaking");
+    element.classList.toggle("mouth-open", Boolean(open));
+    element.classList.toggle("mouth-closed", !open);
+    updatePowanFaceButton(element);
+  }
+}
+
+function typeConversationReplyMouthOnly(nodeId, text, onComplete = null) {
+  clearBackgroundSpeaking(nodeId);
+  const visibleText = formatConversationText("assistant", text || "");
+  if (!visibleText.length) {
+    if (onComplete) {
+      onComplete();
+    }
+    return;
+  }
+  let index = 0;
+  setBackgroundSpeakingFrame(nodeId, true);
+  function tick() {
+    const char = visibleText[index];
+    const pauseMs = conversationTypingPauseMs(char);
+    if (pauseMs > 0) {
+      setBackgroundSpeakingFrame(nodeId, false);
+    } else {
+      setBackgroundSpeakingFrame(nodeId, index % 2 === 0);
+    }
+    index += 1;
+    if (index >= visibleText.length) {
+      clearBackgroundSpeaking(nodeId);
+      logEvent("debug", "conversation-background-mouth-complete", {
+        message: `background mouth complete: ${nodeId}, ${visibleText.length} chars`,
+        nodeId,
+        length: visibleText.length,
+      });
+      if (onComplete) {
+        onComplete();
+      }
+      return;
+    }
+    const timer = window.setTimeout(tick, pauseMs || 32);
+    conversationBackgroundSpeakingTimers.set(nodeId, timer);
+  }
+  tick();
+}
+
 function conversationTypingPauseMs(char) {
   if (char === "\n") {
     return 0;
@@ -1749,6 +2571,7 @@ function conversationTypingPauseMs(char) {
 
 function typeConversationReply(nodeId, text, onComplete = null) {
   stopConversationTyping();
+  clearBackgroundSpeaking(nodeId);
   const message = appendConversationMessage("assistant", "");
   const visibleText = formatConversationText("assistant", text);
   let index = 0;
@@ -1820,6 +2643,24 @@ function typeConversationReply(nodeId, text, onComplete = null) {
     conversationTypingTimer = window.setTimeout(tick, pauseMs || 32);
   }
   tick();
+}
+
+function rememberInactiveConversationReply(tabId, nodeId, conversationId) {
+  const tab = conversationTabs.find((item) => item.id === tabId);
+  if (!tab || tab.nodeId !== nodeId) {
+    return;
+  }
+  const state = conversationTabState(tab.id);
+  state.nodeId = nodeId;
+  state.activeSessionId = normalizeConversationId(conversationId);
+  state.viewingSessionId = normalizeConversationId(conversationId);
+  state.viewingAllSessions = false;
+  state.autoFollow = true;
+  logEvent("debug", "conversation-inactive-tab-reply-remembered", {
+    tabId: tab.id,
+    nodeId,
+    conversationId: normalizeConversationId(conversationId),
+  });
 }
 
 async function startNewConversationSession(nodeId, reason = "conversation-new-session") {
@@ -2034,8 +2875,23 @@ if (panelWorldTab) {
 if (panelSettingsTab) {
   panelSettingsTab.addEventListener("click", () => setPanelTab("settings", { reason: "panel-settings-tab-click" }));
 }
+if (panelHistoryTab) {
+  panelHistoryTab.addEventListener("click", () => setPanelTab("history", { reason: "panel-history-tab-click" }));
+}
 if (panelCodeTab) {
   panelCodeTab.addEventListener("click", () => setPanelTab("code", { reason: "panel-code-tab-click" }));
+}
+if (conversationHistorySortSelect) {
+  conversationHistorySortSelect.addEventListener("change", () => {
+    conversationHistorySort = conversationHistorySortSelect.value || "newest";
+    mergeConversationHistoryItems();
+    logEvent("debug", "conversation-history-sort-change", { sort: conversationHistorySort });
+  });
+}
+if (conversationHistoryRefreshButton) {
+  conversationHistoryRefreshButton.addEventListener("click", () => {
+    refreshConversationHistory({ reason: "conversation-history-refresh-button" });
+  });
 }
 if (conversationPanel) {
   conversationPanel.addEventListener("click", (event) => {
@@ -2147,6 +3003,12 @@ if (talkToPowanNewTabButton) {
       return;
     }
     powanExplorer.talkToPowanInNewTab(nodeId);
+  });
+}
+if (bulkCommandMenuButton) {
+  bulkCommandMenuButton.addEventListener("click", () => {
+    powanExplorer.closeNodeMenu("bulk-command-menu-close");
+    openBulkCommandDialog();
   });
 }
 openCodeMenuButton.addEventListener("click", () => {
@@ -2303,7 +3165,12 @@ if (conversationPanel) {
   });
 }
 async function sendConversation({ forceDirectChildCode = false } = {}) {
+  if (isBulkCommandTab(activeConversationTab())) {
+    await sendBulkCommandToSelected();
+    return;
+  }
   const node = nodeById(conversationNodeId);
+  const requestTabId = activeConversationTabId;
   const text = conversationInput.value.trim();
   const includeDirectChildCode = forceDirectChildCode || Boolean(conversationDirectChildCodeInput?.checked);
   const effectiveText = text || (forceDirectChildCode ? "自分のコードを書いて" : "");
@@ -2358,12 +3225,20 @@ async function sendConversation({ forceDirectChildCode = false } = {}) {
       attachments: attachmentPayloads,
     });
     stopInputWaitingSound("conversation-reply-received");
-    conversationActiveSessionId = normalizeConversationId(data.conversationId);
-    conversationViewingSessionId = normalizeConversationId(data.conversationId);
-    conversationViewingAllSessions = false;
-    rememberConversationTabState(activeConversationTabId);
+    const replyConversationId = normalizeConversationId(data.conversationId);
+    const requestViewIsActive = activeConversationTabId === requestTabId && conversationNodeId === node.id;
+    if (requestViewIsActive) {
+      conversationActiveSessionId = replyConversationId;
+      conversationViewingSessionId = replyConversationId;
+      conversationViewingAllSessions = false;
+      rememberConversationTabState(activeConversationTabId);
+    } else {
+      rememberInactiveConversationReply(requestTabId, node.id, replyConversationId);
+    }
     renderConversationTabs();
-    refreshConversationSessions(node.id, data.conversationId);
+    if (requestViewIsActive) {
+      refreshConversationSessions(node.id, data.conversationId);
+    }
     await reloadCurrentDocument({
       force: true,
       reason: "conversation-agent-sync",
@@ -2371,7 +3246,9 @@ async function sendConversation({ forceDirectChildCode = false } = {}) {
       preserveLocalLayouts: true,
     });
     if (data.cancelled) {
-      markConversationPendingCancelled("キャンセルしました");
+      if (requestViewIsActive) {
+        markConversationPendingCancelled("キャンセルしました");
+      }
       logEvent("info", "conversation-codex-cancelled", {
         message: `reply cancelled: ${node.id}/${data.conversationId}`,
         nodeId: node.id,
@@ -2387,11 +3264,15 @@ async function sendConversation({ forceDirectChildCode = false } = {}) {
     if (arrangedAfterReply) {
       await saveDocument();
     }
-    if (pendingMessage.isConnected) {
+    if (requestViewIsActive && pendingMessage.isConnected) {
       pendingMessage.remove();
     }
     const reply = data.assistantMessage?.text || "";
-    typeConversationReply(node.id, reply, () => maybeAutoSummarizeConversation(node.id));
+    if (requestViewIsActive) {
+      typeConversationReply(node.id, reply, () => maybeAutoSummarizeConversation(node.id));
+    } else {
+      typeConversationReplyMouthOnly(node.id, reply);
+    }
   } catch (error) {
     stopInputWaitingSound("conversation-codex-error");
     if (error.name === "AbortError" || conversationCancelRequested) {
@@ -2888,6 +3769,9 @@ async function loadDocument(name = "project.powan") {
   powanExplorer.setDocument(nextDoc, { name, status: "loaded", reason: "load-document-state" });
   await refreshFiles();
   render();
+  if (activePanelTab === "history") {
+    refreshConversationHistory({ reason: "load-document-refresh-history" });
+  }
   startAutoReload();
   logEvent("debug", "load-document-complete", {
     message: `document loaded: ${name}, ${doc.nodes.length} nodes`,

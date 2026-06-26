@@ -1537,7 +1537,7 @@ body.panning-canvas * {
 
 .panel-tabs {
   display: grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
+  grid-template-columns: repeat(4, minmax(0, 1fr));
   gap: 6px;
   margin-bottom: 14px;
 }
@@ -1568,6 +1568,74 @@ body.panning-canvas * {
 
 .panel-tab-pane[hidden] {
   display: none !important;
+}
+
+.conversation-history-panel {
+  gap: 10px;
+}
+
+.conversation-history-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.conversation-history-head button {
+  min-height: 28px;
+  padding: 4px 10px;
+  font-size: 12px;
+}
+
+.conversation-history-list {
+  display: grid;
+  gap: 8px;
+  min-height: 84px;
+}
+
+.conversation-history-empty,
+.conversation-history-loading {
+  padding: 10px;
+  border: 1px dashed rgba(68, 127, 153, 0.28);
+  border-radius: 6px;
+  color: #4b7182;
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.conversation-history-item {
+  width: 100%;
+  display: grid;
+  gap: 4px;
+  padding: 9px 10px;
+  border: 1px solid rgba(68, 127, 153, 0.18);
+  border-radius: 6px;
+  background: rgba(255, 255, 255, 0.72);
+  color: #244f62;
+  text-align: left;
+}
+
+.conversation-history-item:hover {
+  background: rgba(255, 255, 255, 0.94);
+  border-color: rgba(44, 119, 151, 0.32);
+}
+
+.conversation-history-title {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-size: 12px;
+  font-weight: 900;
+}
+
+.conversation-history-meta,
+.conversation-history-preview {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  color: #5f7f8f;
+  font-size: 11px;
+  font-weight: 700;
 }
 
 .panel-section {

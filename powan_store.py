@@ -180,6 +180,16 @@ class PowanStore:
               error_text TEXT NOT NULL DEFAULT '',
               created_at TEXT NOT NULL
             );
+
+            CREATE TABLE IF NOT EXISTS bulk_command_sessions (
+              id TEXT NOT NULL,
+              document_name TEXT NOT NULL,
+              target_json TEXT NOT NULL DEFAULT '[]',
+              message_json TEXT NOT NULL DEFAULT '[]',
+              created_at TEXT NOT NULL,
+              updated_at TEXT NOT NULL,
+              PRIMARY KEY (document_name, id)
+            );
             """
         )
         connection.execute(
@@ -453,6 +463,275 @@ class PowanStore:
             "activeConversationId": active["id"] if active else None,
             "sessions": sessions,
         }
+
+    def list_document_conversation_sessions(self, project: str, document_name: str) -> dict[str, Any]:
+        document_name = self.safe_powan_name(document_name)
+        self.ensure_project(project)
+        with self.session(project) as connection:
+            rows = connection.execute(
+                """
+                SELECT
+                  c.id,
+                  c.document_name,
+                  c.powan_id,
+                  c.title,
+                  c.codex_thread_id,
+                  c.active,
+                  c.created_at,
+                  c.updated_at,
+                  COUNT(m.id) AS message_count,
+                  (
+                    SELECT text FROM conversation_messages first_user
+                    WHERE first_user.conversation_id = c.id AND first_user.role = 'user'
+                    ORDER BY first_user.id ASC
+                    LIMIT 1
+                  ) AS first_user_text,
+                  (
+                    SELECT text FROM conversation_messages last_message
+                    WHERE last_message.conversation_id = c.id
+                    ORDER BY last_message.id DESC
+                    LIMIT 1
+                  ) AS last_message_text
+                FROM conversations c
+                LEFT JOIN conversation_messages m ON m.conversation_id = c.id
+                WHERE c.document_name = ?
+                GROUP BY c.id
+                HAVING message_count > 0
+                ORDER BY c.updated_at DESC, c.id DESC
+                """,
+                (document_name,),
+            ).fetchall()
+        return {
+            "sessions": [
+                {
+                    "id": int(row["id"]),
+                    "documentName": row["document_name"],
+                    "powanId": row["powan_id"],
+                    "title": row["title"],
+                    "codexThreadId": row["codex_thread_id"],
+                    "active": int(row["active"]),
+                    "createdAt": row["created_at"],
+                    "updatedAt": row["updated_at"],
+                    "messageCount": int(row["message_count"]),
+                    "firstUserText": row["first_user_text"] or "",
+                    "lastMessageText": row["last_message_text"] or "",
+                }
+                for row in rows
+            ],
+        }
+
+    def upsert_bulk_command_session(
+        self,
+        project: str,
+        document_name: str,
+        session_id: str,
+        target_ids: list[Any],
+        target_names: list[Any],
+        messages: list[Any],
+        created_at: str = "",
+        updated_at: str = "",
+    ) -> dict[str, Any]:
+        document_name = self.safe_powan_name(document_name)
+        clean_id = session_id.strip()
+        if not clean_id:
+            raise HTTPException(status_code=400, detail="Bulk session id is required")
+        now = datetime.now().isoformat(timespec="milliseconds")
+        clean_targets = {
+            "targetIds": [str(value) for value in target_ids[:200]],
+            "targetNames": [str(value) for value in target_names[:200]],
+        }
+        clean_messages = []
+        for message in messages[:400]:
+            if not isinstance(message, dict):
+                continue
+            role = str(message.get("role") or "system")
+            text = str(message.get("text") or "")
+            if role not in {"user", "assistant", "system", "ai"}:
+                role = "system"
+            clean_messages.append(
+                {
+                    "role": "assistant" if role == "ai" else role,
+                    "text": text,
+                    "createdAt": str(message.get("createdAt") or updated_at or created_at or now),
+                }
+            )
+        with self.session(project) as connection:
+            existing = connection.execute(
+                """
+                SELECT created_at FROM bulk_command_sessions
+                WHERE document_name = ? AND id = ?
+                """,
+                (document_name, clean_id),
+            ).fetchone()
+            final_created_at = str(existing["created_at"]) if existing else (created_at or now)
+            final_updated_at = updated_at or now
+            connection.execute(
+                """
+                INSERT INTO bulk_command_sessions(
+                  id, document_name, target_json, message_json, created_at, updated_at
+                )
+                VALUES (?, ?, ?, ?, ?, ?)
+                ON CONFLICT(document_name, id) DO UPDATE SET
+                  target_json = excluded.target_json,
+                  message_json = excluded.message_json,
+                  updated_at = excluded.updated_at
+                """,
+                (
+                    clean_id,
+                    document_name,
+                    json.dumps(clean_targets, ensure_ascii=False, separators=(",", ":")),
+                    json.dumps(clean_messages, ensure_ascii=False, separators=(",", ":")),
+                    final_created_at,
+                    final_updated_at,
+                ),
+            )
+        return {
+            "id": clean_id,
+            "documentName": document_name,
+            "targetIds": clean_targets["targetIds"],
+            "targetNames": clean_targets["targetNames"],
+            "messages": clean_messages,
+            "createdAt": final_created_at,
+            "updatedAt": final_updated_at,
+        }
+
+    def list_bulk_command_sessions(self, project: str, document_name: str) -> dict[str, Any]:
+        document_name = self.safe_powan_name(document_name)
+        self.ensure_project(project)
+        with self.session(project) as connection:
+            rows = connection.execute(
+                """
+                SELECT id, document_name, target_json, message_json, created_at, updated_at
+                FROM bulk_command_sessions
+                WHERE document_name = ?
+                ORDER BY updated_at DESC, created_at DESC
+                """,
+                (document_name,),
+            ).fetchall()
+            action_rows = connection.execute(
+                """
+                SELECT id, document_name, powan_id, status, request_json, response_json, error_text, created_at
+                FROM api_action_logs
+                WHERE document_name = ? AND action = 'command-children'
+                ORDER BY id DESC
+                LIMIT 300
+                """,
+                (document_name,),
+            ).fetchall()
+        sessions = []
+        session_ids: set[str] = set()
+        for row in rows:
+            try:
+                targets = json.loads(str(row["target_json"] or "{}"))
+            except json.JSONDecodeError:
+                targets = {}
+            try:
+                messages = json.loads(str(row["message_json"] or "[]"))
+            except json.JSONDecodeError:
+                messages = []
+            sessions.append(
+                {
+                    "id": row["id"],
+                    "documentName": row["document_name"],
+                    "targetIds": targets.get("targetIds") if isinstance(targets, dict) else [],
+                    "targetNames": targets.get("targetNames") if isinstance(targets, dict) else [],
+                    "messages": messages if isinstance(messages, list) else [],
+                    "createdAt": row["created_at"],
+                    "updatedAt": row["updated_at"],
+                }
+            )
+            session_ids.add(str(row["id"]))
+        for row in action_rows:
+            legacy_id = f"legacy-action-{int(row['id'])}"
+            if legacy_id in session_ids:
+                continue
+            try:
+                request_payload = json.loads(str(row["request_json"] or "{}"))
+            except json.JSONDecodeError:
+                request_payload = {}
+            try:
+                response_payload = json.loads(str(row["response_json"] or "{}"))
+            except json.JSONDecodeError:
+                response_payload = {}
+            linked_session_id = str(request_payload.get("bulkHistoryId") or "") if isinstance(request_payload, dict) else ""
+            if linked_session_id and linked_session_id in session_ids:
+                continue
+            instructions = request_payload.get("instructions") if isinstance(request_payload, dict) else []
+            results = response_payload.get("results") if isinstance(response_payload, dict) else []
+            target_ids: list[str] = []
+            target_names: list[str] = []
+            if isinstance(results, list) and results:
+                for result in results[:200]:
+                    if not isinstance(result, dict):
+                        continue
+                    node_id = str(result.get("nodeId") or "")
+                    if node_id:
+                        target_ids.append(node_id)
+                    target_names.append(str(result.get("meaning") or node_id or "名前のないポワン"))
+            elif isinstance(instructions, list):
+                for item in instructions[:200]:
+                    if not isinstance(item, dict):
+                        continue
+                    node_id = str(item.get("childId") or "")
+                    if node_id:
+                        target_ids.append(node_id)
+                    target_names.append(str(item.get("title") or item.get("body") or node_id or "名前のないポワン"))
+            common_instruction = str(request_payload.get("instruction") or "") if isinstance(request_payload, dict) else ""
+            first_instruction = ""
+            if isinstance(instructions, list):
+                first_instruction = next(
+                    (
+                        str(item.get("instruction") or "")
+                        for item in instructions
+                        if isinstance(item, dict) and str(item.get("instruction") or "").strip()
+                    ),
+                    "",
+                )
+            sent_text = common_instruction.strip() or first_instruction.strip() or "一括送信"
+            result_lines: list[str] = []
+            if isinstance(results, list):
+                for result in results[:80]:
+                    if not isinstance(result, dict):
+                        continue
+                    name = str(result.get("meaning") or result.get("nodeId") or "名前のないポワン")
+                    status = str(result.get("status") or row["status"] or "")
+                    assistant = result.get("assistantMessage") if isinstance(result.get("assistantMessage"), dict) else {}
+                    reply = " ".join(str(assistant.get("text") or result.get("error") or "").split())
+                    preview = reply[:80]
+                    result_lines.append(f"{name}: {status}" + (f" / {preview}" if preview else ""))
+            messages = [
+                {"role": "user", "text": sent_text, "createdAt": row["created_at"]},
+            ]
+            result_text = "\n".join(result_lines).strip()
+            if result_text:
+                messages.append(
+                    {
+                        "role": "system",
+                        "text": f"送信完了: {len(result_lines)}件\n{result_text}",
+                        "createdAt": row["created_at"],
+                    }
+                )
+            elif row["error_text"]:
+                messages.append(
+                    {
+                        "role": "system",
+                        "text": f"一括送信エラー: {row['error_text']}",
+                        "createdAt": row["created_at"],
+                    }
+                )
+            sessions.append(
+                {
+                    "id": legacy_id,
+                    "documentName": row["document_name"],
+                    "targetIds": target_ids,
+                    "targetNames": target_names,
+                    "messages": messages,
+                    "createdAt": row["created_at"],
+                    "updatedAt": row["created_at"],
+                }
+            )
+        sessions.sort(key=lambda item: str(item.get("updatedAt") or item.get("createdAt") or ""), reverse=True)
+        return {"sessions": sessions}
 
     def start_new_conversation(
         self,

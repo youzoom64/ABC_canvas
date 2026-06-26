@@ -293,14 +293,21 @@ function schedulePowanFaceRefresh(nodeIds, reason = "powan-face-refresh") {
 }
 
 function restoreSpeakingPowanVisuals() {
-  if (!conversationTypingNodeId) {
-    return;
+  if (conversationTypingNodeId) {
+    for (const element of powanVisualElements(conversationTypingNodeId)) {
+      element.classList.add("speaking");
+      element.classList.toggle("mouth-open", Boolean(conversationTypingMouthOpen));
+      element.classList.toggle("mouth-closed", !conversationTypingMouthOpen);
+      updatePowanFaceButton(element);
+    }
   }
-  for (const element of powanVisualElements(conversationTypingNodeId)) {
-    element.classList.add("speaking");
-    element.classList.toggle("mouth-open", Boolean(conversationTypingMouthOpen));
-    element.classList.toggle("mouth-closed", !conversationTypingMouthOpen);
-    updatePowanFaceButton(element);
+  for (const [nodeId, mouthOpen] of conversationBackgroundSpeakingMouthOpenByNode.entries()) {
+    for (const element of powanVisualElements(nodeId)) {
+      element.classList.add("speaking");
+      element.classList.toggle("mouth-open", Boolean(mouthOpen));
+      element.classList.toggle("mouth-closed", !mouthOpen);
+      updatePowanFaceButton(element);
+    }
   }
 }
 
