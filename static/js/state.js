@@ -268,23 +268,9 @@ var LOG_FLUSH_BATCH_SIZE = 120;
 var logQueue = [];
 var logFlushTimer = null;
 var FOCUSED_CLIENT_LOG_ACTIONS = new Set([
-  "frontend-scripts-loaded",
-  "arrange-current-world-checkpoint",
   "arrange-current-world-skip-revisited",
-  "arrange-visible-start-sync",
-  "arrange-selected-visual-snapshot",
-  "arrange-layout-selected-target",
-  "arrange-layout-animation-call",
-  "arrange-layout-animation-prepared",
-  "arrange-layout-animation-empty",
-  "arrange-layout-animation-start",
-  "arrange-layout-animation-complete",
-  "viewport-motion-start",
-  "viewport-motion-complete",
 ]);
 var FOCUSED_CLIENT_LOG_PREFIXES = [
-  "arrange-pipeline-",
-  "arrange-layout-animation-",
   "client-unhandled-",
 ];
 var INTERIOR_STAGE = {

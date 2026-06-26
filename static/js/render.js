@@ -595,8 +595,6 @@ function syncArrangeMotionStartsFromVisibleElements(targets, reason = "arrange-l
   if (!Array.isArray(targets)) {
     return;
   }
-  let updatedCount = 0;
-  const samples = [];
   for (const target of targets) {
     if (target.kind !== "world") {
       continue;
@@ -606,32 +604,9 @@ function syncArrangeMotionStartsFromVisibleElements(targets, reason = "arrange-l
     if (!node || !visibleLayout) {
       continue;
     }
-    const previousFrom = normalizeArrangeMotionLayout(target.from);
     const nextFrom = normalizeArrangeMotionLayout(visibleLayout);
-    const moved = arrangeMotionTargetDistance({
-      from: previousFrom,
-      to: nextFrom,
-    }) >= 1;
     target.from = nextFrom;
     setArrangeMotionStartWorldLayout(node, nextFrom);
-    if (moved) {
-      updatedCount += 1;
-      if (samples.length < 20) {
-        samples.push({
-          nodeId: node.id,
-          nodeName: meaningName(node),
-          from: arrangeDebugRect(previousFrom),
-          visible: arrangeDebugRect(nextFrom),
-        });
-      }
-    }
-  }
-  if (updatedCount) {
-    logEvent("debug", "arrange-visible-start-sync", {
-      reason,
-      updatedCount,
-      sample: samples,
-    });
   }
 }
 
@@ -803,124 +778,8 @@ function arrangeMotionTargetDistance(target) {
   return Math.max(positionDistance, sizeDistance);
 }
 
-function roundArrangeDebugNumber(value) {
-  const number = Number(value);
-  return Number.isFinite(number) ? Math.round(number * 100) / 100 : 0;
-}
-
-function arrangeDebugRect(rect) {
-  if (!rect) {
-    return null;
-  }
-  return {
-    x: roundArrangeDebugNumber(rect.x ?? rect.left),
-    y: roundArrangeDebugNumber(rect.y ?? rect.top),
-    width: roundArrangeDebugNumber(rect.width),
-    height: roundArrangeDebugNumber(rect.height),
-  };
-}
-
-function arrangeDebugCenter(rect) {
-  if (!rect) {
-    return null;
-  }
-  const x = Number((rect.x ?? rect.left) || 0);
-  const y = Number((rect.y ?? rect.top) || 0);
-  return {
-    x: roundArrangeDebugNumber(x + Number(rect.width || 0) / 2),
-    y: roundArrangeDebugNumber(y + Number(rect.height || 0) / 2),
-  };
-}
-
-function arrangeSelectedVisualSnapshot(stage, reason, nodeId = selectedId) {
-  if (!nodeId) {
-    return null;
-  }
-  const node = nodeById(nodeId);
-  if (!node) {
-    return null;
-  }
-  const worldElement = nodeElementById(nodeId);
-  const nestedElements = [...getWorldLayer().querySelectorAll(
-    `.nested-meaning[data-id="${CSS.escape(nodeId)}"], .nested-preview-meaning[data-id="${CSS.escape(nodeId)}"]`,
-  )];
-  return {
-    action: "arrange-selected-visual-snapshot",
-    reason,
-    stage,
-    nodeId,
-    nodeName: meaningName(node),
-    parentId: node.parent || null,
-    parentName: meaningName(nodeById(node.parent)),
-    worldLayout: arrangeDebugRect(displayLayoutForNode(node)),
-    worldScreen: arrangeDebugRect(worldElement?.getBoundingClientRect?.()),
-    worldScreenCenter: arrangeDebugCenter(worldElement?.getBoundingClientRect?.()),
-    nested: nestedElements.map((element) => {
-      const parentVisual = element.parentElement?.closest?.(".node, .nested-meaning, .nested-preview-meaning");
-      const rect = element.getBoundingClientRect?.();
-      const parentRect = parentVisual?.getBoundingClientRect?.();
-      return {
-        visual: element.classList.contains("nested-preview-meaning") ? "preview" : "nested",
-        style: arrangeDebugStyleRect(element),
-        screen: arrangeDebugRect(rect),
-        screenCenter: arrangeDebugCenter(rect),
-        visualParentId: parentVisual?.dataset?.id || null,
-        visualParentName: meaningName(nodeById(parentVisual?.dataset?.id)),
-        visualParentScreen: arrangeDebugRect(parentRect),
-        visualParentCenter: arrangeDebugCenter(parentRect),
-      };
-    }),
-  };
-}
-
-function logArrangeSelectedVisualSnapshot(stage, reason, nodeId = selectedId) {
-  const snapshot = arrangeSelectedVisualSnapshot(stage, reason, nodeId);
-  if (snapshot) {
-    logEvent("debug", "arrange-selected-visual-snapshot", snapshot);
-  }
-}
-
-function arrangeDebugNodeDepth(node) {
-  return node ? worldPathNodes(node).length - 1 : -1;
-}
-
-function arrangeDebugTarget(target) {
-  const node = nodeById(target.nodeId);
-  const parent = target.parentId ? nodeById(target.parentId) : null;
-  return {
-    kind: target.kind,
-    nodeId: target.nodeId,
-    nodeName: node ? meaningName(node) : "",
-    parentId: target.parentId || node?.parent || null,
-    parentName: parent ? meaningName(parent) : "",
-    depth: arrangeDebugNodeDepth(node),
-    from: arrangeDebugRect(target.from),
-    to: arrangeDebugRect(target.to),
-    fromCenter: arrangeDebugCenter(target.from),
-    toCenter: arrangeDebugCenter(target.to),
-    distance: roundArrangeDebugNumber(arrangeMotionTargetDistance(target)),
-  };
-}
-
-function arrangeDebugCountsByDepth(targets) {
-  return targets.reduce((counts, target) => {
-    const depth = arrangeDebugNodeDepth(nodeById(target.nodeId));
-    const key = String(depth);
-    counts[key] = (counts[key] || 0) + 1;
-    return counts;
-  }, {});
-}
-
-function arrangeDebugCountsByKind(targets) {
-  return targets.reduce((counts, target) => {
-    counts[target.kind] = (counts[target.kind] || 0) + 1;
-    return counts;
-  }, {});
-}
-
 function arrangePrepareTargets(targets) {
   const prepared = [];
-  const rejected = [];
   for (const target of targets || []) {
     const next = {
       kind: target.kind || "world",
@@ -934,126 +793,9 @@ function arrangePrepareTargets(targets) {
     const distance = arrangeMotionTargetDistance(next);
     if (hasNode && hasParent && distance >= 1) {
       prepared.push(next);
-      continue;
     }
-    rejected.push({
-      ...next,
-      distance: roundArrangeDebugNumber(distance),
-      reason: !hasNode ? "missing-node" : !hasParent ? "missing-parent" : "too-close",
-    });
   }
-  return { prepared, rejected };
-}
-
-function arrangeDebugCountsByRejectReason(rejected) {
-  return rejected.reduce((counts, target) => {
-    counts[target.reason] = (counts[target.reason] || 0) + 1;
-    return counts;
-  }, {});
-}
-
-function logSelectedArrangeTarget(reason, rawTargets, prepared, rejected) {
-  if (!selectedId) {
-    return;
-  }
-  const raw = (rawTargets || [])
-    .filter((target) => target.nodeId === selectedId)
-    .map((target) => arrangeDebugTarget({
-      kind: target.kind || "world",
-      nodeId: target.nodeId,
-      parentId: target.parentId || null,
-      from: normalizeArrangeMotionLayout(target.from),
-      to: normalizeArrangeMotionLayout(target.to),
-    }));
-  const preparedMatches = prepared
-    .filter((target) => target.nodeId === selectedId)
-    .map(arrangeDebugTarget);
-  const rejectedMatches = rejected
-    .filter((target) => target.nodeId === selectedId)
-    .map(arrangeDebugTarget);
-  if (!raw.length && !preparedMatches.length && !rejectedMatches.length) {
-    return;
-  }
-  logEvent("debug", "arrange-layout-selected-target", {
-    reason,
-    selectedId,
-    selectedName: meaningName(nodeById(selectedId)),
-    rawCount: raw.length,
-    preparedCount: preparedMatches.length,
-    rejectedCount: rejectedMatches.length,
-    raw,
-    prepared: preparedMatches,
-    rejected: rejectedMatches,
-  });
-}
-
-function arrangeDebugStyleRect(element) {
-  if (!element) {
-    return null;
-  }
-  return {
-    x: roundArrangeDebugNumber(Number.parseFloat(element.style.left || "0")),
-    y: roundArrangeDebugNumber(Number.parseFloat(element.style.top || "0")),
-    width: roundArrangeDebugNumber(Number.parseFloat(element.style.width || "0")),
-    height: roundArrangeDebugNumber(Number.parseFloat(element.style.height || "0")),
-  };
-}
-
-function collectArrangePreviewSnapshot(limit = 28) {
-  const layer = getWorldLayer();
-  const elements = [...layer.querySelectorAll(".nested-meaning, .nested-preview-meaning")]
-    .filter((element) => {
-      const rect = element.getBoundingClientRect();
-      return rect.width > 0 && rect.height > 0;
-    })
-    .slice(0, limit);
-  return elements.map((element) => {
-    const node = nodeById(element.dataset.id);
-    const parentVisual = element.parentElement?.closest?.(".node, .nested-meaning, .nested-preview-meaning");
-    const parentRect = parentVisual?.getBoundingClientRect?.();
-    const rect = element.getBoundingClientRect();
-    return {
-      nodeId: element.dataset.id || null,
-      nodeName: node ? meaningName(node) : "",
-      depth: arrangeDebugNodeDepth(node),
-      visual: element.classList.contains("nested-preview-meaning") ? "preview" : "nested",
-      previewDepth: element.dataset.previewDepth || null,
-      dataParentId: node?.parent || null,
-      visualParentId: parentVisual?.dataset?.id || null,
-      visualParentClass: parentVisual ? String(parentVisual.className || "").slice(0, 80) : "",
-      style: arrangeDebugStyleRect(element),
-      screen: arrangeDebugRect(rect),
-      screenCenter: arrangeDebugCenter(rect),
-      parentScreen: arrangeDebugRect(parentRect),
-      parentScreenCenter: arrangeDebugCenter(parentRect),
-    };
-  });
-}
-
-function logArrangeMotionTargets(prepared, reason) {
-  const deepTargets = prepared.filter((target) => arrangeDebugNodeDepth(nodeById(target.nodeId)) >= 2);
-  logEvent("debug", "arrange-layout-target-details", {
-    reason,
-    total: prepared.length,
-    byKind: arrangeDebugCountsByKind(prepared),
-    byDepth: arrangeDebugCountsByDepth(prepared),
-    deepCount: deepTargets.length,
-    sample: (deepTargets.length ? deepTargets : prepared).slice(0, 30).map(arrangeDebugTarget),
-  });
-}
-
-function logArrangeMotionFrame(reason, phase, progress, prepared) {
-  const deepTargets = prepared.filter((target) => arrangeDebugNodeDepth(nodeById(target.nodeId)) >= 2);
-  logArrangeSelectedVisualSnapshot(phase, reason);
-  logEvent("debug", "arrange-layout-frame-details", {
-    reason,
-    phase,
-    progress: roundArrangeDebugNumber(progress),
-    targetCount: prepared.length,
-    deepTargetCount: deepTargets.length,
-    targetSample: (deepTargets.length ? deepTargets : prepared).slice(0, 18).map(arrangeDebugTarget),
-    previewSample: collectArrangePreviewSnapshot(),
-  });
+  return prepared;
 }
 
 function arrangeLayoutMotionError(error) {
@@ -1106,17 +848,9 @@ function finishArrangeLayoutMotion() {
 
 function animateArrangeLayoutTargets(targets, { reason = "arrange-layout", duration = 720, onComplete = null } = {}) {
   const rawTargetCount = Array.isArray(targets) ? targets.length : 0;
-  logEvent("debug", "arrange-layout-animation-call", {
-    reason,
-    rawTargetCount,
-    duration,
-  });
   let prepared;
-  let rejected = [];
   try {
-    const result = arrangePrepareTargets(targets);
-    prepared = result.prepared;
-    rejected = result.rejected;
+    prepared = arrangePrepareTargets(targets);
   } catch (error) {
     logEvent("error", "arrange-layout-animation-prepare-error", {
       reason,
@@ -1125,22 +859,7 @@ function animateArrangeLayoutTargets(targets, { reason = "arrange-layout", durat
     });
     throw error;
   }
-  logEvent("debug", "arrange-layout-animation-prepared", {
-    reason,
-    rawTargetCount,
-    preparedCount: prepared.length,
-    rejectedCount: rejected.length,
-    rejectedByReason: arrangeDebugCountsByRejectReason(rejected),
-    rejectedSample: rejected.slice(0, 24).map(arrangeDebugTarget),
-    byKind: arrangeDebugCountsByKind(prepared),
-    byDepth: arrangeDebugCountsByDepth(prepared),
-  });
-  logSelectedArrangeTarget(reason, targets, prepared, rejected);
   if (!prepared.length) {
-    logEvent("debug", "arrange-layout-animation-empty", {
-      reason,
-      rawTargetCount,
-    });
     if (typeof onComplete === "function") {
       onComplete();
     }
@@ -1152,9 +871,7 @@ function animateArrangeLayoutTargets(targets, { reason = "arrange-layout", durat
     targets: prepared,
     frameId: null,
     reason,
-    loggedMidpoint: false,
   };
-  logArrangeMotionTargets(prepared, reason);
   const step = (timestamp) => {
     try {
       const motion = arrangeLayoutMotion;
@@ -1167,25 +884,16 @@ function animateArrangeLayoutTargets(targets, { reason = "arrange-layout", durat
         applyArrangeMotionTarget(target, interpolateArrangeMotionLayout(target.from, target.to, eased));
       }
       refreshArrangeMotionView();
-      if (!motion.loggedMidpoint && progress >= 0.5 && progress < 1) {
-        motion.loggedMidpoint = true;
-        logArrangeMotionFrame(reason, "mid", progress, prepared);
-      }
       setDirty();
       if (progress < 1) {
         motion.frameId = requestAnimationFrame(step);
         return;
       }
-      logArrangeMotionFrame(reason, "end", 1, prepared);
       arrangeLayoutMotion = null;
       render();
       if (typeof onComplete === "function") {
         onComplete();
       }
-      logEvent("debug", "arrange-layout-animation-complete", {
-        reason,
-        count: prepared.length,
-      });
     } catch (error) {
       arrangeLayoutMotion = null;
       logEvent("error", "arrange-layout-animation-step-error", {
@@ -1201,7 +909,6 @@ function animateArrangeLayoutTargets(targets, { reason = "arrange-layout", durat
       applyArrangeMotionTarget(target, target.from);
     }
     refreshArrangeMotionView();
-    logArrangeMotionFrame(reason, "start", 0, prepared);
     arrangeLayoutMotion.frameId = requestAnimationFrame(step);
   } catch (error) {
     arrangeLayoutMotion = null;
@@ -1212,10 +919,6 @@ function animateArrangeLayoutTargets(targets, { reason = "arrange-layout", durat
     });
     throw error;
   }
-  logEvent("debug", "arrange-layout-animation-start", {
-    reason,
-    count: prepared.length,
-  });
   return true;
 }
 

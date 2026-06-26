@@ -36,22 +36,6 @@ function arrangePipelineError(error) {
   };
 }
 
-function logArrangePipelineStep(reason, stage, details = {}) {
-  logEvent("debug", "arrange-pipeline-step", {
-    reason,
-    stage,
-    ...details,
-  });
-}
-
-function logArrangeCurrentWorldCheckpoint(reason, stage, details = {}) {
-  logEvent("debug", "arrange-current-world-checkpoint", {
-    reason,
-    stage,
-    ...details,
-  });
-}
-
 function setArrangeMotionStartWorldLayout(node, layout) {
   node.layout = powanWorkspace.clampLayout({
     ...(node.layout || {}),
@@ -75,7 +59,6 @@ function runArrangeRenderAndAnimation({ reason, layoutMotionTargets, details = {
   if (typeof syncArrangeMotionStartsFromVisibleElements === "function") {
     syncArrangeMotionStartsFromVisibleElements(layoutMotionTargets, reason);
   }
-  logArrangePipelineStep(reason, "render-before", payload);
   try {
     render();
   } catch (error) {
@@ -86,18 +69,8 @@ function runArrangeRenderAndAnimation({ reason, layoutMotionTargets, details = {
     });
     throw error;
   }
-  logArrangePipelineStep(reason, "render-after", payload);
-  logArrangePipelineStep(reason, "animate-before", {
-    ...payload,
-    hasAnimateFunction: typeof animateArrangeLayoutTargets === "function",
-  });
   try {
-    const animationStarted = animateArrangeLayoutTargets(layoutMotionTargets, { reason, onComplete });
-    logArrangePipelineStep(reason, "animate-after", {
-      ...payload,
-      animationStarted: Boolean(animationStarted),
-    });
-    return animationStarted;
+    return animateArrangeLayoutTargets(layoutMotionTargets, { reason, onComplete });
   } catch (error) {
     logEvent("error", "arrange-pipeline-animate-error", {
       reason,
@@ -818,34 +791,8 @@ var powanExplorer = {
         nestedSizeScale: appSettings.arrangeNestedChildSize,
         layoutMotionTargets,
       });
-      logArrangeCurrentWorldCheckpoint(reason, "visit-done", {
-        worldParentId: parent.id,
-        parentCount: parents.length,
-        changedCount: changedIds.length,
-        targetCount: layoutMotionTargets.length,
-      });
-      logArrangeCurrentWorldCheckpoint(reason, "touch-before", {
-        worldParentId: parent.id,
-        changedCount: changedIds.length,
-      });
       this.touchPowans(changedIds, `${reason}-touch`);
-      logArrangeCurrentWorldCheckpoint(reason, "touch-after", {
-        worldParentId: parent.id,
-        changedCount: changedIds.length,
-      });
-      logArrangeCurrentWorldCheckpoint(reason, "dirty-before", {
-        worldParentId: parent.id,
-      });
       setDirty();
-      logArrangeCurrentWorldCheckpoint(reason, "dirty-after", {
-        worldParentId: parent.id,
-      });
-      logArrangeCurrentWorldCheckpoint(reason, "pipeline-before", {
-        worldParentId: parent.id,
-        parentCount: parents.length,
-        changedCount: changedIds.length,
-        targetCount: layoutMotionTargets.length,
-      });
       runArrangeRenderAndAnimation({
         reason,
         layoutMotionTargets,
@@ -857,12 +804,6 @@ var powanExplorer = {
         onComplete: () => animateViewportToRect(powanPlacement.parentWorldArea(parent), 64, {
           reason: `${reason}-viewport`,
         }),
-      });
-      logArrangeCurrentWorldCheckpoint(reason, "pipeline-after", {
-        worldParentId: parent.id,
-        parentCount: parents.length,
-        changedCount: changedIds.length,
-        targetCount: layoutMotionTargets.length,
       });
       logEvent("info", reason, {
         worldParentId: parent.id,
@@ -915,36 +856,8 @@ var powanExplorer = {
     for (const root of roots) {
       visit(root);
     }
-    logArrangeCurrentWorldCheckpoint(reason, "visit-done", {
-      worldParentId: null,
-      rootCount: roots.length,
-      parentCount: parents.length,
-      changedCount: changedIds.length,
-      targetCount: layoutMotionTargets.length,
-    });
-    logArrangeCurrentWorldCheckpoint(reason, "touch-before", {
-      worldParentId: null,
-      changedCount: changedIds.length,
-    });
     this.touchPowans(changedIds, `${reason}-touch`);
-    logArrangeCurrentWorldCheckpoint(reason, "touch-after", {
-      worldParentId: null,
-      changedCount: changedIds.length,
-    });
-    logArrangeCurrentWorldCheckpoint(reason, "dirty-before", {
-      worldParentId: null,
-    });
     setDirty();
-    logArrangeCurrentWorldCheckpoint(reason, "dirty-after", {
-      worldParentId: null,
-    });
-    logArrangeCurrentWorldCheckpoint(reason, "pipeline-before", {
-      worldParentId: null,
-      rootCount: roots.length,
-      parentCount: parents.length,
-      changedCount: changedIds.length,
-      targetCount: layoutMotionTargets.length,
-    });
     runArrangeRenderAndAnimation({
       reason,
       layoutMotionTargets,
@@ -957,13 +870,6 @@ var powanExplorer = {
       onComplete: () => animateViewportToRect(powanPlacement.rootWorldArea(), 64, {
         reason: `${reason}-viewport`,
       }),
-    });
-    logArrangeCurrentWorldCheckpoint(reason, "pipeline-after", {
-      worldParentId: null,
-      rootCount: roots.length,
-      parentCount: parents.length,
-      changedCount: changedIds.length,
-      targetCount: layoutMotionTargets.length,
     });
     logEvent("info", reason, {
       worldParentId: null,

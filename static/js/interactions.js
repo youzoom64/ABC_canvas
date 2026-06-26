@@ -2191,9 +2191,6 @@ if (pasteWorldMenuButton) {
 }
 if (panelArrangeWorldButton) {
   panelArrangeWorldButton.addEventListener("click", () => {
-    if (typeof logArrangeSelectedVisualSnapshot === "function") {
-      logArrangeSelectedVisualSnapshot("before-click", "panel-arrange-current-world");
-    }
     powanExplorer.arrangeCurrentWorld("panel-arrange-current-world");
   });
 }
