@@ -56,6 +56,9 @@ MIN_AUTO_SUMMARY_TURNS = 2
 MAX_AUTO_SUMMARY_TURNS = 500
 DEFAULT_CODEX_SANDBOX = "danger-full-access"
 CODEX_SANDBOXES = {"read-only", "workspace-write", "danger-full-access"}
+DEFAULT_CODEX_MODEL = "gpt-5.5"
+DEFAULT_CODEX_REASONING_EFFORT = "low"
+CODEX_REASONING_EFFORTS = {"", "minimal", "low", "medium", "high", "very_high"}
 DEFAULT_ARRANGE_SPACING = 1.0
 DEFAULT_ARRANGE_SIZE = 1.0
 MIN_ARRANGE_SPACING = 0.3
@@ -309,6 +312,11 @@ class ConversationAutoSummaryRequest(BaseModel):
 
 class CodexSandboxRequest(BaseModel):
     codexSandbox: str
+
+
+class CodexModelSettingsRequest(BaseModel):
+    codexModel: str = ""
+    codexReasoningEffort: str = ""
 
 
 class ArrangeSettingsRequest(BaseModel):
@@ -955,6 +963,16 @@ def normalize_codex_sandbox(value: Any) -> str:
     return sandbox if sandbox in CODEX_SANDBOXES else DEFAULT_CODEX_SANDBOX
 
 
+def normalize_codex_model(value: Any) -> str:
+    model = str(value or "").strip()
+    return model[:120]
+
+
+def normalize_codex_reasoning_effort(value: Any) -> str:
+    effort = str(value or "").strip().lower()
+    return effort if effort in CODEX_REASONING_EFFORTS else DEFAULT_CODEX_REASONING_EFFORT
+
+
 def stable_for_signature(value: Any) -> Any:
     if isinstance(value, list):
         return [stable_for_signature(item) for item in value]
@@ -1135,6 +1153,8 @@ def load_app_settings() -> dict[str, Any]:
         "autoSummaryEnabled": bool(data.get("autoSummaryEnabled", DEFAULT_AUTO_SUMMARY_ENABLED)),
         "autoSummaryTurns": clamp_auto_summary_turns(data.get("autoSummaryTurns", DEFAULT_AUTO_SUMMARY_TURNS)),
         "codexSandbox": normalize_codex_sandbox(data.get("codexSandbox", DEFAULT_CODEX_SANDBOX)),
+        "codexModel": normalize_codex_model(data.get("codexModel", DEFAULT_CODEX_MODEL)),
+        "codexReasoningEffort": normalize_codex_reasoning_effort(data.get("codexReasoningEffort", DEFAULT_CODEX_REASONING_EFFORT)),
         "titleFontFamily": normalize_title_font_family(data.get("titleFontFamily", DEFAULT_TITLE_FONT_FAMILY)),
         "titleFontScale": clamp_title_font_scale(data.get("titleFontScale", DEFAULT_TITLE_FONT_SCALE)),
         "titleOutlineEnabled": bool(data.get("titleOutlineEnabled", False)),
@@ -1197,6 +1217,8 @@ def setting_payload() -> dict[str, Any]:
         "autoSummaryEnabled": settings["autoSummaryEnabled"],
         "autoSummaryTurns": settings["autoSummaryTurns"],
         "codexSandbox": settings["codexSandbox"],
+        "codexModel": settings["codexModel"],
+        "codexReasoningEffort": settings["codexReasoningEffort"],
         "titleFontFamily": settings["titleFontFamily"],
         "titleFontScale": settings["titleFontScale"],
         "titleOutlineEnabled": settings["titleOutlineEnabled"],
@@ -1466,6 +1488,23 @@ def save_codex_sandbox(request: CodexSandboxRequest) -> dict[str, Any]:
     settings["codexSandbox"] = normalize_codex_sandbox(request.codexSandbox)
     save_app_settings(settings)
     log_server_event("info", "codex-sandbox-updated", {"codexSandbox": settings["codexSandbox"]})
+    return setting_payload()
+
+
+@app.post("/api/settings/codex-model")
+def save_codex_model_settings(request: CodexModelSettingsRequest) -> dict[str, Any]:
+    settings = load_app_settings()
+    settings["codexModel"] = normalize_codex_model(request.codexModel)
+    settings["codexReasoningEffort"] = normalize_codex_reasoning_effort(request.codexReasoningEffort)
+    save_app_settings(settings)
+    log_server_event(
+        "info",
+        "codex-model-settings-updated",
+        {
+            "codexModel": settings["codexModel"],
+            "codexReasoningEffort": settings["codexReasoningEffort"],
+        },
+    )
     return setting_payload()
 
 
@@ -1827,6 +1866,8 @@ def run_powan_codex_message(
     project_root_path = STORE.project_root(project)
     settings = load_app_settings()
     codex_sandbox = normalize_codex_sandbox(settings.get("codexSandbox"))
+    codex_model = normalize_codex_model(settings.get("codexModel"))
+    codex_reasoning_effort = normalize_codex_reasoning_effort(settings.get("codexReasoningEffort"))
     log_server_event(
         "info",
         "codex-exec-start",
@@ -1843,6 +1884,8 @@ def run_powan_codex_message(
             "attachmentCount": len(materialized_attachments),
             "attachmentPathCount": sum(1 for attachment in materialized_attachments if isinstance(attachment, dict) and attachment.get("path")),
             "codexSandbox": codex_sandbox,
+            "codexModel": codex_model,
+            "codexReasoningEffort": codex_reasoning_effort,
         },
     )
     log_powan_work_status(
@@ -1859,6 +1902,8 @@ def run_powan_codex_message(
             "textPreview": compact_console_text(text),
             "hasThread": bool(conversation.get("codexThreadId")),
             "codexSandbox": codex_sandbox,
+            "codexModel": codex_model,
+            "codexReasoningEffort": codex_reasoning_effort,
             "includeDirectChildCode": bool(include_direct_child_code),
         },
     )
@@ -1876,6 +1921,8 @@ def run_powan_codex_message(
             include_direct_child_code=bool(include_direct_child_code),
             attachments=materialized_attachments,
             codex_sandbox=codex_sandbox,
+            codex_model=codex_model,
+            codex_reasoning_effort=codex_reasoning_effort,
         )
     except Exception as exc:
         detail = f"Codex exec crashed before returning: {exc}"
@@ -2275,6 +2322,9 @@ def summarize_conversation(node_id: str, project: str, file: str = DEFAULT_FILE)
         }
     old_conversation = STORE.active_conversation(project, file, node_id)
     project_root_path = STORE.project_root(project)
+    settings = load_app_settings()
+    codex_model = normalize_codex_model(settings.get("codexModel"))
+    codex_reasoning_effort = normalize_codex_reasoning_effort(settings.get("codexReasoningEffort"))
     log_server_event(
         "info",
         "conversation-summary-start",
@@ -2284,6 +2334,8 @@ def summarize_conversation(node_id: str, project: str, file: str = DEFAULT_FILE)
             "nodeId": node_id,
             "conversationId": old_conversation["id"],
             "messageCount": len(messages),
+            "codexModel": codex_model,
+            "codexReasoningEffort": codex_reasoning_effort,
         },
     )
     try:
@@ -2293,6 +2345,8 @@ def summarize_conversation(node_id: str, project: str, file: str = DEFAULT_FILE)
             document_name=STORE.safe_powan_name(file),
             node_id=node_id,
             messages=messages,
+            codex_model=codex_model,
+            codex_reasoning_effort=codex_reasoning_effort,
         )
     except Exception as exc:
         detail = f"Codex exec crashed before summarizing: {exc}"
