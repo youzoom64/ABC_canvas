@@ -17,6 +17,9 @@ const inputSoundVolumeValue = document.querySelector("#inputSoundVolumeValue");
 const saveInputSoundVolumeButton = document.querySelector("#saveInputSoundVolumeButton");
 const codexSandboxSelect = document.querySelector("#codexSandboxSelect");
 const saveCodexSandboxButton = document.querySelector("#saveCodexSandboxButton");
+const codexModelInput = document.querySelector("#codexModelInput");
+const codexReasoningEffortSelect = document.querySelector("#codexReasoningEffortSelect");
+const saveCodexModelButton = document.querySelector("#saveCodexModelButton");
 const arrangeResizeParentsInput = document.querySelector("#arrangeResizeParentsInput");
 const arrangeRecursiveInput = document.querySelector("#arrangeRecursiveInput");
 const arrangeChildSpacingInput = document.querySelector("#arrangeChildSpacingInput");
@@ -150,6 +153,8 @@ function renderSettings(data) {
   renderVolume(data.conversationSoundVolume);
   renderInputVolume(data.inputSoundVolume);
   codexSandboxSelect.value = data.codexSandbox || "danger-full-access";
+  codexModelInput.value = data.codexModel || "gpt-5.5";
+  codexReasoningEffortSelect.value = data.codexReasoningEffort || "low";
   renderArrange(data);
   restartVisibleConsoleInput.checked = Boolean(data.restartVisibleConsole);
   renderConsoleLogLevels(data);
@@ -311,6 +316,29 @@ async function saveCodexSandbox() {
   }
 }
 
+async function saveCodexModelSettings() {
+  saveCodexModelButton.disabled = true;
+  setSettingsStatus("saving codex model");
+  try {
+    const response = await fetch("/api/settings/codex-model", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        codexModel: codexModelInput.value.trim(),
+        codexReasoningEffort: codexReasoningEffortSelect.value,
+      }),
+    });
+    if (!response.ok) {
+      const error = await response.json().catch(() => ({ detail: "save failed" }));
+      throw new Error(error.detail || "save failed");
+    }
+    renderSettings(await response.json());
+    setSettingsStatus("codex model saved");
+  } finally {
+    saveCodexModelButton.disabled = false;
+  }
+}
+
 async function saveArrange() {
   saveArrangeButton.disabled = true;
   setSettingsStatus("saving arrange");
@@ -467,6 +495,24 @@ saveCodexSandboxButton.addEventListener("click", () => {
 });
 codexSandboxSelect.addEventListener("change", () => {
   autoSave("codexSandbox", saveCodexSandbox);
+});
+saveCodexModelButton.addEventListener("click", () => {
+  saveCodexModelSettings().catch((error) => {
+    setSettingsStatus(error.message);
+    console.error(error);
+  });
+});
+codexModelInput.addEventListener("change", () => {
+  autoSave("codexModel", saveCodexModelSettings);
+});
+codexModelInput.addEventListener("keydown", (event) => {
+  if (event.key === "Enter") {
+    event.preventDefault();
+    autoSave("codexModel", saveCodexModelSettings);
+  }
+});
+codexReasoningEffortSelect.addEventListener("change", () => {
+  autoSave("codexModel", saveCodexModelSettings);
 });
 if (arrangeChildSpacingInput) {
   arrangeChildSpacingInput.addEventListener("input", () => {

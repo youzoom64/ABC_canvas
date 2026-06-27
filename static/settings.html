@@ -5,7 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <title>ABC Canvas Settings</title>
     <link rel="icon" href="data:," />
-    <link rel="stylesheet" href="/static/style.css?v=settings-autosave-1" />
+    <link rel="stylesheet" href="/static/style.css?v=settings-codex-model-1" />
   </head>
   <body class="settings-page">
     <header class="topbar">
@@ -104,6 +104,30 @@
 
         <section class="settings-section">
           <div class="settings-section-head">
+            <h2>Codexモデル</h2>
+            <span class="settings-muted">ポワンと話す時のCodexモデル</span>
+          </div>
+          <div class="settings-folder-row">
+            <select id="codexModelInput">
+              <option value="gpt-5.5">GPT-5.5</option>
+              <option value="gpt-5.4">GPT-5.4</option>
+              <option value="gpt-5.4-mini">GPT-5.4-Mini</option>
+              <option value="gpt-5.3-codex-spark">GPT-5.3-Codex-Spark</option>
+            </select>
+            <button id="saveCodexModelButton" type="button" hidden>Save Model</button>
+          </div>
+          <div class="settings-sound-row">
+            <select id="codexReasoningEffortSelect">
+              <option value="low">低</option>
+              <option value="medium">中</option>
+              <option value="high">高</option>
+              <option value="very_high">非常に高い</option>
+            </select>
+          </div>
+        </section>
+
+        <section class="settings-section">
+          <div class="settings-section-head">
             <h2>整列</h2>
             <span class="settings-muted">整列ボタンと右クリック整列で使う並べ方</span>
           </div>
@@ -152,6 +176,6 @@
       </section>
     </main>
 
-    <script src="/static/settings.js?v=settings-autosave-1"></script>
+    <script src="/static/settings.js?v=settings-codex-model-1"></script>
   </body>
 </html>

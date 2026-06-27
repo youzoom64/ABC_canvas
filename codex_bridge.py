@@ -82,6 +82,8 @@ class CodexPowanBridge:
         include_direct_child_code: bool = False,
         attachments: list[dict[str, Any]] | None = None,
         codex_sandbox: str = "danger-full-access",
+        codex_model: str = "",
+        codex_reasoning_effort: str = "",
     ) -> CodexRunResult:
         prompt_payload = self.prompt_payload(
             project=project,
@@ -112,6 +114,8 @@ class CodexPowanBridge:
                 tool_env=tool_env,
                 cancel_key=cancel_key,
                 sandbox=codex_sandbox,
+                model=codex_model,
+                reasoning_effort=codex_reasoning_effort,
             )
             if result.returncode == 0 or result.cancelled:
                 return result
@@ -135,6 +139,8 @@ class CodexPowanBridge:
             tool_env=tool_env,
             cancel_key=cancel_key,
             sandbox=codex_sandbox,
+            model=codex_model,
+            reasoning_effort=codex_reasoning_effort,
         )
 
     def summarize_conversation(
@@ -145,6 +151,8 @@ class CodexPowanBridge:
         document_name: str,
         node_id: str,
         messages: list[dict[str, Any]],
+        codex_model: str = "",
+        codex_reasoning_effort: str = "",
     ) -> CodexRunResult:
         source = self.build_summary_source(messages)
         tool_env = {
@@ -155,7 +163,15 @@ class CodexPowanBridge:
         }
         max_chars = 3000
         prompt = self.render_summary_prompt(source["text"], max_chars=max_chars)
-        result = self.run_codex(project_root, prompt, thread_id=None, tool_env=tool_env, ignore_rules=True)
+        result = self.run_codex(
+            project_root,
+            prompt,
+            thread_id=None,
+            tool_env=tool_env,
+            ignore_rules=True,
+            model=codex_model,
+            reasoning_effort=codex_reasoning_effort,
+        )
         if result.returncode != 0 or not result.text:
             result.input_chars = source["input_chars"]
             result.turn_count = source["turn_count"]
@@ -165,7 +181,15 @@ class CodexPowanBridge:
         if len(result.text) > max_chars:
             retry_count = 1
             retry_prompt = self.render_summary_retry_prompt(result.text, max_chars=max_chars)
-            retry_result = self.run_codex(project_root, retry_prompt, thread_id=None, tool_env=tool_env, ignore_rules=True)
+            retry_result = self.run_codex(
+                project_root,
+                retry_prompt,
+                thread_id=None,
+                tool_env=tool_env,
+                ignore_rules=True,
+                model=codex_model,
+                reasoning_effort=codex_reasoning_effort,
+            )
             if retry_result.returncode == 0 and retry_result.text:
                 retry_result.stdout = f"{result.stdout}\n{retry_result.stdout}".strip()
                 retry_result.stderr = f"{result.stderr}\n{retry_result.stderr}".strip()
@@ -191,15 +215,19 @@ class CodexPowanBridge:
         ignore_rules: bool = False,
         cancel_key: str | None = None,
         sandbox: str = "danger-full-access",
+        model: str = "",
+        reasoning_effort: str = "",
     ) -> CodexRunResult:
         codex_command = shutil.which("codex") or shutil.which("codex.cmd") or "codex"
         output_path = Path(tempfile.gettempdir()) / f"abc_canvas_codex_{uuid4().hex}.txt"
+        option_args = self.codex_option_args(model=model, reasoning_effort=reasoning_effort)
         if thread_id:
             command = [
                 codex_command,
                 "exec",
                 "resume",
                 "--json",
+                *option_args,
                 "--skip-git-repo-check",
                 "-o",
                 str(output_path),
@@ -213,6 +241,7 @@ class CodexPowanBridge:
                 codex_command,
                 "exec",
                 "--json",
+                *option_args,
                 "-C",
                 str(project_root),
                 "--skip-git-repo-check",
@@ -299,6 +328,16 @@ class CodexPowanBridge:
             command=command,
             cancelled=cancelled,
         )
+
+    def codex_option_args(self, *, model: str = "", reasoning_effort: str = "") -> list[str]:
+        args: list[str] = []
+        clean_model = str(model or "").strip()
+        if clean_model:
+            args.extend(["-m", clean_model])
+        clean_effort = str(reasoning_effort or "").strip().lower()
+        if clean_effort:
+            args.extend(["-c", f'model_reasoning_effort="{clean_effort}"'])
+        return args
 
     def prompt_payload(
         self,
