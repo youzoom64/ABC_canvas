@@ -126,7 +126,6 @@ var powanSoftBodyView = {
       Math.abs(dimensions.width - state.width) < 0.5 &&
       Math.abs(dimensions.height - state.height) < 0.5
     ) {
-      this.setSkinSize(state);
       return state;
     }
     state.width = dimensions.width;
