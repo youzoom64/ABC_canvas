@@ -6,7 +6,19 @@ ABC Canvas は、思いついたアイデアを小さな意味に分けて、最
 
 この1つ1つの意味のかたまりを、このアプリでは「ポワン」と呼びます。
 
-## まず動かす
+## 最初にCodexとつなぐ
+
+ABC Canvas は、Codex API に直接つなぐのではなく、ローカルの `codex` CLI を起動してポワンと会話します。
+
+先に、このPCで `codex` コマンドが使える状態にしてください。
+
+```powershell
+codex --version
+```
+
+このコマンドが通らない場合は、Codex CLI をインストールして、認証を済ませてから進めます。
+
+ABC Canvas を起動します。
 
 ```powershell
 .\start_abc_canvas.bat
@@ -18,7 +30,20 @@ ABC Canvas は、思いついたアイデアを小さな意味に分けて、最
 http://127.0.0.1:8790/
 ```
 
-手動で起動する場合:
+ポワンに会話を送ると、ABC Canvas のサーバーが `codex exec` を起動します。会話中のCodexには、次の情報が環境変数として渡されます。
+
+```text
+ABC_CANVAS_API_BASE=http://127.0.0.1:8790
+ABC_POWAN_PROJECT=<プロジェクト名>
+ABC_POWAN_FILE=project.powan
+ABC_POWAN_NODE_ID=<会話中のポワンID>
+```
+
+Codex はこの情報を使って、必要に応じて `abc_powan_tool.py` からABC Canvas APIを呼び、ポワンの意味設定、子ポワン作成、コード書き込みを行います。
+
+同じ会話では保存済みの `codexThreadId` を使って `codex exec resume` します。つまり常時接続ではなく、送信ごとにCodex CLIを起動または再開する仕組みです。
+
+## 手動で起動する場合
 
 ```powershell
 python -m pip install -r requirements.txt

@@ -120,14 +120,16 @@ var powanHitTest = {
     const textTarget = this.isTextTarget(event.target);
     const ownNestedSurface = !closestNested || closestNested === element;
     const easyPreviewDrag = element.classList?.contains("nested-preview-simple");
-    const canDrag = insideEllipse && (onEdge || easyPreviewDrag) && ownNestedSurface && !textTarget;
+    const depth = Number(element.dataset?.previewDepth || 0);
+    const depth2Preview = element.classList?.contains("nested-preview-meaning") && depth >= 2;
+    const canDrag = insideEllipse && (onEdge || easyPreviewDrag || depth2Preview) && ownNestedSurface && (!textTarget || depth2Preview);
     return {
       canDrag,
       reason: canDrag
         ? "accepted"
         : !insideEllipse
           ? "outside-ellipse"
-          : !onEdge && !easyPreviewDrag
+          : !onEdge && !easyPreviewDrag && !depth2Preview
             ? "not-edge"
             : !ownNestedSurface
               ? "nested-target"

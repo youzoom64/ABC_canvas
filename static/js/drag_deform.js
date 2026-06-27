@@ -507,7 +507,7 @@ var powanDragDeform = {
     path.setAttribute("class", "softbody-path");
     path.setAttribute("fill", fill);
     path.setAttribute("stroke", accent);
-    path.setAttribute("stroke-width", selected ? "3" : "2");
+    path.setAttribute("stroke-width", selected ? "3.4" : "2");
     path.setAttribute("d", powanSoftBody.toPathData(softBody));
     skin.appendChild(path);
     element.insertBefore(skin, element.firstChild);

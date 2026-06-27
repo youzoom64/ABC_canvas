@@ -2319,44 +2319,109 @@ body.panning-canvas * {
   vector-effect: non-scaling-stroke;
 }
 
-/* 掴んでいる間も通常時もフォーカス発光を皮に残す */
-.node.softbody-visual.selected > .softbody-skin,
-.drag-softbody.selected .softbody-skin {
-  filter:
-    drop-shadow(0 0 12px color-mix(in srgb, var(--accent) 76%, transparent))
-    drop-shadow(0 0 24px color-mix(in srgb, var(--accent) 48%, transparent));
+.node,
+.nested-meaning,
+.nested-preview-meaning {
+  --powan-focus-box-glow-1: 14px;
+  --powan-focus-box-glow-2: 32px;
+  --powan-focus-body-glow-1: 10px;
+  --powan-focus-body-glow-2: 22px;
+  --powan-focus-skin-glow-1: 12px;
+  --powan-focus-skin-glow-2: 28px;
+  --powan-focus-skin-glow-3: 44px;
 }
 
+.nested-meaning {
+  --powan-focus-box-glow-1: 10px;
+  --powan-focus-box-glow-2: 22px;
+  --powan-focus-body-glow-1: 8px;
+  --powan-focus-body-glow-2: 16px;
+  --powan-focus-skin-glow-1: 9px;
+  --powan-focus-skin-glow-2: 20px;
+  --powan-focus-skin-glow-3: 32px;
+}
+
+.nested-preview-meaning {
+  --powan-focus-box-glow-1: 7px;
+  --powan-focus-box-glow-2: 15px;
+  --powan-focus-body-glow-1: 5px;
+  --powan-focus-body-glow-2: 11px;
+  --powan-focus-skin-glow-1: 6px;
+  --powan-focus-skin-glow-2: 13px;
+  --powan-focus-skin-glow-3: 21px;
+}
+
+.nested-preview-meaning[data-preview-depth="2"] {
+  --powan-focus-box-glow-1: 4px;
+  --powan-focus-box-glow-2: 9px;
+  --powan-focus-body-glow-1: 3px;
+  --powan-focus-body-glow-2: 7px;
+  --powan-focus-skin-glow-1: 4px;
+  --powan-focus-skin-glow-2: 8px;
+  --powan-focus-skin-glow-3: 13px;
+}
+
+.node.softbody-visual.selected > .softbody-skin,
 .nested-meaning.softbody-visual.selected > .softbody-skin,
-.nested-preview-meaning.softbody-visual.selected > .softbody-skin {
+.nested-preview-meaning.softbody-visual.selected > .softbody-skin,
+.drag-softbody.selected .softbody-skin {
+  filter: none;
+}
+
+.softbody-visual.drag-edge > .softbody-skin {
   filter:
-    drop-shadow(0 0 7px color-mix(in srgb, var(--accent) 62%, transparent))
-    drop-shadow(0 0 14px color-mix(in srgb, var(--accent) 34%, transparent));
+    drop-shadow(0 0 var(--powan-focus-skin-glow-1) color-mix(in srgb, var(--accent) 92%, transparent))
+    drop-shadow(0 0 var(--powan-focus-skin-glow-2) color-mix(in srgb, var(--accent) 56%, transparent))
+    drop-shadow(0 0 var(--powan-focus-skin-glow-3) color-mix(in srgb, var(--accent) 28%, transparent));
 }
 
 .node.softbody-visual.selected > .softbody-skin .softbody-path,
+.nested-meaning.softbody-visual.selected > .softbody-skin .softbody-path,
+.nested-preview-meaning.softbody-visual.selected > .softbody-skin .softbody-path,
 .drag-softbody.selected > .softbody-skin .softbody-path {
+  stroke: var(--accent);
+  stroke-width: 3.4;
+}
+
+.softbody-visual.drag-edge > .softbody-skin .softbody-path {
   stroke: var(--accent);
   stroke-width: 2;
 }
 
-.node.drag-edge:not(.selected),
-.nested-meaning.drag-edge:not(.selected),
-.nested-preview-meaning.drag-edge:not(.selected) {
+.node.selected,
+.nested-meaning.selected,
+.nested-preview-meaning.selected {
+  opacity: 1;
+  z-index: 35;
+  border-color: var(--accent);
+  border-width: 3px;
+  box-shadow: none;
+  filter: none;
+}
+
+.canvas.has-selection .node.selected-context:not(.drag-edge),
+.canvas.has-selection .nested-meaning.selected-context:not(.drag-edge),
+.canvas.has-selection .nested-preview-meaning.selected-context:not(.drag-edge) {
+  opacity: 1;
+}
+
+.canvas.has-selection .node:not(.selected-context):not(.drag-edge),
+.canvas.has-selection .nested-meaning:not(.selected-context):not(.drag-edge),
+.canvas.has-selection .nested-preview-meaning:not(.selected-context):not(.drag-edge) {
+  opacity: 0.36;
+}
+
+.node.drag-edge,
+.nested-meaning.drag-edge,
+.nested-preview-meaning.drag-edge {
+  opacity: 0.96;
+  z-index: 35;
   box-shadow:
-    0 0 14px color-mix(in srgb, var(--accent) 70%, transparent),
-    0 0 32px color-mix(in srgb, var(--accent) 36%, transparent);
-}
-
-.softbody-visual.drag-edge:not(.selected) > .softbody-skin {
+    0 0 var(--powan-focus-box-glow-1) color-mix(in srgb, var(--accent) 76%, transparent),
+    0 0 var(--powan-focus-box-glow-2) color-mix(in srgb, var(--accent) 42%, transparent);
   filter:
-    drop-shadow(0 0 14px color-mix(in srgb, var(--accent) 72%, transparent))
-    drop-shadow(0 0 28px color-mix(in srgb, var(--accent) 34%, transparent));
-}
-
-.softbody-visual.drag-edge:not(.selected) > .softbody-skin .softbody-path {
-  stroke: color-mix(in srgb, var(--accent) 72%, #ffffff);
-  stroke-width: 2;
+    drop-shadow(0 0 var(--powan-focus-body-glow-1) color-mix(in srgb, var(--accent) 86%, transparent))
+    drop-shadow(0 0 var(--powan-focus-body-glow-2) color-mix(in srgb, var(--accent) 44%, transparent));
 }
 
 .node.drag-stretching {
@@ -2379,12 +2444,11 @@ body.panning-canvas * {
 
 .node.selected {
   border-color: var(--accent);
-  opacity: 0.98;
-  z-index: 24;
-  box-shadow:
-    0 0 18px color-mix(in srgb, var(--accent) 78%, transparent),
-    0 0 42px color-mix(in srgb, var(--accent) 42%, transparent),
-    0 0 76px color-mix(in srgb, var(--accent) 22%, transparent);
+  border-width: 3px;
+  opacity: 1;
+  z-index: 35;
+  box-shadow: none;
+  filter: none;
 }
 
 .node.glow {
@@ -2469,10 +2533,11 @@ body.panning-canvas * {
 
 .node.selected.glow {
   border-color: var(--accent);
-  box-shadow:
-    0 0 18px color-mix(in srgb, var(--accent) 78%, transparent),
-    0 0 42px color-mix(in srgb, var(--accent) 42%, transparent),
-    0 0 76px color-mix(in srgb, var(--accent) 22%, transparent);
+  border-width: 3px;
+  opacity: 1;
+  z-index: 35;
+  box-shadow: none;
+  filter: none;
 }
 
 .nested-layer {

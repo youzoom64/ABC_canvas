@@ -293,7 +293,7 @@ var powanSoftBodyView = {
     const stroke = selected ? state.selectedStrokeStyle : state.strokeStyle;
     const viewScale = typeof viewport !== "undefined" ? viewport.scale : 1;
     const screenScale = Math.max(0.01, Number(viewScale || 1));
-    const lineWidth = (selected ? 2.2 : 2) / screenScale;
+    const lineWidth = (selected ? 3.4 : 2) / screenScale;
 
     context.beginPath();
     for (let i = 0; i < n; i++) {
