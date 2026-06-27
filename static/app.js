@@ -1,4 +1,4 @@
-const ABC_CANVAS_SCRIPT_VERSION = "stable-nested-wheel-134";
+const ABC_CANVAS_SCRIPT_VERSION = "stable-nested-wheel-149";
 const ABC_CANVAS_SCRIPTS = [
   "/static/js/workspace.js",
   "/static/js/state.js",
