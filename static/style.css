@@ -2225,30 +2225,30 @@ body.panning-canvas * {
 .powan-drag-hit-bottom {
   left: 22%;
   right: 22%;
-  height: 12px;
+  height: var(--powan-drag-hit-size, 12px);
 }
 
 .powan-drag-hit-top {
-  top: -12px;
+  top: calc(-1 * var(--powan-drag-hit-size, 12px));
 }
 
 .powan-drag-hit-bottom {
-  bottom: -12px;
+  bottom: calc(-1 * var(--powan-drag-hit-size, 12px));
 }
 
 .powan-drag-hit-left,
 .powan-drag-hit-right {
   top: 24%;
   bottom: 24%;
-  width: 12px;
+  width: var(--powan-drag-hit-size, 12px);
 }
 
 .powan-drag-hit-left {
-  left: -12px;
+  left: calc(-1 * var(--powan-drag-hit-size, 12px));
 }
 
 .powan-drag-hit-right {
-  right: -12px;
+  right: calc(-1 * var(--powan-drag-hit-size, 12px));
 }
 
 /* 常時soft-body: 箱の背景/縁/影を消し、SVG輪郭(.softbody-skin)を本体として見せる */
@@ -2319,14 +2319,21 @@ body.panning-canvas * {
 }
 
 /* 掴んでいる間も通常時もフォーカス発光を皮に残す */
-.softbody-visual.selected > .softbody-skin,
+.node.softbody-visual.selected > .softbody-skin,
 .drag-softbody.selected .softbody-skin {
   filter:
     drop-shadow(0 0 12px color-mix(in srgb, var(--accent) 76%, transparent))
     drop-shadow(0 0 24px color-mix(in srgb, var(--accent) 48%, transparent));
 }
 
-.softbody-visual.selected > .softbody-skin .softbody-path,
+.nested-meaning.softbody-visual.selected > .softbody-skin,
+.nested-preview-meaning.softbody-visual.selected > .softbody-skin {
+  filter:
+    drop-shadow(0 0 7px color-mix(in srgb, var(--accent) 62%, transparent))
+    drop-shadow(0 0 14px color-mix(in srgb, var(--accent) 34%, transparent));
+}
+
+.node.softbody-visual.selected > .softbody-skin .softbody-path,
 .drag-softbody.selected > .softbody-skin .softbody-path {
   stroke: var(--accent);
   stroke-width: 2;
@@ -2369,9 +2376,7 @@ body.panning-canvas * {
     drag-release-bounce 0.38s cubic-bezier(0.2, 1.35, 0.34, 1) both;
 }
 
-.node.selected,
-.nested-meaning.selected,
-.nested-preview-meaning.selected {
+.node.selected {
   border-color: var(--accent);
   opacity: 0.98;
   z-index: 24;
@@ -2461,9 +2466,7 @@ body.panning-canvas * {
     0 0 40px color-mix(in srgb, var(--accent) 26%, transparent);
 }
 
-.node.selected.glow,
-.nested-meaning.selected,
-.nested-preview-meaning.selected {
+.node.selected.glow {
   border-color: var(--accent);
   box-shadow:
     0 0 18px color-mix(in srgb, var(--accent) 78%, transparent),
@@ -2584,6 +2587,7 @@ body.panning-canvas * {
   background: #ffffff;
   border-color: color-mix(in srgb, var(--accent) 72%, #ffffff);
   box-shadow: 0 0 7px color-mix(in srgb, var(--accent) 26%, transparent);
+  animation: blob-morph var(--powan-morph-duration) ease-in-out infinite;
 }
 
 .nested-preview-simple.softbody-visual,

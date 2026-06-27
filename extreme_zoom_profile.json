@@ -1,0 +1,2415 @@
+{
+  "selectedPreviewIds": 88,
+  "restored": {
+    "viewport": {
+      "x": -5662.457718061829,
+      "y": -5907.010795030779,
+      "scale": 1.264790694742372
+    },
+    "selectionCount": 1
+  },
+  "results": [
+    {
+      "label": "scale12_all_on",
+      "viewport": {
+        "x": -58850.5,
+        "y": -59388.3,
+        "scale": 12
+      },
+      "counts": {
+        "allElements": 1630,
+        "node": 1,
+        "nestedMeaning": 5,
+        "nestedPreview": 88,
+        "selected": 176,
+        "softbodySkin": 6,
+        "softbodyPath": 6,
+        "face": 94,
+        "text": 94
+      },
+      "animations": {
+        "blob-morph": 88
+      },
+      "attrCounts": {
+        "d": 30,
+        "aria-label": 188
+      },
+      "frame": {
+        "frames": 5,
+        "fps": 4.2,
+        "avgMs": 280.24,
+        "p50Ms": 229.2,
+        "p90Ms": 675.6,
+        "p99Ms": 675.6,
+        "over33ms": 5,
+        "over100ms": 4
+      },
+      "areas": {
+        "selected": {
+          "total": 176,
+          "visible": 6,
+          "rawArea": 6162723,
+          "clippedArea": 267185,
+          "maxRawArea": 226496,
+          "top": [
+            {
+              "tag": "ARTICLE",
+              "cls": "nested-preview-meaning shape-cloud glow blur motion has-name nested-preview-simple has-nested-preview selected",
+              "title": "🙂土地🙂地形🙂水辺🙂森林🙂居住可能地",
+              "raw": 226496,
+              "clipped": 0,
+              "rect": {
+                "x": 1549,
+                "y": -569,
+                "w": 614,
+                "h": 369
+              }
+            },
+            {
+              "tag": "ARTICLE",
+              "cls": "nested-preview-meaning shape-cloud glow blur motion has-name nested-preview-simple selected",
+              "title": "🙂境界",
+              "raw": 226496,
+              "clipped": 0,
+              "rect": {
+                "x": 2209,
+                "y": -569,
+                "w": 614,
+                "h": 369
+              }
+            },
+            {
+              "tag": "ARTICLE",
+              "cls": "nested-preview-meaning shape-cloud glow blur motion has-name nested-preview-simple selected",
+              "title": "🙂資源",
+              "raw": 226496,
+              "clipped": 0,
+              "rect": {
+                "x": 2209,
+                "y": -139,
+                "w": 614,
+                "h": 369
+              }
+            },
+            {
+              "tag": "ARTICLE",
+              "cls": "nested-preview-meaning shape-cloud glow blur motion has-name nested-preview-simple has-nested-preview selected",
+              "title": "🙂生活圏🙂居住圏🙂労働圏🙂移動圏🙂商業圏🙂文化圏",
+              "raw": 226496,
+              "clipped": 0,
+              "rect": {
+                "x": 1549,
+                "y": -139,
+                "w": 614,
+                "h": 369
+              }
+            },
+            {
+              "tag": "ARTICLE",
+              "cls": "nested-preview-meaning shape-cloud glow blur motion has-name nested-preview-simple selected",
+              "title": "🙂義務を担う人",
+              "raw": 157190,
+              "clipped": 0,
+              "rect": {
+                "x": 304,
+                "y": -600,
+                "w": 499,
+                "h": 315
+              }
+            }
+          ]
+        },
+        "preview": {
+          "total": 88,
+          "visible": 6,
+          "rawArea": 6162723,
+          "clippedArea": 267185,
+          "maxRawArea": 226496,
+          "top": [
+            {
+              "tag": "ARTICLE",
+              "cls": "nested-preview-meaning shape-cloud glow blur motion has-name nested-preview-simple has-nested-preview selected",
+              "title": "🙂土地🙂地形🙂水辺🙂森林🙂居住可能地",
+              "raw": 226496,
+              "clipped": 0,
+              "rect": {
+                "x": 1549,
+                "y": -569,
+                "w": 614,
+                "h": 369
+              }
+            },
+            {
+              "tag": "ARTICLE",
+              "cls": "nested-preview-meaning shape-cloud glow blur motion has-name nested-preview-simple selected",
+              "title": "🙂境界",
+              "raw": 226496,
+              "clipped": 0,
+              "rect": {
+                "x": 2209,
+                "y": -569,
+                "w": 614,
+                "h": 369
+              }
+            },
+            {
+              "tag": "ARTICLE",
+              "cls": "nested-preview-meaning shape-cloud glow blur motion has-name nested-preview-simple selected",
+              "title": "🙂資源",
+              "raw": 226496,
+              "clipped": 0,
+              "rect": {
+                "x": 2209,
+                "y": -139,
+                "w": 614,
+                "h": 369
+              }
+            },
+            {
+              "tag": "ARTICLE",
+              "cls": "nested-preview-meaning shape-cloud glow blur motion has-name nested-preview-simple has-nested-preview selected",
+              "title": "🙂生活圏🙂居住圏🙂労働圏🙂移動圏🙂商業圏🙂文化圏",
+              "raw": 226496,
+              "clipped": 0,
+              "rect": {
+                "x": 1549,
+                "y": -139,
+                "w": 614,
+                "h": 369
+              }
+            },
+            {
+              "tag": "ARTICLE",
+              "cls": "nested-preview-meaning shape-cloud glow blur motion has-name nested-preview-simple selected",
+              "title": "🙂義務を担う人",
+              "raw": 157190,
+              "clipped": 0,
+              "rect": {
+                "x": 304,
+                "y": -600,
+                "w": 499,
+                "h": 315
+              }
+            }
+          ]
+        },
+        "softbodyVisual": {
+          "total": 6,
+          "visible": 3,
+          "rawArea": 27383254,
+          "clippedArea": 1636330,
+          "maxRawArea": 19644768,
+          "top": [
+            {
+              "tag": "ARTICLE",
+              "cls": "node shape-cloud softbody-visual glow blur motion has-name has-code has-nested-meanings",
+              "title": "😊🙂国民🙂権利を持つ人🙂義務を担う人🙂共同体で暮ら",
+              "raw": 19644768,
+              "clipped": 1152000,
+              "rect": {
+                "x": -1670,
+                "y": -1048,
+                "w": 5724,
+                "h": 3432
+              }
+            },
+            {
+              "tag": "ARTICLE",
+              "cls": "nested-meaning shape-cloud softbody-visual glow blur motion has-name has-nested-preview translucent-meaning",
+              "title": "🙂領土🙂土地🙂地形🙂水辺🙂森林🙂居住可能地🙂境",
+              "raw": 1547703,
+              "clipped": 0,
+              "rect": {
+                "x": 1387,
+                "y": -669,
+                "w": 1574,
+                "h": 983
+              }
+            },
+            {
+              "tag": "ARTICLE",
+              "cls": "nested-meaning shape-cloud softbody-visual glow blur motion has-name has-nested-preview translucent-meaning",
+              "title": "🙂国民🙂権利を持つ人🙂義務を担う人🙂共同体で暮らす人",
+              "raw": 1547699,
+              "clipped": 322690,
+              "rect": {
+                "x": -548,
+                "y": -669,
+                "w": 1574,
+                "h": 983
+              }
+            },
+            {
+              "tag": "ARTICLE",
+              "cls": "nested-meaning shape-cloud softbody-visual glow blur motion has-name has-nested-preview translucent-meaning",
+              "title": "🙂法律🙂権利🙂自由🙂財産🙂安全🙂義務🙂納税🙂",
+              "raw": 1547697,
+              "clipped": 0,
+              "rect": {
+                "x": 420,
+                "y": 1259,
+                "w": 1574,
+                "h": 983
+              }
+            },
+            {
+              "tag": "ARTICLE",
+              "cls": "nested-meaning shape-cloud softbody-visual glow blur motion has-name has-nested-preview translucent-meaning",
+              "title": "🙂政府🙂政策意思決定🙂課題受付記録🙂政策案比較表🙂",
+              "raw": 1547695,
+              "clipped": 0,
+              "rect": {
+                "x": 1986,
+                "y": 522,
+                "w": 1574,
+                "h": 983
+              }
+            }
+          ]
+        },
+        "softbodySkin": {
+          "total": 6,
+          "visible": 3,
+          "rawArea": 27383271,
+          "clippedArea": 1646254,
+          "maxRawArea": 19644768,
+          "top": [
+            {
+              "tag": "svg",
+              "cls": "softbody-skin softbody-permanent-skin",
+              "title": "",
+              "raw": 19644768,
+              "clipped": 1152000,
+              "rect": {
+                "x": -1646,
+                "y": -1024,
+                "w": 5724,
+                "h": 3432
+              }
+            },
+            {
+              "tag": "svg",
+              "cls": "softbody-skin softbody-permanent-skin",
+              "title": "",
+              "raw": 1547705,
+              "clipped": 0,
+              "rect": {
+                "x": 1395,
+                "y": -661,
+                "w": 1574,
+                "h": 983
+              }
+            },
+            {
+              "tag": "svg",
+              "cls": "softbody-skin softbody-permanent-skin",
+              "title": "",
+              "raw": 1547703,
+              "clipped": 0,
+              "rect": {
+                "x": 427,
+                "y": 1267,
+                "w": 1574,
+                "h": 983
+              }
+            },
+            {
+              "tag": "svg",
+              "cls": "softbody-skin softbody-permanent-skin",
+              "title": "",
+              "raw": 1547699,
+              "clipped": 0,
+              "rect": {
+                "x": 1994,
+                "y": 529,
+                "w": 1574,
+                "h": 983
+              }
+            },
+            {
+              "tag": "svg",
+              "cls": "softbody-skin softbody-permanent-skin",
+              "title": "",
+              "raw": 1547699,
+              "clipped": 161205,
+              "rect": {
+                "x": -1139,
+                "y": 529,
+                "w": 1574,
+                "h": 983
+              }
+            }
+          ]
+        },
+        "face": {
+          "total": 94,
+          "visible": 4,
+          "rawArea": 652171,
+          "clippedArea": 61818,
+          "maxRawArea": 160100,
+          "top": [
+            {
+              "tag": "BUTTON",
+              "cls": "powan-face-button",
+              "title": "😊",
+              "raw": 160100,
+              "clipped": 0,
+              "rect": {
+                "x": 3062,
+                "y": -415,
+                "w": 400,
+                "h": 400
+              }
+            },
+            {
+              "tag": "BUTTON",
+              "cls": "powan-face-button",
+              "title": "🙂",
+              "raw": 49605,
+              "clipped": 0,
+              "rect": {
+                "x": 656,
+                "y": -584,
+                "w": 223,
+                "h": 223
+              }
+            },
+            {
+              "tag": "BUTTON",
+              "cls": "powan-face-button",
+              "title": "🙂",
+              "raw": 49605,
+              "clipped": 0,
+              "rect": {
+                "x": 2591,
+                "y": -584,
+                "w": 223,
+                "h": 223
+              }
+            },
+            {
+              "tag": "BUTTON",
+              "cls": "powan-face-button",
+              "title": "🙂",
+              "raw": 49605,
+              "clipped": 0,
+              "rect": {
+                "x": 3190,
+                "y": 607,
+                "w": 223,
+                "h": 223
+              }
+            },
+            {
+              "tag": "BUTTON",
+              "cls": "powan-face-button",
+              "title": "🙂",
+              "raw": 49604,
+              "clipped": 0,
+              "rect": {
+                "x": 1623,
+                "y": 1344,
+                "w": 223,
+                "h": 223
+              }
+            }
+          ]
+        },
+        "text": {
+          "total": 94,
+          "visible": 6,
+          "rawArea": 10375504,
+          "clippedArea": 1021828,
+          "maxRawArea": 4762800,
+          "top": [
+            {
+              "tag": "TEXTAREA",
+              "cls": "node-body",
+              "title": "",
+              "raw": 4762800,
+              "clipped": 873375,
+              "rect": {
+                "x": -1454,
+                "y": 218,
+                "w": 5292,
+                "h": 900
+              }
+            },
+            {
+              "tag": "DIV",
+              "cls": "node-body nested-body-label",
+              "title": "領土",
+              "raw": 337246,
+              "clipped": 0,
+              "rect": {
+                "x": 1464,
+                "y": -296,
+                "w": 1421,
+                "h": 237
+              }
+            },
+            {
+              "tag": "DIV",
+              "cls": "node-body nested-body-label",
+              "title": "国民",
+              "raw": 337245,
+              "clipped": 0,
+              "rect": {
+                "x": -471,
+                "y": -296,
+                "w": 1421,
+                "h": 237
+              }
+            },
+            {
+              "tag": "DIV",
+              "cls": "node-body nested-body-label",
+              "title": "政府",
+              "raw": 337240,
+              "clipped": 0,
+              "rect": {
+                "x": 2063,
+                "y": 895,
+                "w": 1421,
+                "h": 237
+              }
+            },
+            {
+              "tag": "DIV",
+              "cls": "node-body nested-body-label",
+              "title": "経済",
+              "raw": 337239,
+              "clipped": 1894,
+              "rect": {
+                "x": -1070,
+                "y": 895,
+                "w": 1421,
+                "h": 237
+              }
+            }
+          ]
+        }
+      }
+    },
+    {
+      "label": "scale12_stop_preview_blob_morph",
+      "viewport": {
+        "x": -58850.5,
+        "y": -59388.3,
+        "scale": 12
+      },
+      "counts": {
+        "allElements": 1631,
+        "node": 1,
+        "nestedMeaning": 5,
+        "nestedPreview": 88,
+        "selected": 176,
+        "softbodySkin": 6,
+        "softbodyPath": 6,
+        "face": 94,
+        "text": 94
+      },
+      "animations": {},
+      "attrCounts": {
+        "d": 24,
+        "aria-label": 188
+      },
+      "frame": {
+        "frames": 4,
+        "fps": 3.3,
+        "avgMs": 387.88,
+        "p50Ms": 421.1,
+        "p90Ms": 453.2,
+        "p99Ms": 453.2,
+        "over33ms": 4,
+        "over100ms": 4
+      },
+      "areas": {
+        "selected": {
+          "total": 176,
+          "visible": 6,
+          "rawArea": 6162723,
+          "clippedArea": 267185,
+          "maxRawArea": 226496,
+          "top": [
+            {
+              "tag": "ARTICLE",
+              "cls": "nested-preview-meaning shape-cloud glow blur motion has-name nested-preview-simple has-nested-preview selected",
+              "title": "🙂土地🙂地形🙂水辺🙂森林🙂居住可能地",
+              "raw": 226496,
+              "clipped": 0,
+              "rect": {
+                "x": 1549,
+                "y": -569,
+                "w": 614,
+                "h": 369
+              }
+            },
+            {
+              "tag": "ARTICLE",
+              "cls": "nested-preview-meaning shape-cloud glow blur motion has-name nested-preview-simple selected",
+              "title": "🙂境界",
+              "raw": 226496,
+              "clipped": 0,
+              "rect": {
+                "x": 2209,
+                "y": -569,
+                "w": 614,
+                "h": 369
+              }
+            },
+            {
+              "tag": "ARTICLE",
+              "cls": "nested-preview-meaning shape-cloud glow blur motion has-name nested-preview-simple selected",
+              "title": "🙂資源",
+              "raw": 226496,
+              "clipped": 0,
+              "rect": {
+                "x": 2209,
+                "y": -139,
+                "w": 614,
+                "h": 369
+              }
+            },
+            {
+              "tag": "ARTICLE",
+              "cls": "nested-preview-meaning shape-cloud glow blur motion has-name nested-preview-simple has-nested-preview selected",
+              "title": "🙂生活圏🙂居住圏🙂労働圏🙂移動圏🙂商業圏🙂文化圏",
+              "raw": 226496,
+              "clipped": 0,
+              "rect": {
+                "x": 1549,
+                "y": -139,
+                "w": 614,
+                "h": 369
+              }
+            },
+            {
+              "tag": "ARTICLE",
+              "cls": "nested-preview-meaning shape-cloud glow blur motion has-name nested-preview-simple selected",
+              "title": "🙂義務を担う人",
+              "raw": 157190,
+              "clipped": 0,
+              "rect": {
+                "x": 304,
+                "y": -600,
+                "w": 499,
+                "h": 315
+              }
+            }
+          ]
+        },
+        "preview": {
+          "total": 88,
+          "visible": 6,
+          "rawArea": 6162723,
+          "clippedArea": 267185,
+          "maxRawArea": 226496,
+          "top": [
+            {
+              "tag": "ARTICLE",
+              "cls": "nested-preview-meaning shape-cloud glow blur motion has-name nested-preview-simple has-nested-preview selected",
+              "title": "🙂土地🙂地形🙂水辺🙂森林🙂居住可能地",
+              "raw": 226496,
+              "clipped": 0,
+              "rect": {
+                "x": 1549,
+                "y": -569,
+                "w": 614,
+                "h": 369
+              }
+            },
+            {
+              "tag": "ARTICLE",
+              "cls": "nested-preview-meaning shape-cloud glow blur motion has-name nested-preview-simple selected",
+              "title": "🙂境界",
+              "raw": 226496,
+              "clipped": 0,
+              "rect": {
+                "x": 2209,
+                "y": -569,
+                "w": 614,
+                "h": 369
+              }
+            },
+            {
+              "tag": "ARTICLE",
+              "cls": "nested-preview-meaning shape-cloud glow blur motion has-name nested-preview-simple selected",
+              "title": "🙂資源",
+              "raw": 226496,
+              "clipped": 0,
+              "rect": {
+                "x": 2209,
+                "y": -139,
+                "w": 614,
+                "h": 369
+              }
+            },
+            {
+              "tag": "ARTICLE",
+              "cls": "nested-preview-meaning shape-cloud glow blur motion has-name nested-preview-simple has-nested-preview selected",
+              "title": "🙂生活圏🙂居住圏🙂労働圏🙂移動圏🙂商業圏🙂文化圏",
+              "raw": 226496,
+              "clipped": 0,
+              "rect": {
+                "x": 1549,
+                "y": -139,
+                "w": 614,
+                "h": 369
+              }
+            },
+            {
+              "tag": "ARTICLE",
+              "cls": "nested-preview-meaning shape-cloud glow blur motion has-name nested-preview-simple selected",
+              "title": "🙂義務を担う人",
+              "raw": 157190,
+              "clipped": 0,
+              "rect": {
+                "x": 304,
+                "y": -600,
+                "w": 499,
+                "h": 315
+              }
+            }
+          ]
+        },
+        "softbodyVisual": {
+          "total": 6,
+          "visible": 3,
+          "rawArea": 27383254,
+          "clippedArea": 1636330,
+          "maxRawArea": 19644768,
+          "top": [
+            {
+              "tag": "ARTICLE",
+              "cls": "node shape-cloud softbody-visual glow blur motion has-name has-code has-nested-meanings",
+              "title": "😊🙂国民🙂権利を持つ人🙂義務を担う人🙂共同体で暮ら",
+              "raw": 19644768,
+              "clipped": 1152000,
+              "rect": {
+                "x": -1670,
+                "y": -1048,
+                "w": 5724,
+                "h": 3432
+              }
+            },
+            {
+              "tag": "ARTICLE",
+              "cls": "nested-meaning shape-cloud softbody-visual glow blur motion has-name has-nested-preview translucent-meaning",
+              "title": "🙂領土🙂土地🙂地形🙂水辺🙂森林🙂居住可能地🙂境",
+              "raw": 1547703,
+              "clipped": 0,
+              "rect": {
+                "x": 1387,
+                "y": -669,
+                "w": 1574,
+                "h": 983
+              }
+            },
+            {
+              "tag": "ARTICLE",
+              "cls": "nested-meaning shape-cloud softbody-visual glow blur motion has-name has-nested-preview translucent-meaning",
+              "title": "🙂国民🙂権利を持つ人🙂義務を担う人🙂共同体で暮らす人",
+              "raw": 1547699,
+              "clipped": 322690,
+              "rect": {
+                "x": -548,
+                "y": -669,
+                "w": 1574,
+                "h": 983
+              }
+            },
+            {
+              "tag": "ARTICLE",
+              "cls": "nested-meaning shape-cloud softbody-visual glow blur motion has-name has-nested-preview translucent-meaning",
+              "title": "🙂法律🙂権利🙂自由🙂財産🙂安全🙂義務🙂納税🙂",
+              "raw": 1547697,
+              "clipped": 0,
+              "rect": {
+                "x": 420,
+                "y": 1259,
+                "w": 1574,
+                "h": 983
+              }
+            },
+            {
+              "tag": "ARTICLE",
+              "cls": "nested-meaning shape-cloud softbody-visual glow blur motion has-name has-nested-preview translucent-meaning",
+              "title": "🙂政府🙂政策意思決定🙂課題受付記録🙂政策案比較表🙂",
+              "raw": 1547695,
+              "clipped": 0,
+              "rect": {
+                "x": 1986,
+                "y": 522,
+                "w": 1574,
+                "h": 983
+              }
+            }
+          ]
+        },
+        "softbodySkin": {
+          "total": 6,
+          "visible": 3,
+          "rawArea": 27383271,
+          "clippedArea": 1646254,
+          "maxRawArea": 19644768,
+          "top": [
+            {
+              "tag": "svg",
+              "cls": "softbody-skin softbody-permanent-skin",
+              "title": "",
+              "raw": 19644768,
+              "clipped": 1152000,
+              "rect": {
+                "x": -1646,
+                "y": -1024,
+                "w": 5724,
+                "h": 3432
+              }
+            },
+            {
+              "tag": "svg",
+              "cls": "softbody-skin softbody-permanent-skin",
+              "title": "",
+              "raw": 1547705,
+              "clipped": 0,
+              "rect": {
+                "x": 1395,
+                "y": -661,
+                "w": 1574,
+                "h": 983
+              }
+            },
+            {
+              "tag": "svg",
+              "cls": "softbody-skin softbody-permanent-skin",
+              "title": "",
+              "raw": 1547703,
+              "clipped": 0,
+              "rect": {
+                "x": 427,
+                "y": 1267,
+                "w": 1574,
+                "h": 983
+              }
+            },
+            {
+              "tag": "svg",
+              "cls": "softbody-skin softbody-permanent-skin",
+              "title": "",
+              "raw": 1547699,
+              "clipped": 0,
+              "rect": {
+                "x": 1994,
+                "y": 529,
+                "w": 1574,
+                "h": 983
+              }
+            },
+            {
+              "tag": "svg",
+              "cls": "softbody-skin softbody-permanent-skin",
+              "title": "",
+              "raw": 1547699,
+              "clipped": 161205,
+              "rect": {
+                "x": -1139,
+                "y": 529,
+                "w": 1574,
+                "h": 983
+              }
+            }
+          ]
+        },
+        "face": {
+          "total": 94,
+          "visible": 4,
+          "rawArea": 652171,
+          "clippedArea": 61818,
+          "maxRawArea": 160100,
+          "top": [
+            {
+              "tag": "BUTTON",
+              "cls": "powan-face-button",
+              "title": "😊",
+              "raw": 160100,
+              "clipped": 0,
+              "rect": {
+                "x": 3062,
+                "y": -415,
+                "w": 400,
+                "h": 400
+              }
+            },
+            {
+              "tag": "BUTTON",
+              "cls": "powan-face-button",
+              "title": "🙂",
+              "raw": 49605,
+              "clipped": 0,
+              "rect": {
+                "x": 656,
+                "y": -584,
+                "w": 223,
+                "h": 223
+              }
+            },
+            {
+              "tag": "BUTTON",
+              "cls": "powan-face-button",
+              "title": "🙂",
+              "raw": 49605,
+              "clipped": 0,
+              "rect": {
+                "x": 2591,
+                "y": -584,
+                "w": 223,
+                "h": 223
+              }
+            },
+            {
+              "tag": "BUTTON",
+              "cls": "powan-face-button",
+              "title": "🙂",
+              "raw": 49605,
+              "clipped": 0,
+              "rect": {
+                "x": 3190,
+                "y": 607,
+                "w": 223,
+                "h": 223
+              }
+            },
+            {
+              "tag": "BUTTON",
+              "cls": "powan-face-button",
+              "title": "🙂",
+              "raw": 49604,
+              "clipped": 0,
+              "rect": {
+                "x": 1623,
+                "y": 1344,
+                "w": 223,
+                "h": 223
+              }
+            }
+          ]
+        },
+        "text": {
+          "total": 94,
+          "visible": 6,
+          "rawArea": 10375504,
+          "clippedArea": 1021828,
+          "maxRawArea": 4762800,
+          "top": [
+            {
+              "tag": "TEXTAREA",
+              "cls": "node-body",
+              "title": "",
+              "raw": 4762800,
+              "clipped": 873375,
+              "rect": {
+                "x": -1454,
+                "y": 218,
+                "w": 5292,
+                "h": 900
+              }
+            },
+            {
+              "tag": "DIV",
+              "cls": "node-body nested-body-label",
+              "title": "領土",
+              "raw": 337246,
+              "clipped": 0,
+              "rect": {
+                "x": 1464,
+                "y": -296,
+                "w": 1421,
+                "h": 237
+              }
+            },
+            {
+              "tag": "DIV",
+              "cls": "node-body nested-body-label",
+              "title": "国民",
+              "raw": 337245,
+              "clipped": 0,
+              "rect": {
+                "x": -471,
+                "y": -296,
+                "w": 1421,
+                "h": 237
+              }
+            },
+            {
+              "tag": "DIV",
+              "cls": "node-body nested-body-label",
+              "title": "政府",
+              "raw": 337240,
+              "clipped": 0,
+              "rect": {
+                "x": 2063,
+                "y": 895,
+                "w": 1421,
+                "h": 237
+              }
+            },
+            {
+              "tag": "DIV",
+              "cls": "node-body nested-body-label",
+              "title": "経済",
+              "raw": 337239,
+              "clipped": 1894,
+              "rect": {
+                "x": -1070,
+                "y": 895,
+                "w": 1421,
+                "h": 237
+              }
+            }
+          ]
+        }
+      }
+    },
+    {
+      "label": "scale12_stop_preview_animation_and_selected_glow",
+      "viewport": {
+        "x": -58850.5,
+        "y": -59388.3,
+        "scale": 12
+      },
+      "counts": {
+        "allElements": 1632,
+        "node": 1,
+        "nestedMeaning": 5,
+        "nestedPreview": 88,
+        "selected": 176,
+        "softbodySkin": 6,
+        "softbodyPath": 6,
+        "face": 94,
+        "text": 94
+      },
+      "animations": {},
+      "attrCounts": {
+        "d": 24,
+        "aria-label": 94
+      },
+      "frame": {
+        "frames": 4,
+        "fps": 3.3,
+        "avgMs": 360.68,
+        "p50Ms": 380.8,
+        "p90Ms": 452.1,
+        "p99Ms": 452.1,
+        "over33ms": 4,
+        "over100ms": 4
+      },
+      "areas": {
+        "selected": {
+          "total": 176,
+          "visible": 6,
+          "rawArea": 6162723,
+          "clippedArea": 267185,
+          "maxRawArea": 226496,
+          "top": [
+            {
+              "tag": "ARTICLE",
+              "cls": "nested-preview-meaning shape-cloud glow blur motion has-name nested-preview-simple has-nested-preview selected",
+              "title": "🙂土地🙂地形🙂水辺🙂森林🙂居住可能地",
+              "raw": 226496,
+              "clipped": 0,
+              "rect": {
+                "x": 1549,
+                "y": -569,
+                "w": 614,
+                "h": 369
+              }
+            },
+            {
+              "tag": "ARTICLE",
+              "cls": "nested-preview-meaning shape-cloud glow blur motion has-name nested-preview-simple selected",
+              "title": "🙂境界",
+              "raw": 226496,
+              "clipped": 0,
+              "rect": {
+                "x": 2209,
+                "y": -569,
+                "w": 614,
+                "h": 369
+              }
+            },
+            {
+              "tag": "ARTICLE",
+              "cls": "nested-preview-meaning shape-cloud glow blur motion has-name nested-preview-simple selected",
+              "title": "🙂資源",
+              "raw": 226496,
+              "clipped": 0,
+              "rect": {
+                "x": 2209,
+                "y": -139,
+                "w": 614,
+                "h": 369
+              }
+            },
+            {
+              "tag": "ARTICLE",
+              "cls": "nested-preview-meaning shape-cloud glow blur motion has-name nested-preview-simple has-nested-preview selected",
+              "title": "🙂生活圏🙂居住圏🙂労働圏🙂移動圏🙂商業圏🙂文化圏",
+              "raw": 226496,
+              "clipped": 0,
+              "rect": {
+                "x": 1549,
+                "y": -139,
+                "w": 614,
+                "h": 369
+              }
+            },
+            {
+              "tag": "ARTICLE",
+              "cls": "nested-preview-meaning shape-cloud glow blur motion has-name nested-preview-simple selected",
+              "title": "🙂義務を担う人",
+              "raw": 157190,
+              "clipped": 0,
+              "rect": {
+                "x": 304,
+                "y": -600,
+                "w": 499,
+                "h": 315
+              }
+            }
+          ]
+        },
+        "preview": {
+          "total": 88,
+          "visible": 6,
+          "rawArea": 6162723,
+          "clippedArea": 267185,
+          "maxRawArea": 226496,
+          "top": [
+            {
+              "tag": "ARTICLE",
+              "cls": "nested-preview-meaning shape-cloud glow blur motion has-name nested-preview-simple has-nested-preview selected",
+              "title": "🙂土地🙂地形🙂水辺🙂森林🙂居住可能地",
+              "raw": 226496,
+              "clipped": 0,
+              "rect": {
+                "x": 1549,
+                "y": -569,
+                "w": 614,
+                "h": 369
+              }
+            },
+            {
+              "tag": "ARTICLE",
+              "cls": "nested-preview-meaning shape-cloud glow blur motion has-name nested-preview-simple selected",
+              "title": "🙂境界",
+              "raw": 226496,
+              "clipped": 0,
+              "rect": {
+                "x": 2209,
+                "y": -569,
+                "w": 614,
+                "h": 369
+              }
+            },
+            {
+              "tag": "ARTICLE",
+              "cls": "nested-preview-meaning shape-cloud glow blur motion has-name nested-preview-simple selected",
+              "title": "🙂資源",
+              "raw": 226496,
+              "clipped": 0,
+              "rect": {
+                "x": 2209,
+                "y": -139,
+                "w": 614,
+                "h": 369
+              }
+            },
+            {
+              "tag": "ARTICLE",
+              "cls": "nested-preview-meaning shape-cloud glow blur motion has-name nested-preview-simple has-nested-preview selected",
+              "title": "🙂生活圏🙂居住圏🙂労働圏🙂移動圏🙂商業圏🙂文化圏",
+              "raw": 226496,
+              "clipped": 0,
+              "rect": {
+                "x": 1549,
+                "y": -139,
+                "w": 614,
+                "h": 369
+              }
+            },
+            {
+              "tag": "ARTICLE",
+              "cls": "nested-preview-meaning shape-cloud glow blur motion has-name nested-preview-simple selected",
+              "title": "🙂義務を担う人",
+              "raw": 157190,
+              "clipped": 0,
+              "rect": {
+                "x": 304,
+                "y": -600,
+                "w": 499,
+                "h": 315
+              }
+            }
+          ]
+        },
+        "softbodyVisual": {
+          "total": 6,
+          "visible": 3,
+          "rawArea": 27383254,
+          "clippedArea": 1636330,
+          "maxRawArea": 19644768,
+          "top": [
+            {
+              "tag": "ARTICLE",
+              "cls": "node shape-cloud softbody-visual glow blur motion has-name has-code has-nested-meanings",
+              "title": "😊🙂国民🙂権利を持つ人🙂義務を担う人🙂共同体で暮ら",
+              "raw": 19644768,
+              "clipped": 1152000,
+              "rect": {
+                "x": -1670,
+                "y": -1048,
+                "w": 5724,
+                "h": 3432
+              }
+            },
+            {
+              "tag": "ARTICLE",
+              "cls": "nested-meaning shape-cloud softbody-visual glow blur motion has-name has-nested-preview translucent-meaning",
+              "title": "🙂領土🙂土地🙂地形🙂水辺🙂森林🙂居住可能地🙂境",
+              "raw": 1547703,
+              "clipped": 0,
+              "rect": {
+                "x": 1387,
+                "y": -669,
+                "w": 1574,
+                "h": 983
+              }
+            },
+            {
+              "tag": "ARTICLE",
+              "cls": "nested-meaning shape-cloud softbody-visual glow blur motion has-name has-nested-preview translucent-meaning",
+              "title": "🙂国民🙂権利を持つ人🙂義務を担う人🙂共同体で暮らす人",
+              "raw": 1547699,
+              "clipped": 322690,
+              "rect": {
+                "x": -548,
+                "y": -669,
+                "w": 1574,
+                "h": 983
+              }
+            },
+            {
+              "tag": "ARTICLE",
+              "cls": "nested-meaning shape-cloud softbody-visual glow blur motion has-name has-nested-preview translucent-meaning",
+              "title": "🙂法律🙂権利🙂自由🙂財産🙂安全🙂義務🙂納税🙂",
+              "raw": 1547697,
+              "clipped": 0,
+              "rect": {
+                "x": 420,
+                "y": 1259,
+                "w": 1574,
+                "h": 983
+              }
+            },
+            {
+              "tag": "ARTICLE",
+              "cls": "nested-meaning shape-cloud softbody-visual glow blur motion has-name has-nested-preview translucent-meaning",
+              "title": "🙂政府🙂政策意思決定🙂課題受付記録🙂政策案比較表🙂",
+              "raw": 1547695,
+              "clipped": 0,
+              "rect": {
+                "x": 1986,
+                "y": 522,
+                "w": 1574,
+                "h": 983
+              }
+            }
+          ]
+        },
+        "softbodySkin": {
+          "total": 6,
+          "visible": 3,
+          "rawArea": 27383271,
+          "clippedArea": 1646254,
+          "maxRawArea": 19644768,
+          "top": [
+            {
+              "tag": "svg",
+              "cls": "softbody-skin softbody-permanent-skin",
+              "title": "",
+              "raw": 19644768,
+              "clipped": 1152000,
+              "rect": {
+                "x": -1646,
+                "y": -1024,
+                "w": 5724,
+                "h": 3432
+              }
+            },
+            {
+              "tag": "svg",
+              "cls": "softbody-skin softbody-permanent-skin",
+              "title": "",
+              "raw": 1547705,
+              "clipped": 0,
+              "rect": {
+                "x": 1395,
+                "y": -661,
+                "w": 1574,
+                "h": 983
+              }
+            },
+            {
+              "tag": "svg",
+              "cls": "softbody-skin softbody-permanent-skin",
+              "title": "",
+              "raw": 1547703,
+              "clipped": 0,
+              "rect": {
+                "x": 427,
+                "y": 1267,
+                "w": 1574,
+                "h": 983
+              }
+            },
+            {
+              "tag": "svg",
+              "cls": "softbody-skin softbody-permanent-skin",
+              "title": "",
+              "raw": 1547699,
+              "clipped": 0,
+              "rect": {
+                "x": 1994,
+                "y": 529,
+                "w": 1574,
+                "h": 983
+              }
+            },
+            {
+              "tag": "svg",
+              "cls": "softbody-skin softbody-permanent-skin",
+              "title": "",
+              "raw": 1547699,
+              "clipped": 161205,
+              "rect": {
+                "x": -1139,
+                "y": 529,
+                "w": 1574,
+                "h": 983
+              }
+            }
+          ]
+        },
+        "face": {
+          "total": 94,
+          "visible": 4,
+          "rawArea": 652171,
+          "clippedArea": 61818,
+          "maxRawArea": 160100,
+          "top": [
+            {
+              "tag": "BUTTON",
+              "cls": "powan-face-button",
+              "title": "😊",
+              "raw": 160100,
+              "clipped": 0,
+              "rect": {
+                "x": 3062,
+                "y": -415,
+                "w": 400,
+                "h": 400
+              }
+            },
+            {
+              "tag": "BUTTON",
+              "cls": "powan-face-button",
+              "title": "🙂",
+              "raw": 49605,
+              "clipped": 0,
+              "rect": {
+                "x": 656,
+                "y": -584,
+                "w": 223,
+                "h": 223
+              }
+            },
+            {
+              "tag": "BUTTON",
+              "cls": "powan-face-button",
+              "title": "🙂",
+              "raw": 49605,
+              "clipped": 0,
+              "rect": {
+                "x": 2591,
+                "y": -584,
+                "w": 223,
+                "h": 223
+              }
+            },
+            {
+              "tag": "BUTTON",
+              "cls": "powan-face-button",
+              "title": "🙂",
+              "raw": 49605,
+              "clipped": 0,
+              "rect": {
+                "x": 3190,
+                "y": 607,
+                "w": 223,
+                "h": 223
+              }
+            },
+            {
+              "tag": "BUTTON",
+              "cls": "powan-face-button",
+              "title": "🙂",
+              "raw": 49604,
+              "clipped": 0,
+              "rect": {
+                "x": 1623,
+                "y": 1344,
+                "w": 223,
+                "h": 223
+              }
+            }
+          ]
+        },
+        "text": {
+          "total": 94,
+          "visible": 6,
+          "rawArea": 10375504,
+          "clippedArea": 1021828,
+          "maxRawArea": 4762800,
+          "top": [
+            {
+              "tag": "TEXTAREA",
+              "cls": "node-body",
+              "title": "",
+              "raw": 4762800,
+              "clipped": 873375,
+              "rect": {
+                "x": -1454,
+                "y": 218,
+                "w": 5292,
+                "h": 900
+              }
+            },
+            {
+              "tag": "DIV",
+              "cls": "node-body nested-body-label",
+              "title": "領土",
+              "raw": 337246,
+              "clipped": 0,
+              "rect": {
+                "x": 1464,
+                "y": -296,
+                "w": 1421,
+                "h": 237
+              }
+            },
+            {
+              "tag": "DIV",
+              "cls": "node-body nested-body-label",
+              "title": "国民",
+              "raw": 337245,
+              "clipped": 0,
+              "rect": {
+                "x": -471,
+                "y": -296,
+                "w": 1421,
+                "h": 237
+              }
+            },
+            {
+              "tag": "DIV",
+              "cls": "node-body nested-body-label",
+              "title": "政府",
+              "raw": 337240,
+              "clipped": 0,
+              "rect": {
+                "x": 2063,
+                "y": 895,
+                "w": 1421,
+                "h": 237
+              }
+            },
+            {
+              "tag": "DIV",
+              "cls": "node-body nested-body-label",
+              "title": "経済",
+              "raw": 337239,
+              "clipped": 1894,
+              "rect": {
+                "x": -1070,
+                "y": 895,
+                "w": 1421,
+                "h": 237
+              }
+            }
+          ]
+        }
+      }
+    },
+    {
+      "label": "scale12_plus_hide_softbody_skin",
+      "viewport": {
+        "x": -58850.5,
+        "y": -59388.3,
+        "scale": 12
+      },
+      "counts": {
+        "allElements": 1633,
+        "node": 1,
+        "nestedMeaning": 5,
+        "nestedPreview": 88,
+        "selected": 176,
+        "softbodySkin": 6,
+        "softbodyPath": 6,
+        "face": 94,
+        "text": 94
+      },
+      "animations": {},
+      "attrCounts": {
+        "d": 234,
+        "aria-label": 94
+      },
+      "frame": {
+        "frames": 39,
+        "fps": 32.5,
+        "avgMs": 30.97,
+        "p50Ms": 16.7,
+        "p90Ms": 80.8,
+        "p99Ms": 226.9,
+        "over33ms": 4,
+        "over100ms": 3
+      },
+      "areas": {
+        "selected": {
+          "total": 176,
+          "visible": 6,
+          "rawArea": 6162723,
+          "clippedArea": 267185,
+          "maxRawArea": 226496,
+          "top": [
+            {
+              "tag": "ARTICLE",
+              "cls": "nested-preview-meaning shape-cloud glow blur motion has-name nested-preview-simple has-nested-preview selected",
+              "title": "🙂土地🙂地形🙂水辺🙂森林🙂居住可能地",
+              "raw": 226496,
+              "clipped": 0,
+              "rect": {
+                "x": 1549,
+                "y": -569,
+                "w": 614,
+                "h": 369
+              }
+            },
+            {
+              "tag": "ARTICLE",
+              "cls": "nested-preview-meaning shape-cloud glow blur motion has-name nested-preview-simple selected",
+              "title": "🙂境界",
+              "raw": 226496,
+              "clipped": 0,
+              "rect": {
+                "x": 2209,
+                "y": -569,
+                "w": 614,
+                "h": 369
+              }
+            },
+            {
+              "tag": "ARTICLE",
+              "cls": "nested-preview-meaning shape-cloud glow blur motion has-name nested-preview-simple selected",
+              "title": "🙂資源",
+              "raw": 226496,
+              "clipped": 0,
+              "rect": {
+                "x": 2209,
+                "y": -139,
+                "w": 614,
+                "h": 369
+              }
+            },
+            {
+              "tag": "ARTICLE",
+              "cls": "nested-preview-meaning shape-cloud glow blur motion has-name nested-preview-simple has-nested-preview selected",
+              "title": "🙂生活圏🙂居住圏🙂労働圏🙂移動圏🙂商業圏🙂文化圏",
+              "raw": 226496,
+              "clipped": 0,
+              "rect": {
+                "x": 1549,
+                "y": -139,
+                "w": 614,
+                "h": 369
+              }
+            },
+            {
+              "tag": "ARTICLE",
+              "cls": "nested-preview-meaning shape-cloud glow blur motion has-name nested-preview-simple selected",
+              "title": "🙂義務を担う人",
+              "raw": 157190,
+              "clipped": 0,
+              "rect": {
+                "x": 304,
+                "y": -600,
+                "w": 499,
+                "h": 315
+              }
+            }
+          ]
+        },
+        "preview": {
+          "total": 88,
+          "visible": 6,
+          "rawArea": 6162723,
+          "clippedArea": 267185,
+          "maxRawArea": 226496,
+          "top": [
+            {
+              "tag": "ARTICLE",
+              "cls": "nested-preview-meaning shape-cloud glow blur motion has-name nested-preview-simple has-nested-preview selected",
+              "title": "🙂土地🙂地形🙂水辺🙂森林🙂居住可能地",
+              "raw": 226496,
+              "clipped": 0,
+              "rect": {
+                "x": 1549,
+                "y": -569,
+                "w": 614,
+                "h": 369
+              }
+            },
+            {
+              "tag": "ARTICLE",
+              "cls": "nested-preview-meaning shape-cloud glow blur motion has-name nested-preview-simple selected",
+              "title": "🙂境界",
+              "raw": 226496,
+              "clipped": 0,
+              "rect": {
+                "x": 2209,
+                "y": -569,
+                "w": 614,
+                "h": 369
+              }
+            },
+            {
+              "tag": "ARTICLE",
+              "cls": "nested-preview-meaning shape-cloud glow blur motion has-name nested-preview-simple selected",
+              "title": "🙂資源",
+              "raw": 226496,
+              "clipped": 0,
+              "rect": {
+                "x": 2209,
+                "y": -139,
+                "w": 614,
+                "h": 369
+              }
+            },
+            {
+              "tag": "ARTICLE",
+              "cls": "nested-preview-meaning shape-cloud glow blur motion has-name nested-preview-simple has-nested-preview selected",
+              "title": "🙂生活圏🙂居住圏🙂労働圏🙂移動圏🙂商業圏🙂文化圏",
+              "raw": 226496,
+              "clipped": 0,
+              "rect": {
+                "x": 1549,
+                "y": -139,
+                "w": 614,
+                "h": 369
+              }
+            },
+            {
+              "tag": "ARTICLE",
+              "cls": "nested-preview-meaning shape-cloud glow blur motion has-name nested-preview-simple selected",
+              "title": "🙂義務を担う人",
+              "raw": 157190,
+              "clipped": 0,
+              "rect": {
+                "x": 304,
+                "y": -600,
+                "w": 499,
+                "h": 315
+              }
+            }
+          ]
+        },
+        "softbodyVisual": {
+          "total": 6,
+          "visible": 3,
+          "rawArea": 27383254,
+          "clippedArea": 1636330,
+          "maxRawArea": 19644768,
+          "top": [
+            {
+              "tag": "ARTICLE",
+              "cls": "node shape-cloud softbody-visual glow blur motion has-name has-code has-nested-meanings",
+              "title": "😊🙂国民🙂権利を持つ人🙂義務を担う人🙂共同体で暮ら",
+              "raw": 19644768,
+              "clipped": 1152000,
+              "rect": {
+                "x": -1670,
+                "y": -1048,
+                "w": 5724,
+                "h": 3432
+              }
+            },
+            {
+              "tag": "ARTICLE",
+              "cls": "nested-meaning shape-cloud softbody-visual glow blur motion has-name has-nested-preview translucent-meaning",
+              "title": "🙂領土🙂土地🙂地形🙂水辺🙂森林🙂居住可能地🙂境",
+              "raw": 1547703,
+              "clipped": 0,
+              "rect": {
+                "x": 1387,
+                "y": -669,
+                "w": 1574,
+                "h": 983
+              }
+            },
+            {
+              "tag": "ARTICLE",
+              "cls": "nested-meaning shape-cloud softbody-visual glow blur motion has-name has-nested-preview translucent-meaning",
+              "title": "🙂国民🙂権利を持つ人🙂義務を担う人🙂共同体で暮らす人",
+              "raw": 1547699,
+              "clipped": 322690,
+              "rect": {
+                "x": -548,
+                "y": -669,
+                "w": 1574,
+                "h": 983
+              }
+            },
+            {
+              "tag": "ARTICLE",
+              "cls": "nested-meaning shape-cloud softbody-visual glow blur motion has-name has-nested-preview translucent-meaning",
+              "title": "🙂法律🙂権利🙂自由🙂財産🙂安全🙂義務🙂納税🙂",
+              "raw": 1547697,
+              "clipped": 0,
+              "rect": {
+                "x": 420,
+                "y": 1259,
+                "w": 1574,
+                "h": 983
+              }
+            },
+            {
+              "tag": "ARTICLE",
+              "cls": "nested-meaning shape-cloud softbody-visual glow blur motion has-name has-nested-preview translucent-meaning",
+              "title": "🙂政府🙂政策意思決定🙂課題受付記録🙂政策案比較表🙂",
+              "raw": 1547695,
+              "clipped": 0,
+              "rect": {
+                "x": 1986,
+                "y": 522,
+                "w": 1574,
+                "h": 983
+              }
+            }
+          ]
+        },
+        "softbodySkin": {
+          "total": 6,
+          "visible": 3,
+          "rawArea": 27383271,
+          "clippedArea": 1646254,
+          "maxRawArea": 19644768,
+          "top": [
+            {
+              "tag": "svg",
+              "cls": "softbody-skin softbody-permanent-skin",
+              "title": "",
+              "raw": 19644768,
+              "clipped": 1152000,
+              "rect": {
+                "x": -1646,
+                "y": -1024,
+                "w": 5724,
+                "h": 3432
+              }
+            },
+            {
+              "tag": "svg",
+              "cls": "softbody-skin softbody-permanent-skin",
+              "title": "",
+              "raw": 1547705,
+              "clipped": 0,
+              "rect": {
+                "x": 1395,
+                "y": -661,
+                "w": 1574,
+                "h": 983
+              }
+            },
+            {
+              "tag": "svg",
+              "cls": "softbody-skin softbody-permanent-skin",
+              "title": "",
+              "raw": 1547703,
+              "clipped": 0,
+              "rect": {
+                "x": 427,
+                "y": 1267,
+                "w": 1574,
+                "h": 983
+              }
+            },
+            {
+              "tag": "svg",
+              "cls": "softbody-skin softbody-permanent-skin",
+              "title": "",
+              "raw": 1547699,
+              "clipped": 0,
+              "rect": {
+                "x": 1994,
+                "y": 529,
+                "w": 1574,
+                "h": 983
+              }
+            },
+            {
+              "tag": "svg",
+              "cls": "softbody-skin softbody-permanent-skin",
+              "title": "",
+              "raw": 1547699,
+              "clipped": 161205,
+              "rect": {
+                "x": -1139,
+                "y": 529,
+                "w": 1574,
+                "h": 983
+              }
+            }
+          ]
+        },
+        "face": {
+          "total": 94,
+          "visible": 4,
+          "rawArea": 652171,
+          "clippedArea": 61818,
+          "maxRawArea": 160100,
+          "top": [
+            {
+              "tag": "BUTTON",
+              "cls": "powan-face-button",
+              "title": "😊",
+              "raw": 160100,
+              "clipped": 0,
+              "rect": {
+                "x": 3062,
+                "y": -415,
+                "w": 400,
+                "h": 400
+              }
+            },
+            {
+              "tag": "BUTTON",
+              "cls": "powan-face-button",
+              "title": "🙂",
+              "raw": 49605,
+              "clipped": 0,
+              "rect": {
+                "x": 656,
+                "y": -584,
+                "w": 223,
+                "h": 223
+              }
+            },
+            {
+              "tag": "BUTTON",
+              "cls": "powan-face-button",
+              "title": "🙂",
+              "raw": 49605,
+              "clipped": 0,
+              "rect": {
+                "x": 2591,
+                "y": -584,
+                "w": 223,
+                "h": 223
+              }
+            },
+            {
+              "tag": "BUTTON",
+              "cls": "powan-face-button",
+              "title": "🙂",
+              "raw": 49605,
+              "clipped": 0,
+              "rect": {
+                "x": 3190,
+                "y": 607,
+                "w": 223,
+                "h": 223
+              }
+            },
+            {
+              "tag": "BUTTON",
+              "cls": "powan-face-button",
+              "title": "🙂",
+              "raw": 49604,
+              "clipped": 0,
+              "rect": {
+                "x": 1623,
+                "y": 1344,
+                "w": 223,
+                "h": 223
+              }
+            }
+          ]
+        },
+        "text": {
+          "total": 94,
+          "visible": 6,
+          "rawArea": 10375504,
+          "clippedArea": 1021828,
+          "maxRawArea": 4762800,
+          "top": [
+            {
+              "tag": "TEXTAREA",
+              "cls": "node-body",
+              "title": "",
+              "raw": 4762800,
+              "clipped": 873375,
+              "rect": {
+                "x": -1454,
+                "y": 218,
+                "w": 5292,
+                "h": 900
+              }
+            },
+            {
+              "tag": "DIV",
+              "cls": "node-body nested-body-label",
+              "title": "領土",
+              "raw": 337246,
+              "clipped": 0,
+              "rect": {
+                "x": 1464,
+                "y": -296,
+                "w": 1421,
+                "h": 237
+              }
+            },
+            {
+              "tag": "DIV",
+              "cls": "node-body nested-body-label",
+              "title": "国民",
+              "raw": 337245,
+              "clipped": 0,
+              "rect": {
+                "x": -471,
+                "y": -296,
+                "w": 1421,
+                "h": 237
+              }
+            },
+            {
+              "tag": "DIV",
+              "cls": "node-body nested-body-label",
+              "title": "政府",
+              "raw": 337240,
+              "clipped": 0,
+              "rect": {
+                "x": 2063,
+                "y": 895,
+                "w": 1421,
+                "h": 237
+              }
+            },
+            {
+              "tag": "DIV",
+              "cls": "node-body nested-body-label",
+              "title": "経済",
+              "raw": 337239,
+              "clipped": 1894,
+              "rect": {
+                "x": -1070,
+                "y": 895,
+                "w": 1421,
+                "h": 237
+              }
+            }
+          ]
+        }
+      }
+    },
+    {
+      "label": "scale12_plus_hide_previews",
+      "viewport": {
+        "x": -58850.5,
+        "y": -59388.3,
+        "scale": 12
+      },
+      "counts": {
+        "allElements": 1633,
+        "node": 1,
+        "nestedMeaning": 5,
+        "nestedPreview": 88,
+        "selected": 176,
+        "softbodySkin": 6,
+        "softbodyPath": 6,
+        "face": 94,
+        "text": 94
+      },
+      "animations": {},
+      "attrCounts": {
+        "d": 48,
+        "aria-label": 94
+      },
+      "frame": {
+        "frames": 8,
+        "fps": 6.7,
+        "avgMs": 154.29,
+        "p50Ms": 166.5,
+        "p90Ms": 177.7,
+        "p99Ms": 177.7,
+        "over33ms": 8,
+        "over100ms": 7
+      },
+      "areas": {
+        "selected": {
+          "total": 176,
+          "visible": 6,
+          "rawArea": 6162723,
+          "clippedArea": 267185,
+          "maxRawArea": 226496,
+          "top": [
+            {
+              "tag": "ARTICLE",
+              "cls": "nested-preview-meaning shape-cloud glow blur motion has-name nested-preview-simple has-nested-preview selected",
+              "title": "🙂土地🙂地形🙂水辺🙂森林🙂居住可能地",
+              "raw": 226496,
+              "clipped": 0,
+              "rect": {
+                "x": 1549,
+                "y": -569,
+                "w": 614,
+                "h": 369
+              }
+            },
+            {
+              "tag": "ARTICLE",
+              "cls": "nested-preview-meaning shape-cloud glow blur motion has-name nested-preview-simple selected",
+              "title": "🙂境界",
+              "raw": 226496,
+              "clipped": 0,
+              "rect": {
+                "x": 2209,
+                "y": -569,
+                "w": 614,
+                "h": 369
+              }
+            },
+            {
+              "tag": "ARTICLE",
+              "cls": "nested-preview-meaning shape-cloud glow blur motion has-name nested-preview-simple selected",
+              "title": "🙂資源",
+              "raw": 226496,
+              "clipped": 0,
+              "rect": {
+                "x": 2209,
+                "y": -139,
+                "w": 614,
+                "h": 369
+              }
+            },
+            {
+              "tag": "ARTICLE",
+              "cls": "nested-preview-meaning shape-cloud glow blur motion has-name nested-preview-simple has-nested-preview selected",
+              "title": "🙂生活圏🙂居住圏🙂労働圏🙂移動圏🙂商業圏🙂文化圏",
+              "raw": 226496,
+              "clipped": 0,
+              "rect": {
+                "x": 1549,
+                "y": -139,
+                "w": 614,
+                "h": 369
+              }
+            },
+            {
+              "tag": "ARTICLE",
+              "cls": "nested-preview-meaning shape-cloud glow blur motion has-name nested-preview-simple selected",
+              "title": "🙂義務を担う人",
+              "raw": 157190,
+              "clipped": 0,
+              "rect": {
+                "x": 304,
+                "y": -600,
+                "w": 499,
+                "h": 315
+              }
+            }
+          ]
+        },
+        "preview": {
+          "total": 88,
+          "visible": 6,
+          "rawArea": 6162723,
+          "clippedArea": 267185,
+          "maxRawArea": 226496,
+          "top": [
+            {
+              "tag": "ARTICLE",
+              "cls": "nested-preview-meaning shape-cloud glow blur motion has-name nested-preview-simple has-nested-preview selected",
+              "title": "🙂土地🙂地形🙂水辺🙂森林🙂居住可能地",
+              "raw": 226496,
+              "clipped": 0,
+              "rect": {
+                "x": 1549,
+                "y": -569,
+                "w": 614,
+                "h": 369
+              }
+            },
+            {
+              "tag": "ARTICLE",
+              "cls": "nested-preview-meaning shape-cloud glow blur motion has-name nested-preview-simple selected",
+              "title": "🙂境界",
+              "raw": 226496,
+              "clipped": 0,
+              "rect": {
+                "x": 2209,
+                "y": -569,
+                "w": 614,
+                "h": 369
+              }
+            },
+            {
+              "tag": "ARTICLE",
+              "cls": "nested-preview-meaning shape-cloud glow blur motion has-name nested-preview-simple selected",
+              "title": "🙂資源",
+              "raw": 226496,
+              "clipped": 0,
+              "rect": {
+                "x": 2209,
+                "y": -139,
+                "w": 614,
+                "h": 369
+              }
+            },
+            {
+              "tag": "ARTICLE",
+              "cls": "nested-preview-meaning shape-cloud glow blur motion has-name nested-preview-simple has-nested-preview selected",
+              "title": "🙂生活圏🙂居住圏🙂労働圏🙂移動圏🙂商業圏🙂文化圏",
+              "raw": 226496,
+              "clipped": 0,
+              "rect": {
+                "x": 1549,
+                "y": -139,
+                "w": 614,
+                "h": 369
+              }
+            },
+            {
+              "tag": "ARTICLE",
+              "cls": "nested-preview-meaning shape-cloud glow blur motion has-name nested-preview-simple selected",
+              "title": "🙂義務を担う人",
+              "raw": 157190,
+              "clipped": 0,
+              "rect": {
+                "x": 304,
+                "y": -600,
+                "w": 499,
+                "h": 315
+              }
+            }
+          ]
+        },
+        "softbodyVisual": {
+          "total": 6,
+          "visible": 3,
+          "rawArea": 27383254,
+          "clippedArea": 1636330,
+          "maxRawArea": 19644768,
+          "top": [
+            {
+              "tag": "ARTICLE",
+              "cls": "node shape-cloud softbody-visual glow blur motion has-name has-code has-nested-meanings",
+              "title": "😊🙂国民🙂権利を持つ人🙂義務を担う人🙂共同体で暮ら",
+              "raw": 19644768,
+              "clipped": 1152000,
+              "rect": {
+                "x": -1670,
+                "y": -1048,
+                "w": 5724,
+                "h": 3432
+              }
+            },
+            {
+              "tag": "ARTICLE",
+              "cls": "nested-meaning shape-cloud softbody-visual glow blur motion has-name has-nested-preview translucent-meaning",
+              "title": "🙂領土🙂土地🙂地形🙂水辺🙂森林🙂居住可能地🙂境",
+              "raw": 1547703,
+              "clipped": 0,
+              "rect": {
+                "x": 1387,
+                "y": -669,
+                "w": 1574,
+                "h": 983
+              }
+            },
+            {
+              "tag": "ARTICLE",
+              "cls": "nested-meaning shape-cloud softbody-visual glow blur motion has-name has-nested-preview translucent-meaning",
+              "title": "🙂国民🙂権利を持つ人🙂義務を担う人🙂共同体で暮らす人",
+              "raw": 1547699,
+              "clipped": 322690,
+              "rect": {
+                "x": -548,
+                "y": -669,
+                "w": 1574,
+                "h": 983
+              }
+            },
+            {
+              "tag": "ARTICLE",
+              "cls": "nested-meaning shape-cloud softbody-visual glow blur motion has-name has-nested-preview translucent-meaning",
+              "title": "🙂法律🙂権利🙂自由🙂財産🙂安全🙂義務🙂納税🙂",
+              "raw": 1547697,
+              "clipped": 0,
+              "rect": {
+                "x": 420,
+                "y": 1259,
+                "w": 1574,
+                "h": 983
+              }
+            },
+            {
+              "tag": "ARTICLE",
+              "cls": "nested-meaning shape-cloud softbody-visual glow blur motion has-name has-nested-preview translucent-meaning",
+              "title": "🙂政府🙂政策意思決定🙂課題受付記録🙂政策案比較表🙂",
+              "raw": 1547695,
+              "clipped": 0,
+              "rect": {
+                "x": 1986,
+                "y": 522,
+                "w": 1574,
+                "h": 983
+              }
+            }
+          ]
+        },
+        "softbodySkin": {
+          "total": 6,
+          "visible": 3,
+          "rawArea": 27383271,
+          "clippedArea": 1646254,
+          "maxRawArea": 19644768,
+          "top": [
+            {
+              "tag": "svg",
+              "cls": "softbody-skin softbody-permanent-skin",
+              "title": "",
+              "raw": 19644768,
+              "clipped": 1152000,
+              "rect": {
+                "x": -1646,
+                "y": -1024,
+                "w": 5724,
+                "h": 3432
+              }
+            },
+            {
+              "tag": "svg",
+              "cls": "softbody-skin softbody-permanent-skin",
+              "title": "",
+              "raw": 1547705,
+              "clipped": 0,
+              "rect": {
+                "x": 1395,
+                "y": -661,
+                "w": 1574,
+                "h": 983
+              }
+            },
+            {
+              "tag": "svg",
+              "cls": "softbody-skin softbody-permanent-skin",
+              "title": "",
+              "raw": 1547703,
+              "clipped": 0,
+              "rect": {
+                "x": 427,
+                "y": 1267,
+                "w": 1574,
+                "h": 983
+              }
+            },
+            {
+              "tag": "svg",
+              "cls": "softbody-skin softbody-permanent-skin",
+              "title": "",
+              "raw": 1547699,
+              "clipped": 0,
+              "rect": {
+                "x": 1994,
+                "y": 529,
+                "w": 1574,
+                "h": 983
+              }
+            },
+            {
+              "tag": "svg",
+              "cls": "softbody-skin softbody-permanent-skin",
+              "title": "",
+              "raw": 1547699,
+              "clipped": 161205,
+              "rect": {
+                "x": -1139,
+                "y": 529,
+                "w": 1574,
+                "h": 983
+              }
+            }
+          ]
+        },
+        "face": {
+          "total": 94,
+          "visible": 4,
+          "rawArea": 652171,
+          "clippedArea": 61818,
+          "maxRawArea": 160100,
+          "top": [
+            {
+              "tag": "BUTTON",
+              "cls": "powan-face-button",
+              "title": "😊",
+              "raw": 160100,
+              "clipped": 0,
+              "rect": {
+                "x": 3062,
+                "y": -415,
+                "w": 400,
+                "h": 400
+              }
+            },
+            {
+              "tag": "BUTTON",
+              "cls": "powan-face-button",
+              "title": "🙂",
+              "raw": 49605,
+              "clipped": 0,
+              "rect": {
+                "x": 656,
+                "y": -584,
+                "w": 223,
+                "h": 223
+              }
+            },
+            {
+              "tag": "BUTTON",
+              "cls": "powan-face-button",
+              "title": "🙂",
+              "raw": 49605,
+              "clipped": 0,
+              "rect": {
+                "x": 2591,
+                "y": -584,
+                "w": 223,
+                "h": 223
+              }
+            },
+            {
+              "tag": "BUTTON",
+              "cls": "powan-face-button",
+              "title": "🙂",
+              "raw": 49605,
+              "clipped": 0,
+              "rect": {
+                "x": 3190,
+                "y": 607,
+                "w": 223,
+                "h": 223
+              }
+            },
+            {
+              "tag": "BUTTON",
+              "cls": "powan-face-button",
+              "title": "🙂",
+              "raw": 49604,
+              "clipped": 0,
+              "rect": {
+                "x": 1623,
+                "y": 1344,
+                "w": 223,
+                "h": 223
+              }
+            }
+          ]
+        },
+        "text": {
+          "total": 94,
+          "visible": 6,
+          "rawArea": 10375504,
+          "clippedArea": 1021828,
+          "maxRawArea": 4762800,
+          "top": [
+            {
+              "tag": "TEXTAREA",
+              "cls": "node-body",
+              "title": "",
+              "raw": 4762800,
+              "clipped": 873375,
+              "rect": {
+                "x": -1454,
+                "y": 218,
+                "w": 5292,
+                "h": 900
+              }
+            },
+            {
+              "tag": "DIV",
+              "cls": "node-body nested-body-label",
+              "title": "領土",
+              "raw": 337246,
+              "clipped": 0,
+              "rect": {
+                "x": 1464,
+                "y": -296,
+                "w": 1421,
+                "h": 237
+              }
+            },
+            {
+              "tag": "DIV",
+              "cls": "node-body nested-body-label",
+              "title": "国民",
+              "raw": 337245,
+              "clipped": 0,
+              "rect": {
+                "x": -471,
+                "y": -296,
+                "w": 1421,
+                "h": 237
+              }
+            },
+            {
+              "tag": "DIV",
+              "cls": "node-body nested-body-label",
+              "title": "政府",
+              "raw": 337240,
+              "clipped": 0,
+              "rect": {
+                "x": 2063,
+                "y": 895,
+                "w": 1421,
+                "h": 237
+              }
+            },
+            {
+              "tag": "DIV",
+              "cls": "node-body nested-body-label",
+              "title": "経済",
+              "raw": 337239,
+              "clipped": 1894,
+              "rect": {
+                "x": -1070,
+                "y": 895,
+                "w": 1421,
+                "h": 237
+              }
+            }
+          ]
+        }
+      }
+    }
+  ]
+}

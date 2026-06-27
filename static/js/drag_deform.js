@@ -506,7 +506,7 @@ var powanDragDeform = {
     const path = document.createElementNS(SVG_NS, "path");
     path.setAttribute("class", "softbody-path");
     path.setAttribute("fill", fill);
-    path.setAttribute("stroke", selected ? accent : style.borderTopColor);
+    path.setAttribute("stroke", accent);
     path.setAttribute("stroke-width", selected ? "3" : "2");
     path.setAttribute("d", powanSoftBody.toPathData(softBody));
     skin.appendChild(path);

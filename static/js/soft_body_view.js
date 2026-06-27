@@ -60,6 +60,13 @@ var powanSoftBodyView = {
       softBody,
       skin: null,
       path: null,
+      context: null,
+      pixelRatio: 1,
+      drawPadding: 0,
+      fillStyle: "#ffffff",
+      strokeStyle: "#8ddcff",
+      selectedStrokeStyle: "#8ddcff",
+      selected: false,
       width: dimensions.width,
       height: dimensions.height,
       controlled: false,
@@ -75,26 +82,36 @@ var powanSoftBodyView = {
       child.classList?.contains("softbody-skin") &&
       child.classList?.contains("softbody-permanent-skin")
     ));
-    let path = skin?.querySelector(".softbody-path") || null;
+    if (skin && skin.tagName?.toLowerCase() !== "canvas") {
+      skin.remove();
+      skin = null;
+    }
     if (!skin) {
-      skin = document.createElementNS(SVG_NS, "svg");
-      skin.setAttribute("class", "softbody-skin softbody-permanent-skin");
+      skin = document.createElement("canvas");
+      skin.className = "softbody-skin softbody-permanent-skin";
       skin.style.position = "absolute";
       skin.style.left = "0";
       skin.style.top = "0";
       skin.style.overflow = "visible";
-      skin.style.pointerEvents = "auto";
+      skin.style.pointerEvents = "none";
       skin.style.zIndex = "0";
       state.element.insertBefore(skin, state.element.firstChild);
     }
-    if (!path) {
-      path = document.createElementNS(SVG_NS, "path");
-      path.setAttribute("class", "softbody-path");
-      skin.appendChild(path);
-    }
     state.skin = skin;
-    state.path = path;
+    state.context = skin.getContext("2d");
+    state.path = this.pathProxy(state);
     this.setSkinSize(state);
+    this.refreshSkinStyle(state);
+  },
+
+  pathProxy(state) {
+    return {
+      setAttribute: (name) => {
+        if (name === "d") {
+          this.writePath(state);
+        }
+      },
+    };
   },
 
   dimensions(element, layout = {}) {
@@ -141,17 +158,147 @@ var powanSoftBodyView = {
 
   setSkinSize(state) {
     if (!state.skin) {
+      return false;
+    }
+    const padding = Math.max(16, Math.min(96, Math.max(state.width, state.height) * 0.12));
+    const ratio = this.targetPixelRatio(state);
+    const skinWidth = state.width + padding * 2;
+    const skinHeight = state.height + padding * 2;
+    const pixelWidth = Math.max(1, Math.round(skinWidth * ratio));
+    const pixelHeight = Math.max(1, Math.round(skinHeight * ratio));
+    let changed = Math.abs((state.pixelRatio || 1) - ratio) > 0.01;
+    state.drawPadding = padding;
+    state.pixelRatio = ratio;
+    if (state.skin.width !== pixelWidth) {
+      state.skin.width = pixelWidth;
+      changed = true;
+    }
+    if (state.skin.height !== pixelHeight) {
+      state.skin.height = pixelHeight;
+      changed = true;
+    }
+    state.skin.style.left = `${-padding}px`;
+    state.skin.style.top = `${-padding}px`;
+    state.skin.style.width = `${skinWidth}px`;
+    state.skin.style.height = `${skinHeight}px`;
+    return changed;
+  },
+
+  targetPixelRatio(state) {
+    const deviceRatio = Math.max(1, window.devicePixelRatio || 1);
+    const viewScale = typeof viewport !== "undefined" ? Number(viewport.scale || 1) : 1;
+    const screenRatio = this.visibleScreenPixelRatio(state, deviceRatio);
+    let level = 1;
+    if (state.element?.classList?.contains("nested-preview-meaning")) {
+      const depth = Math.max(1, Number(state.element.dataset.previewDepth || 1));
+      const first = 1.75 + (depth - 1) * 0.65;
+      const second = 3 + (depth - 1) * 0.85;
+      const third = 4.5 + (depth - 1) * 1.15;
+      level = viewScale >= third ? 4 : viewScale >= second ? 3 : viewScale >= first ? 2 : 1;
+    } else if (state.element?.classList?.contains("nested-meaning")) {
+      level = viewScale >= 4 ? 4 : viewScale >= 2.4 ? 3 : viewScale >= 1.5 ? 2 : 1;
+    } else {
+      level = viewScale >= 4 ? 3 : viewScale >= 2 ? 2 : 1;
+    }
+    return Math.max(1, Math.min(8, Math.max(deviceRatio, level, screenRatio)));
+  },
+
+  visibleScreenScale(state) {
+    const rect = state.element?.getBoundingClientRect?.();
+    if (!rect || !Number.isFinite(rect.width) || !Number.isFinite(rect.height)) {
+      return 1;
+    }
+    const margin = 96;
+    const visible = (
+      rect.right >= -margin &&
+      rect.bottom >= -margin &&
+      rect.left <= window.innerWidth + margin &&
+      rect.top <= window.innerHeight + margin
+    );
+    if (!visible) {
+      return 1;
+    }
+    const widthScale = rect.width / Math.max(1, state.width);
+    const heightScale = rect.height / Math.max(1, state.height);
+    return Math.max(widthScale, heightScale, 1);
+  },
+
+  visibleScreenPixelRatio(state, deviceRatio = Math.max(1, window.devicePixelRatio || 1)) {
+    return Math.ceil(this.visibleScreenScale(state) * deviceRatio);
+  },
+
+  refreshViewportResolution() {
+    let changed = 0;
+    for (const state of this.states.values()) {
+      if (!state.element?.isConnected) {
+        continue;
+      }
+      if (this.setSkinSize(state)) {
+        this.writePath(state);
+        changed += 1;
+      }
+    }
+    return changed;
+  },
+
+  refreshSkinStyle(state) {
+    if (!state?.element) {
       return;
     }
-    state.skin.setAttribute("width", String(state.width));
-    state.skin.setAttribute("height", String(state.height));
-    state.skin.setAttribute("viewBox", `0 0 ${state.width} ${state.height}`);
+    const style = getComputedStyle(state.element);
+    const accent = style.getPropertyValue("--accent").trim() || "#8ddcff";
+    state.fillStyle = style.getPropertyValue("--node-color").trim() || "#ffffff";
+    state.strokeStyle = accent;
+    state.selectedStrokeStyle = accent;
+    state.selected = state.element.classList.contains("selected");
   },
 
   writePath(state) {
-    if (state.path) {
-      state.path.setAttribute("d", powanSoftBody.toPathData(state.softBody));
+    if (!state.context || !state.skin) {
+      return;
     }
+    const points = state.softBody?.points || [];
+    const n = state.softBody?.count || points.length;
+    if (n < 3) {
+      return;
+    }
+    const context = state.context;
+    const ratio = state.pixelRatio || 1;
+    const padding = state.drawPadding || 0;
+    context.setTransform(ratio, 0, 0, ratio, 0, 0);
+    context.clearRect(0, 0, state.width + padding * 2, state.height + padding * 2);
+    context.translate(padding, padding);
+
+    const selected = state.element.classList.contains("selected");
+    if (selected !== state.selected) {
+      this.refreshSkinStyle(state);
+    }
+    const stroke = selected ? state.selectedStrokeStyle : state.strokeStyle;
+    const viewScale = typeof viewport !== "undefined" ? viewport.scale : 1;
+    const screenScale = Math.max(0.01, Number(viewScale || 1));
+    const lineWidth = (selected ? 2.2 : 2) / screenScale;
+
+    context.beginPath();
+    for (let i = 0; i < n; i++) {
+      const p0 = points[(i - 1 + n) % n];
+      const p1 = points[i];
+      const p2 = points[(i + 1) % n];
+      const p3 = points[(i + 2) % n];
+      if (i === 0) {
+        context.moveTo(p1.x, p1.y);
+      }
+      const c1x = p1.x + (p2.x - p0.x) / 6;
+      const c1y = p1.y + (p2.y - p0.y) / 6;
+      const c2x = p2.x - (p3.x - p1.x) / 6;
+      const c2y = p2.y - (p3.y - p1.y) / 6;
+      context.bezierCurveTo(c1x, c1y, c2x, c2y, p2.x, p2.y);
+    }
+    context.closePath();
+    context.fillStyle = state.fillStyle;
+    context.strokeStyle = stroke;
+    context.lineWidth = lineWidth;
+    context.fill();
+    context.stroke();
   },
 
   start() {

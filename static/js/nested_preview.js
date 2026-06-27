@@ -67,8 +67,7 @@ function nestedPreviewChildSize(cellWidth, cellHeight, depth) {
 }
 
 function renderNestedPreviewMeaning(node, placement, depth) {
-  const element = createPowanSurfaceWithoutSoftBody(node, placement, { mode: "preview", depth });
-  element.classList.add("nested-preview-simple");
+  const element = createPowanSurface(node, placement, { mode: "preview", depth });
   element.dataset.previewDepth = String(depth);
   element.addEventListener("pointerdown", (event) => {
     logNestedPointerDebug("nested-preview-pointerdown-capture", event, node, element, { depth });

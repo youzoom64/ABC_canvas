@@ -1032,6 +1032,12 @@ function applyViewportTransform() {
     return;
   }
   worldLayer.style.transform = `translate(${viewport.x}px, ${viewport.y}px) scale(${viewport.scale})`;
+  if (canvas) {
+    canvas.style.setProperty("--abc-view-scale", viewport.scale.toFixed(4));
+  }
+  if (typeof powanSoftBodyView !== "undefined") {
+    powanSoftBodyView.refreshViewportResolution();
+  }
 }
 
 function setViewportRaw(nextViewport) {

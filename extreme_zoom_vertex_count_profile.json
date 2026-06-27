@@ -1,0 +1,212 @@
+{
+  "previewIds": 88,
+  "restored": {
+    "viewport": {
+      "x": -9379.285734069726,
+      "y": -9448.019140995799,
+      "scale": 1.9835866586590387
+    },
+    "selectionCount": 1
+  },
+  "results": [
+    {
+      "label": "24_points_current",
+      "drawPoints": 24,
+      "curvesInFirstPath": 24,
+      "frame": {
+        "fps": 29.2,
+        "frames": 38,
+        "avgMs": 34.5,
+        "p90Ms": 34.4,
+        "p99Ms": 124.5,
+        "over100": 1
+      },
+      "attrs": {
+        "d": 228,
+        "aria-label": 188
+      },
+      "areas": {
+        "allSkin": {
+          "visible": 4,
+          "raw": 27383277,
+          "clipped": 1682170,
+          "max": 19644768
+        },
+        "nodeSkin": {
+          "visible": 1,
+          "raw": 19644768,
+          "clipped": 1152000,
+          "max": 19644768
+        },
+        "nestedSkin": {
+          "visible": 3,
+          "raw": 7738509,
+          "clipped": 530170,
+          "max": 1547705
+        },
+        "text": {
+          "visible": 11,
+          "raw": 10375502,
+          "clipped": 951549,
+          "max": 4762800
+        },
+        "preview": {
+          "visible": 13,
+          "raw": 6162710,
+          "clipped": 425572,
+          "max": 226496
+        }
+      }
+    },
+    {
+      "label": "12_points",
+      "drawPoints": 12,
+      "curvesInFirstPath": 12,
+      "frame": {
+        "fps": 23.1,
+        "frames": 30,
+        "avgMs": 44.6,
+        "p90Ms": 54.9,
+        "p99Ms": 87.3,
+        "over100": 0
+      },
+      "attrs": {
+        "d": 180,
+        "aria-label": 94,
+        "class": 3
+      },
+      "areas": {
+        "allSkin": {
+          "visible": 4,
+          "raw": 27383277,
+          "clipped": 1682170,
+          "max": 19644768
+        },
+        "nodeSkin": {
+          "visible": 1,
+          "raw": 19644768,
+          "clipped": 1152000,
+          "max": 19644768
+        },
+        "nestedSkin": {
+          "visible": 3,
+          "raw": 7738509,
+          "clipped": 530170,
+          "max": 1547705
+        },
+        "text": {
+          "visible": 11,
+          "raw": 10375502,
+          "clipped": 951549,
+          "max": 4762800
+        },
+        "preview": {
+          "visible": 13,
+          "raw": 6162710,
+          "clipped": 425572,
+          "max": 226496
+        }
+      }
+    },
+    {
+      "label": "8_points",
+      "drawPoints": 8,
+      "curvesInFirstPath": 8,
+      "frame": {
+        "fps": 26.2,
+        "frames": 34,
+        "avgMs": 38.5,
+        "p90Ms": 39.8,
+        "p99Ms": 42.9,
+        "over100": 0
+      },
+      "attrs": {
+        "class": 7,
+        "d": 204,
+        "aria-label": 188
+      },
+      "areas": {
+        "allSkin": {
+          "visible": 4,
+          "raw": 27383277,
+          "clipped": 1682170,
+          "max": 19644768
+        },
+        "nodeSkin": {
+          "visible": 1,
+          "raw": 19644768,
+          "clipped": 1152000,
+          "max": 19644768
+        },
+        "nestedSkin": {
+          "visible": 3,
+          "raw": 7738509,
+          "clipped": 530170,
+          "max": 1547705
+        },
+        "text": {
+          "visible": 11,
+          "raw": 10375502,
+          "clipped": 951549,
+          "max": 4762800
+        },
+        "preview": {
+          "visible": 13,
+          "raw": 6162710,
+          "clipped": 425572,
+          "max": 226496
+        }
+      }
+    },
+    {
+      "label": "6_points",
+      "drawPoints": 6,
+      "curvesInFirstPath": 6,
+      "frame": {
+        "fps": 25.4,
+        "frames": 33,
+        "avgMs": 39.6,
+        "p90Ms": 41.7,
+        "p99Ms": 51.3,
+        "over100": 0
+      },
+      "attrs": {
+        "d": 198,
+        "class": 10,
+        "aria-label": 95
+      },
+      "areas": {
+        "allSkin": {
+          "visible": 4,
+          "raw": 27383277,
+          "clipped": 1682170,
+          "max": 19644768
+        },
+        "nodeSkin": {
+          "visible": 1,
+          "raw": 19644768,
+          "clipped": 1152000,
+          "max": 19644768
+        },
+        "nestedSkin": {
+          "visible": 3,
+          "raw": 7738509,
+          "clipped": 530170,
+          "max": 1547705
+        },
+        "text": {
+          "visible": 11,
+          "raw": 10375502,
+          "clipped": 951549,
+          "max": 4762800
+        },
+        "preview": {
+          "visible": 13,
+          "raw": 6162710,
+          "clipped": 425572,
+          "max": 226496
+        }
+      }
+    }
+  ]
+}

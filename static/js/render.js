@@ -138,8 +138,13 @@ function applyPowanVisualMetrics(element, layout, { kind = "node", depth = 0, so
   const bodySize = isPreview
     ? Math.max(2, Math.min(18, Number(layout?.width || 0) * 0.16))
     : metrics.bodySize;
+  const dragHitSize = Math.max(
+    2,
+    Math.min(isPreview ? 7 : isNested ? 10 : 12, shortSide * 0.1),
+  );
   element.style.setProperty("--powan-face-size", `${Math.round(faceSize)}px`);
   element.style.setProperty("--powan-body-size", `${Math.round(bodySize)}px`);
+  element.style.setProperty("--powan-drag-hit-size", `${dragHitSize.toFixed(1)}px`);
   element.style.setProperty("--powan-code-label-size", `${metrics.codeSize}px`);
   element.style.setProperty("--powan-morph-duration", `${isPreview ? 8.4 + depth * 0.35 : isNested ? 7.8 : 7}s`);
   element.style.setProperty("--powan-breathe-duration", `${isPreview ? 5.2 + depth * 0.24 : isNested ? 4.8 : 4.5}s`);

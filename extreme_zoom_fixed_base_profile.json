@@ -1,0 +1,375 @@
+{
+  "previewIds": 88,
+  "restored": {
+    "viewport": {
+      "x": -10933.61406298765,
+      "y": -11127.950930774428,
+      "scale": 2.304598903449047
+    },
+    "selectionCount": 1
+  },
+  "out": [
+    {
+      "label": "base_no_preview_anim_no_glow_no_filter",
+      "frame": {
+        "fps": 5.3,
+        "frames": 8,
+        "avgMs": 188,
+        "p90Ms": 555.5,
+        "p99Ms": 555.5,
+        "over100": 4
+      },
+      "attrs": {
+        "d": 48,
+        "aria-label": 94
+      },
+      "anim": {},
+      "areas": {
+        "nodeSkin": {
+          "visible": 1,
+          "raw": 19644768,
+          "clipped": 1152000,
+          "max": 19644768
+        },
+        "nestedSkin": {
+          "visible": 2,
+          "raw": 7738503,
+          "clipped": 100944,
+          "max": 1547705
+        },
+        "allSkin": {
+          "visible": 3,
+          "raw": 27383271,
+          "clipped": 1252944,
+          "max": 19644768
+        },
+        "preview": {
+          "visible": 3,
+          "raw": 6162723,
+          "clipped": 10307,
+          "max": 226496
+        },
+        "selected": {
+          "visible": 3,
+          "raw": 6162723,
+          "clipped": 10307,
+          "max": 226496
+        },
+        "text": {
+          "visible": 3,
+          "raw": 10375504,
+          "clipped": 1146117,
+          "max": 4762800
+        },
+        "face": {
+          "visible": 0,
+          "raw": 652171,
+          "clipped": 0,
+          "max": 160100
+        }
+      }
+    },
+    {
+      "label": "base_plus_hide_all_softbody_skin",
+      "frame": {
+        "fps": 60.7,
+        "frames": 91,
+        "avgMs": 16.6,
+        "p90Ms": 17.3,
+        "p99Ms": 18.2,
+        "over100": 0
+      },
+      "attrs": {
+        "d": 546,
+        "aria-label": 188
+      },
+      "anim": {},
+      "areas": {
+        "nodeSkin": {
+          "visible": 1,
+          "raw": 19644768,
+          "clipped": 1152000,
+          "max": 19644768
+        },
+        "nestedSkin": {
+          "visible": 2,
+          "raw": 7738503,
+          "clipped": 100944,
+          "max": 1547705
+        },
+        "allSkin": {
+          "visible": 3,
+          "raw": 27383271,
+          "clipped": 1252944,
+          "max": 19644768
+        },
+        "preview": {
+          "visible": 3,
+          "raw": 6162723,
+          "clipped": 10307,
+          "max": 226496
+        },
+        "selected": {
+          "visible": 3,
+          "raw": 6162723,
+          "clipped": 10307,
+          "max": 226496
+        },
+        "text": {
+          "visible": 3,
+          "raw": 10375504,
+          "clipped": 1146117,
+          "max": 4762800
+        },
+        "face": {
+          "visible": 0,
+          "raw": 652171,
+          "clipped": 0,
+          "max": 160100
+        }
+      }
+    },
+    {
+      "label": "base_plus_hide_root_node_skin",
+      "frame": {
+        "fps": 20.7,
+        "frames": 31,
+        "avgMs": 48.6,
+        "p90Ms": 50.4,
+        "p99Ms": 96.6,
+        "over100": 0
+      },
+      "attrs": {
+        "d": 186,
+        "class": 1,
+        "aria-label": 188
+      },
+      "anim": {},
+      "areas": {
+        "nodeSkin": {
+          "visible": 1,
+          "raw": 19644768,
+          "clipped": 1152000,
+          "max": 19644768
+        },
+        "nestedSkin": {
+          "visible": 2,
+          "raw": 7738503,
+          "clipped": 100944,
+          "max": 1547705
+        },
+        "allSkin": {
+          "visible": 3,
+          "raw": 27383271,
+          "clipped": 1252944,
+          "max": 19644768
+        },
+        "preview": {
+          "visible": 3,
+          "raw": 6162723,
+          "clipped": 10307,
+          "max": 226496
+        },
+        "selected": {
+          "visible": 3,
+          "raw": 6162723,
+          "clipped": 10307,
+          "max": 226496
+        },
+        "text": {
+          "visible": 3,
+          "raw": 10375504,
+          "clipped": 1146117,
+          "max": 4762800
+        },
+        "face": {
+          "visible": 0,
+          "raw": 652171,
+          "clipped": 0,
+          "max": 160100
+        }
+      }
+    },
+    {
+      "label": "base_plus_hide_nested_meaning_skins",
+      "frame": {
+        "fps": 58.7,
+        "frames": 88,
+        "avgMs": 17.2,
+        "p90Ms": 17,
+        "p99Ms": 66.4,
+        "over100": 0
+      },
+      "attrs": {
+        "d": 528,
+        "aria-label": 94
+      },
+      "anim": {},
+      "areas": {
+        "nodeSkin": {
+          "visible": 1,
+          "raw": 19644768,
+          "clipped": 1152000,
+          "max": 19644768
+        },
+        "nestedSkin": {
+          "visible": 2,
+          "raw": 7738503,
+          "clipped": 100944,
+          "max": 1547705
+        },
+        "allSkin": {
+          "visible": 3,
+          "raw": 27383271,
+          "clipped": 1252944,
+          "max": 19644768
+        },
+        "preview": {
+          "visible": 3,
+          "raw": 6162723,
+          "clipped": 10307,
+          "max": 226496
+        },
+        "selected": {
+          "visible": 3,
+          "raw": 6162723,
+          "clipped": 10307,
+          "max": 226496
+        },
+        "text": {
+          "visible": 3,
+          "raw": 10375504,
+          "clipped": 1146117,
+          "max": 4762800
+        },
+        "face": {
+          "visible": 0,
+          "raw": 652171,
+          "clipped": 0,
+          "max": 160100
+        }
+      }
+    },
+    {
+      "label": "base_plus_hide_text",
+      "frame": {
+        "fps": 28,
+        "frames": 42,
+        "avgMs": 36.2,
+        "p90Ms": 38.2,
+        "p99Ms": 45.1,
+        "over100": 0
+      },
+      "attrs": {
+        "d": 252,
+        "style": 2,
+        "aria-label": 94
+      },
+      "anim": {},
+      "areas": {
+        "nodeSkin": {
+          "visible": 1,
+          "raw": 10781283,
+          "clipped": 1152000,
+          "max": 10781283
+        },
+        "nestedSkin": {
+          "visible": 5,
+          "raw": 4246987,
+          "clipped": 277692,
+          "max": 849399
+        },
+        "allSkin": {
+          "visible": 6,
+          "raw": 15028269,
+          "clipped": 1429692,
+          "max": 10781283
+        },
+        "preview": {
+          "visible": 12,
+          "raw": 3382170,
+          "clipped": 124467,
+          "max": 124303
+        },
+        "selected": {
+          "visible": 12,
+          "raw": 3382170,
+          "clipped": 124467,
+          "max": 124303
+        },
+        "text": {
+          "visible": 10,
+          "raw": 5694205,
+          "clipped": 929438,
+          "max": 2613888
+        },
+        "face": {
+          "visible": 3,
+          "raw": 357919,
+          "clipped": 1870,
+          "max": 87864
+        }
+      }
+    },
+    {
+      "label": "base_plus_hide_nested_previews",
+      "frame": {
+        "fps": 40.7,
+        "frames": 61,
+        "avgMs": 24.7,
+        "p90Ms": 27.2,
+        "p99Ms": 29.1,
+        "over100": 0
+      },
+      "attrs": {
+        "d": 366,
+        "aria-label": 188
+      },
+      "anim": {},
+      "areas": {
+        "nodeSkin": {
+          "visible": 1,
+          "raw": 10781283,
+          "clipped": 1152000,
+          "max": 10781283
+        },
+        "nestedSkin": {
+          "visible": 5,
+          "raw": 4246987,
+          "clipped": 277692,
+          "max": 849399
+        },
+        "allSkin": {
+          "visible": 6,
+          "raw": 15028269,
+          "clipped": 1429692,
+          "max": 10781283
+        },
+        "preview": {
+          "visible": 12,
+          "raw": 3382170,
+          "clipped": 124467,
+          "max": 124303
+        },
+        "selected": {
+          "visible": 12,
+          "raw": 3382170,
+          "clipped": 124467,
+          "max": 124303
+        },
+        "text": {
+          "visible": 10,
+          "raw": 5694205,
+          "clipped": 929438,
+          "max": 2613888
+        },
+        "face": {
+          "visible": 3,
+          "raw": 357919,
+          "clipped": 1870,
+          "max": 87864
+        }
+      }
+    }
+  ]
+}

@@ -1,0 +1,190 @@
+{
+  "selectedPreviewIds": 88,
+  "restored": {
+    "viewport": {
+      "x": -6388.46511627907,
+      "y": -6438.46511627907,
+      "scale": 1.372093023255814
+    },
+    "selectionCount": 1
+  },
+  "results": [
+    {
+      "label": "baseline_scale12_current",
+      "viewport": {
+        "x": -60550.4,
+        "y": -59361.1,
+        "scale": 12
+      },
+      "frame": {
+        "fps": 3.8,
+        "frames": 5,
+        "avgMs": 292.9,
+        "p90Ms": 361.6,
+        "p99Ms": 361.6,
+        "over100": 5
+      },
+      "attrs": {
+        "d": 30,
+        "aria-label": 94
+      },
+      "counts": {
+        "states": 6,
+        "offscreenClass": 0,
+        "nestedPreview": 88,
+        "selected": 176,
+        "animations": 88
+      },
+      "areas": {
+        "allSkin": {
+          "visible": 3,
+          "offscreen": 3,
+          "raw": 27383275,
+          "clipped": 2117667
+        },
+        "nodeSkin": {
+          "visible": 1,
+          "offscreen": 0,
+          "raw": 19644768,
+          "clipped": 1152000
+        },
+        "nestedSkin": {
+          "visible": 2,
+          "offscreen": 3,
+          "raw": 7738507,
+          "clipped": 965667
+        },
+        "preview": {
+          "visible": 16,
+          "offscreen": 72,
+          "raw": 6162722,
+          "clipped": 802354
+        },
+        "text": {
+          "visible": 18,
+          "offscreen": 76,
+          "raw": 10375509,
+          "clipped": 1491919
+        }
+      }
+    },
+    {
+      "label": "cull_offscreen_softbody_skin_and_step",
+      "viewport": {
+        "x": -60550.4,
+        "y": -59361.1,
+        "scale": 12
+      },
+      "frame": {
+        "fps": 3.8,
+        "frames": 5,
+        "avgMs": 312.8,
+        "p90Ms": 334.5,
+        "p99Ms": 334.5,
+        "over100": 5
+      },
+      "attrs": {
+        "aria-label": 188,
+        "d": 15
+      },
+      "counts": {
+        "states": 6,
+        "offscreenClass": 3,
+        "nestedPreview": 88,
+        "selected": 176,
+        "animations": 88
+      },
+      "areas": {
+        "allSkin": {
+          "visible": 3,
+          "offscreen": 3,
+          "raw": 27383275,
+          "clipped": 2117667
+        },
+        "nodeSkin": {
+          "visible": 1,
+          "offscreen": 0,
+          "raw": 19644768,
+          "clipped": 1152000
+        },
+        "nestedSkin": {
+          "visible": 2,
+          "offscreen": 3,
+          "raw": 7738507,
+          "clipped": 965667
+        },
+        "preview": {
+          "visible": 16,
+          "offscreen": 72,
+          "raw": 6162722,
+          "clipped": 802354
+        },
+        "text": {
+          "visible": 18,
+          "offscreen": 76,
+          "raw": 10375509,
+          "clipped": 1491919
+        }
+      }
+    },
+    {
+      "label": "cull_tiny_visible_slice_too",
+      "viewport": {
+        "x": -60550.4,
+        "y": -59361.1,
+        "scale": 12
+      },
+      "frame": {
+        "fps": 3.8,
+        "frames": 5,
+        "avgMs": 314.4,
+        "p90Ms": 343.8,
+        "p99Ms": 343.8,
+        "over100": 5
+      },
+      "attrs": {
+        "aria-label": 188,
+        "d": 15
+      },
+      "counts": {
+        "states": 6,
+        "offscreenClass": 3,
+        "nestedPreview": 88,
+        "selected": 176,
+        "animations": 88
+      },
+      "areas": {
+        "allSkin": {
+          "visible": 3,
+          "offscreen": 3,
+          "raw": 27383275,
+          "clipped": 2117667
+        },
+        "nodeSkin": {
+          "visible": 1,
+          "offscreen": 0,
+          "raw": 19644768,
+          "clipped": 1152000
+        },
+        "nestedSkin": {
+          "visible": 2,
+          "offscreen": 3,
+          "raw": 7738507,
+          "clipped": 965667
+        },
+        "preview": {
+          "visible": 16,
+          "offscreen": 72,
+          "raw": 6162722,
+          "clipped": 802354
+        },
+        "text": {
+          "visible": 18,
+          "offscreen": 76,
+          "raw": 10375509,
+          "clipped": 1491919
+        }
+      }
+    }
+  ]
+}
