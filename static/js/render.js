@@ -121,7 +121,6 @@ function powanFaceMetrics(layout) {
   return {
     faceSize: Math.round(base),
     bodySize: Math.round(bodyBase),
-    codeSize: Math.round(Math.max(4, Math.min(28, base * 0.76))),
   };
 }
 
@@ -142,10 +141,12 @@ function applyPowanVisualMetrics(element, layout, { kind = "node", depth = 0, so
     2,
     Math.min(isPreview ? 7 : isNested ? 10 : 12, shortSide * 0.1),
   );
+  // code文字は常に顔文字の0.78倍。階層が変わっても比率を一定に保つ。
+  const codeLabelSize = Math.max(1, Math.round(faceSize * 0.78));
   element.style.setProperty("--powan-face-size", `${Math.round(faceSize)}px`);
   element.style.setProperty("--powan-body-size", `${Math.round(bodySize)}px`);
   element.style.setProperty("--powan-drag-hit-size", `${dragHitSize.toFixed(1)}px`);
-  element.style.setProperty("--powan-code-label-size", `${metrics.codeSize}px`);
+  element.style.setProperty("--powan-code-label-size", `${codeLabelSize}px`);
   element.style.setProperty("--powan-morph-duration", `${isPreview ? 8.4 + depth * 0.35 : isNested ? 7.8 : 7}s`);
   element.style.setProperty("--powan-breathe-duration", `${isPreview ? 5.2 + depth * 0.24 : isNested ? 4.8 : 4.5}s`);
   element.style.setProperty("--powan-breathe-scale-start", "1 1");

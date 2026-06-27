@@ -25,6 +25,11 @@ var powanSoftBodyView = {
       return null;
     }
     const state = this.createState(element, layout);
+    // 静止スキンはアニメしないので、脈動(breathing)で歪んだ1フレームを焼き込まない。
+    // 歪みのない中央楕円で描き直す（雲が要素中心に揃い、文字が上にズレない）。
+    state.isStatic = true;
+    state.softBody = powanSoftBody.create(state.width, state.height);
+    this.writePath(state);
     element.classList.add("softbody-visual");
     return state;
   },
@@ -147,10 +152,13 @@ var powanSoftBodyView = {
     }
     state.width = dimensions.width;
     state.height = dimensions.height;
-    state.softBody = powanSoftBody.applyBreathing(
-      powanSoftBody.create(dimensions.width, dimensions.height),
-      time,
-    );
+    // 静止スキンは脈動の歪みを焼き込まない（雲が要素中心に揃う）。
+    state.softBody = state.isStatic
+      ? powanSoftBody.create(dimensions.width, dimensions.height)
+      : powanSoftBody.applyBreathing(
+          powanSoftBody.create(dimensions.width, dimensions.height),
+          time,
+        );
     this.setSkinSize(state);
     this.writePath(state);
     return state;
@@ -245,12 +253,21 @@ var powanSoftBodyView = {
     if (!state?.element) {
       return;
     }
-    const style = getComputedStyle(state.element);
-    const accent = style.getPropertyValue("--accent").trim() || "#8ddcff";
-    state.fillStyle = style.getPropertyValue("--node-color").trim() || "#ffffff";
+    const element = state.element;
+    // インライン値を優先して読む。要素がまだDOMに挿入されていない(detached)とき
+    // getComputedStyleはカスタムプロパティを空で返すため、白に化けてしまう。
+    const readVar = (name) => {
+      const inline = element.style.getPropertyValue(name).trim();
+      if (inline) {
+        return inline;
+      }
+      return getComputedStyle(element).getPropertyValue(name).trim();
+    };
+    const accent = readVar("--accent") || "#8ddcff";
+    state.fillStyle = readVar("--node-color") || "#ffffff";
     state.strokeStyle = accent;
     state.selectedStrokeStyle = accent;
-    state.selected = state.element.classList.contains("selected");
+    state.selected = element.classList.contains("selected");
   },
 
   writePath(state) {

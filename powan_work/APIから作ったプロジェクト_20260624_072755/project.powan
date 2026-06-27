@@ -3,9 +3,9 @@
   "canvas": {
     "background": "#e8f8ff",
     "viewport": {
-      "x": -11655,
-      "y": -11612,
-      "scale": 2.4276,
+      "x": -15436,
+      "y": -15097,
+      "scale": 3.1109,
       "openParentId": null
     },
     "workspace": {
@@ -93,7 +93,7 @@
       "id": "node-16f675f28a",
       "title": "領土",
       "body": "国家が立つ場所。土地、境界、資源、生活圏を持つ土台。",
-      "code": "",
+      "code": "a",
       "parent": "node-7001a6d464",
       "children": [
         "node-df8ecf1154",
@@ -483,7 +483,7 @@
       "id": "node-d9fcec08d2",
       "title": "資源",
       "body": "水、鉱物、森林、農地、海産物など、暮らしや産業を支える領土の恵み。",
-      "code": "",
+      "code": "a",
       "parent": "node-16f675f28a",
       "children": [],
       "style": {
@@ -3695,7 +3695,7 @@
       "title": "移動圏",
       "body": "道路、鉄道、港、空港、徒歩の道など、人や物が行き来して生活圏をつなぐ流れ。",
       "powanKind": "nerve",
-      "code": "",
+      "code": "a",
       "parent": "node-cb27589604",
       "children": [],
       "style": {

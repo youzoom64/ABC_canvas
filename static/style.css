@@ -1358,7 +1358,6 @@ body.resizing-conversation {
   position: absolute;
   inset: 0;
   transform-origin: 0 0;
-  will-change: transform;
 }
 
 .world-boundary {
@@ -2846,9 +2845,13 @@ body.panning-canvas * {
 
 .nested-meaning > .node-body,
 .nested-preview-meaning > .node-body {
-  width: 100%;
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  width: 88%;
   min-height: 2.8em;
   height: 2.8em;
+  transform: translate(-50%, -50%);
   color: rgba(35, 66, 78, 0.84);
   font-size: clamp(6px, calc(var(--powan-body-size, 8px) * 0.92 * var(--powan-title-font-scale, 1)), 36px);
   font-weight: 700;
@@ -2866,10 +2869,7 @@ body.panning-canvas * {
 }
 
 .nested-preview-meaning > .node-body {
-  position: absolute;
-  inset: 12% 10% 10%;
-  width: auto;
-  height: auto;
+  height: 2.4em;
   min-height: 0;
   padding: 0;
   color: rgba(35, 66, 78, 0.72);
@@ -2879,6 +2879,22 @@ body.panning-canvas * {
   display: flex;
   align-items: center;
   justify-content: center;
+}
+
+/* ひ孫(プレビュー深さ2)は1行のみ。はみ出しは…省略。極小でも行が潰れない。
+   × scale を残しメニュー連動を維持。 */
+.nested-preview-meaning[data-preview-depth="2"] > .node-body {
+  display: block;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  text-align: center;
+  /* 箱を1行ぶんの高さにし、line-height=高さで1行を縦中央に固定。
+     2.4em(2行ぶん)のままだと1行が箱の上に張り付いて上に寄る。 */
+  height: 1.3em;
+  min-height: 0;
+  line-height: 1.3em;
+  font-size: clamp(2px, calc(var(--powan-body-size, 5px) * 0.5 * var(--powan-title-font-scale, 1)), 14px);
 }
 
 .nested-preview-simple > .node-body {
@@ -3217,8 +3233,8 @@ body.panning-canvas * {
 .nested-preview-meaning.has-code::after {
   content: "code";
   position: absolute;
-  top: 7%;
-  right: 10%;
+  top: 14%;
+  right: 9%;
   z-index: 34;
   color: #d4a300;
   font-size: var(--powan-code-label-size, 10px);
@@ -3230,15 +3246,15 @@ body.panning-canvas * {
 
 .nested-meaning.has-code::after,
 .nested-preview-meaning.has-code::after {
-  top: -8px;
+  top: 1%;
   right: 8%;
-  font-size: max(10px, var(--powan-code-label-size, 10px));
+  font-size: var(--powan-code-label-size, 10px);
 }
 
 .nested-preview-simple.has-code::after {
-  top: -7px;
+  top: 10%;
   right: 6%;
-  font-size: max(9px, var(--powan-code-label-size, 9px));
+  font-size: var(--powan-code-label-size, 9px);
 }
 
 .node > .node-body,
@@ -3248,6 +3264,21 @@ body.panning-canvas * {
 .nested-meaning.softbody-visual > .node-body,
 .nested-preview-meaning.softbody-visual > .node-body {
   z-index: 22;
+}
+
+.node > .powan-face-button,
+.nested-meaning > .powan-face-button,
+.nested-preview-meaning > .powan-face-button {
+  z-index: 48;
+}
+
+.nested-meaning.softbody-visual > .node-body,
+.nested-preview-meaning.softbody-visual > .node-body {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  width: 88%;
+  transform: translate(-50%, -50%);
 }
 
 .node::before,
