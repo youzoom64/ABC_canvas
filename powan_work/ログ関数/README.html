@@ -1,0 +1,481 @@
+<!doctype html>
+<html lang="ja">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Python共通ログ関数 README</title>
+  <style>
+    :root {
+      color-scheme: light;
+      --ink: #18212f;
+      --muted: #5b6472;
+      --line: #d8dee8;
+      --paper: #f7f9fc;
+      --panel: #ffffff;
+      --accent: #1677c9;
+      --accent-soft: #e7f2ff;
+      --ok: #087443;
+      --warn: #9b5d00;
+      --bad: #b42318;
+      --code: #101828;
+    }
+
+    * {
+      box-sizing: border-box;
+    }
+
+    body {
+      margin: 0;
+      font-family: "Yu Gothic", "Meiryo", system-ui, -apple-system, BlinkMacSystemFont, sans-serif;
+      color: var(--ink);
+      background: var(--paper);
+      line-height: 1.7;
+    }
+
+    main {
+      max-width: 1080px;
+      margin: 0 auto;
+      padding: 40px 24px 64px;
+    }
+
+    header {
+      padding: 28px 0 24px;
+      border-bottom: 1px solid var(--line);
+    }
+
+    h1 {
+      margin: 0 0 10px;
+      font-size: 2rem;
+      letter-spacing: 0;
+    }
+
+    h2 {
+      margin: 36px 0 12px;
+      padding-top: 8px;
+      font-size: 1.35rem;
+      border-top: 1px solid var(--line);
+      letter-spacing: 0;
+    }
+
+    h3 {
+      margin: 24px 0 8px;
+      font-size: 1rem;
+      letter-spacing: 0;
+    }
+
+    p {
+      margin: 0 0 14px;
+    }
+
+    code,
+    pre {
+      font-family: Consolas, "Cascadia Mono", "Courier New", monospace;
+    }
+
+    code {
+      padding: 0.1em 0.32em;
+      border-radius: 4px;
+      background: #eef2f7;
+      color: var(--code);
+      font-size: 0.94em;
+    }
+
+    pre {
+      overflow-x: auto;
+      margin: 12px 0 22px;
+      padding: 16px;
+      border: 1px solid #202939;
+      border-radius: 8px;
+      background: #111827;
+      color: #f8fafc;
+      line-height: 1.55;
+      tab-size: 4;
+    }
+
+    pre code {
+      padding: 0;
+      background: transparent;
+      color: inherit;
+      font-size: 0.92rem;
+    }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      margin: 12px 0 22px;
+      background: var(--panel);
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      overflow: hidden;
+    }
+
+    th,
+    td {
+      padding: 10px 12px;
+      border-bottom: 1px solid var(--line);
+      vertical-align: top;
+      text-align: left;
+    }
+
+    th {
+      background: #eef4fb;
+      font-weight: 700;
+      white-space: nowrap;
+    }
+
+    tr:last-child td {
+      border-bottom: 0;
+    }
+
+    ul {
+      margin: 8px 0 18px;
+      padding-left: 1.4rem;
+    }
+
+    .lead {
+      max-width: 760px;
+      color: var(--muted);
+      font-size: 1.05rem;
+    }
+
+    .panel {
+      margin: 20px 0;
+      padding: 18px;
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      background: var(--panel);
+    }
+
+    .note {
+      border-color: #b7d8ff;
+      background: var(--accent-soft);
+    }
+
+    .success {
+      border-color: #b8e5cb;
+      background: #edfdf3;
+    }
+
+    .warning {
+      border-color: #f4cf8f;
+      background: #fff7e6;
+    }
+
+    .pill-row {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      margin: 14px 0 0;
+    }
+
+    .pill {
+      display: inline-flex;
+      align-items: center;
+      min-height: 28px;
+      padding: 3px 10px;
+      border: 1px solid var(--line);
+      border-radius: 999px;
+      background: #fff;
+      color: var(--muted);
+      font-size: 0.92rem;
+    }
+
+    .level-trace { color: #475467; }
+    .level-debug { color: #0066a1; }
+    .level-info { color: var(--ok); }
+    .level-warning { color: var(--warn); }
+    .level-error { color: var(--bad); }
+    .level-critical { color: #7a271a; font-weight: 700; }
+  </style>
+</head>
+<body>
+  <main>
+    <header>
+      <h1>Python共通ログ関数</h1>
+      <p class="lead">
+        複数のPythonアプリケーションで同じ感覚で使える、標準 <code>logging</code> の入口です。
+        コンソール表示、ファイル保存、ログレベル、例外記録、アプリ別設定をひとつの呼び口にまとめます。
+      </p>
+      <div class="pill-row" aria-label="主な機能">
+        <span class="pill">get_logger</span>
+        <span class="pill">configure_logging</span>
+        <span class="pill">TRACE対応</span>
+        <span class="pill">ファイル出力</span>
+        <span class="pill">例外記録</span>
+        <span class="pill">環境変数設定</span>
+      </div>
+    </header>
+
+    <section>
+      <h2>最短の使い方</h2>
+      <p>
+        ふだんは <code>get_logger("アプリ名")</code> を呼ぶだけで始められます。
+        車のエンジン始動ボタンみたいに、まずここを押せばログが走り出します。
+      </p>
+      <pre><code class="language-python">from common_logging import get_logger
+
+logger = get_logger("my_app")
+
+logger.info("起動しました")
+logger.warning("注意が必要です")
+logger.error("処理に失敗しました")</code></pre>
+    </section>
+
+    <section>
+      <h2>ファイルにも保存する</h2>
+      <p>
+        <code>file=True</code> を渡すと、アプリ名ごとのログファイルを作ります。
+        保存先は <code>log_dir</code> で指定できます。
+      </p>
+      <pre><code class="language-python">from common_logging import get_logger
+
+logger = get_logger(
+    "my_app",
+    level="DEBUG",
+    file=True,
+    log_dir="logs",
+)
+
+logger.debug("開発中の細かい情報")
+logger.info("通常の記録")</code></pre>
+
+      <div class="panel note">
+        <p>
+          ファイル名を指定しない場合は、アプリ名から安全なファイル名を作って
+          <code>logs/my_app.log</code> のように保存します。
+        </p>
+      </div>
+    </section>
+
+    <section>
+      <h2>細かく設定する</h2>
+      <p>
+        設定内容や作られたハンドラまで見たい時は <code>configure_logging</code> を使います。
+        これは整備モードです。どういうログ配線になったかを確認できます。
+      </p>
+      <pre><code class="language-python">from common_logging import configure_logging
+
+setup = configure_logging(
+    "batch_worker",
+    app={
+        "level": "INFO",
+        "console": True,
+        "file": True,
+        "log_dir": "logs",
+        "rotation": "size",
+        "max_bytes": 1_000_000,
+        "backup_count": 3,
+    },
+)
+
+logger = setup.logger
+logger.info("設定済みロガーで開始")
+
+print(setup.profile.as_dict())</code></pre>
+    </section>
+
+    <section>
+      <h2>例外を記録する</h2>
+      <p>
+        例外は <code>log_exception</code> に渡すと、例外名、メッセージ、スタックトレース、
+        任意の文脈情報をまとめて残せます。事故記録のブラックボックスです。
+      </p>
+      <pre><code class="language-python">from common_logging import get_logger, log_exception
+
+logger = get_logger("my_app", file=True)
+
+try:
+    1 / 0
+except Exception as exc:
+    log_exception(
+        logger,
+        "計算に失敗しました",
+        exc,
+        context={
+            "job_id": "daily-001",
+            "user_id": 123,
+            "api_token": "secret-value",
+        },
+    )</code></pre>
+
+      <div class="panel success">
+        <p>
+          <code>password</code>、<code>token</code>、<code>secret</code>、<code>api_key</code>
+          などを含むキーは <code>***</code> にマスクします。
+        </p>
+      </div>
+    </section>
+
+    <section>
+      <h2>ログレベル</h2>
+      <p>
+        6段階のログレベルを扱います。<code>TRACE</code> は <code>DEBUG</code> より細かい追跡用です。
+      </p>
+      <table>
+        <thead>
+          <tr>
+            <th>レベル</th>
+            <th>意味</th>
+            <th>使う場面</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td class="level-trace"><code>TRACE</code></td>
+            <td>かなり細かい実行追跡</td>
+            <td>関数の入口、分岐、細部の流れを追う</td>
+          </tr>
+          <tr>
+            <td class="level-debug"><code>DEBUG</code></td>
+            <td>開発中の状態確認</td>
+            <td>変数、設定、処理途中の値を見る</td>
+          </tr>
+          <tr>
+            <td class="level-info"><code>INFO</code></td>
+            <td>通常の記録</td>
+            <td>起動、完了、主要な処理の通過を残す</td>
+          </tr>
+          <tr>
+            <td class="level-warning"><code>WARNING</code></td>
+            <td>注意が必要</td>
+            <td>処理は続けられるが、放置すると危ない</td>
+          </tr>
+          <tr>
+            <td class="level-error"><code>ERROR</code></td>
+            <td>処理失敗</td>
+            <td>一部処理が失敗したが、アプリ全体は続く可能性がある</td>
+          </tr>
+          <tr>
+            <td class="level-critical"><code>CRITICAL</code></td>
+            <td>致命的異常</td>
+            <td>アプリ継続が危ない、すぐ見るべき状態</td>
+          </tr>
+        </tbody>
+      </table>
+    </section>
+
+    <section>
+      <h2>設定キー</h2>
+      <table>
+        <thead>
+          <tr>
+            <th>キー</th>
+            <th>例</th>
+            <th>説明</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td><code>level</code></td>
+            <td><code>"DEBUG"</code></td>
+            <td>出力する最小ログレベルです。</td>
+          </tr>
+          <tr>
+            <td><code>console</code></td>
+            <td><code>True</code></td>
+            <td>コンソールへ表示するかを指定します。</td>
+          </tr>
+          <tr>
+            <td><code>file</code></td>
+            <td><code>True</code></td>
+            <td>ログファイルへ保存するかを指定します。</td>
+          </tr>
+          <tr>
+            <td><code>log_dir</code></td>
+            <td><code>"logs"</code></td>
+            <td>ログファイルの保存先ディレクトリです。</td>
+          </tr>
+          <tr>
+            <td><code>filename</code></td>
+            <td><code>"app.log"</code></td>
+            <td>保存ファイル名です。省略時はアプリ名から作ります。</td>
+          </tr>
+          <tr>
+            <td><code>format</code></td>
+            <td><code>"%(asctime)s %(levelname)s %(message)s"</code></td>
+            <td>標準 <code>logging.Formatter</code> の書式です。</td>
+          </tr>
+          <tr>
+            <td><code>rotation</code></td>
+            <td><code>"none"</code> / <code>"size"</code> / <code>"time"</code></td>
+            <td>ログローテーション方式です。</td>
+          </tr>
+          <tr>
+            <td><code>max_bytes</code></td>
+            <td><code>1000000</code></td>
+            <td><code>rotation="size"</code> の最大サイズです。</td>
+          </tr>
+          <tr>
+            <td><code>backup_count</code></td>
+            <td><code>3</code></td>
+            <td>ローテーション時に残す世代数です。</td>
+          </tr>
+          <tr>
+            <td><code>propagate</code></td>
+            <td><code>False</code></td>
+            <td>親ロガーへ伝播するかを指定します。</td>
+          </tr>
+        </tbody>
+      </table>
+    </section>
+
+    <section>
+      <h2>環境変数で上書きする</h2>
+      <p>
+        <code>LOG_</code> で始まる環境変数を使うと、実行環境ごとに設定を差し替えられます。
+      </p>
+      <pre><code class="language-powershell">$env:LOG_LEVEL = "DEBUG"
+$env:LOG_FILE = "true"
+$env:LOG_DIR = "logs"
+$env:LOG_ROTATION = "size"
+$env:LOG_MAX_BYTES = "1000000"
+$env:LOG_BACKUP_COUNT = "3"</code></pre>
+
+      <pre><code class="language-python">from common_logging import configure_logging
+
+setup = configure_logging("my_app")
+setup.logger.debug("環境変数でDEBUGが有効になります")</code></pre>
+    </section>
+
+    <section>
+      <h2>JSONまたはTOML設定ファイル</h2>
+      <p>
+        アプリ別の設定ファイルを渡すこともできます。JSONはそのまま使えます。
+        TOMLはPython 3.11以上の <code>tomllib</code> が必要です。
+      </p>
+      <pre><code class="language-json">{
+  "level": "INFO",
+  "console": true,
+  "file": true,
+  "log_dir": "logs",
+  "filename": "my_app.log"
+}</code></pre>
+
+      <pre><code class="language-python">from common_logging import configure_logging
+
+setup = configure_logging("my_app", app="logging.json")
+setup.logger.info("設定ファイルから起動しました")</code></pre>
+    </section>
+
+    <section>
+      <h2>おすすめの配置</h2>
+      <p>
+        複数アプリで使い回すなら、共通モジュールとして <code>common_logging.py</code>
+        のような名前で置くのが分かりやすいです。
+      </p>
+      <pre><code>your_project/
+  common_logging.py
+  app_a.py
+  app_b.py
+  logs/</code></pre>
+
+      <div class="panel warning">
+        <p>
+          まずは <code>get_logger("アプリ名")</code> から使い始めるのがおすすめです。
+          必要になったらファイル保存、ローテーション、環境変数上書きを足していくと、無理なく育てられます。
+        </p>
+      </div>
+    </section>
+  </main>
+</body>
+</html>
