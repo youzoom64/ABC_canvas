@@ -1314,6 +1314,7 @@ def ensure_project(project: str) -> Path:
 
 
 STORE = PowanStore(POWAN_WORK_ROOT, DEFAULT_FILE, blank_document, log_server_event)
+STORE.recover_interrupted_work(reason="server-startup")
 CODEX_BRIDGE = CodexPowanBridge(log_server_event)
 
 

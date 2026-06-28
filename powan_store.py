@@ -92,6 +92,168 @@ class PowanStore:
         finally:
             connection.close()
 
+    def recover_interrupted_work(self, project: str | None = None, reason: str = "startup-recovery") -> dict[str, Any]:
+        projects = [self.safe_project_name(project)] if project else [
+            path.name
+            for path in self.work_root.iterdir()
+            if path.is_dir() and (path / "powan.db").is_file()
+        ]
+        now = datetime.now().isoformat(timespec="milliseconds")
+        error_text = (
+            "前回のサーバープロセス終了または再起動で、この作業を受け取る実行プロセスが消えました。"
+            "DB上の作業中状態だけが残っていたため失敗扱いに回収しました。"
+        )
+        summary: dict[str, Any] = {
+            "projectCount": 0,
+            "agentRunCount": 0,
+            "dispatchCount": 0,
+            "sessionCount": 0,
+            "projects": [],
+        }
+
+        for project_name in projects:
+            try:
+                with self.session(project_name) as connection:
+                    running_runs = connection.execute(
+                        """
+                        SELECT id FROM agent_runs
+                        WHERE status = 'running'
+                        """
+                    ).fetchall()
+                    for row in running_runs:
+                        connection.execute(
+                            """
+                            UPDATE agent_runs
+                            SET status = 'failed',
+                                error_text = CASE
+                                  WHEN COALESCE(error_text, '') = '' THEN ?
+                                  ELSE error_text || char(10) || ?
+                                END,
+                                updated_at = ?
+                            WHERE id = ?
+                            """,
+                            (error_text, error_text, now, int(row["id"])),
+                        )
+
+                    active_dispatches = connection.execute(
+                        """
+                        SELECT id, session_id, document_name, parent_id, child_id, error_text
+                        FROM child_command_dispatches
+                        WHERE status NOT IN ('completed', 'failed', 'cancelled', 'skipped')
+                        """
+                    ).fetchall()
+                    for row in active_dispatches:
+                        existing_error = str(row["error_text"] or "").strip()
+                        next_error = error_text if not existing_error else f"{existing_error}\n{error_text}"
+                        dispatch_id = int(row["id"])
+                        connection.execute(
+                            """
+                            UPDATE child_command_dispatches
+                            SET status = 'failed',
+                                error_text = ?,
+                                replied_at = COALESCE(replied_at, ?),
+                                updated_at = ?
+                            WHERE id = ?
+                            """,
+                            (next_error, now, now, dispatch_id),
+                        )
+                        connection.execute(
+                            """
+                            INSERT INTO child_command_events(
+                              session_id, dispatch_id, document_name, parent_id, child_id,
+                              event_type, payload_json, created_at
+                            )
+                            VALUES (?, ?, ?, ?, ?, 'recovered-failed', ?, ?)
+                            """,
+                            (
+                                row["session_id"],
+                                dispatch_id,
+                                row["document_name"],
+                                row["parent_id"],
+                                row["child_id"],
+                                json.dumps(
+                                    {
+                                        "status": "failed",
+                                        "reason": reason,
+                                        "error": error_text,
+                                    },
+                                    ensure_ascii=False,
+                                    separators=(",", ":"),
+                                ),
+                                now,
+                            ),
+                        )
+
+                    active_sessions = connection.execute(
+                        """
+                        SELECT id, document_name, parent_id
+                        FROM child_command_sessions
+                        WHERE status NOT IN ('completed', 'failed', 'cancelled')
+                        """
+                    ).fetchall()
+                    for row in active_sessions:
+                        connection.execute(
+                            """
+                            UPDATE child_command_sessions
+                            SET status = 'failed',
+                                updated_at = ?,
+                                completed_at = COALESCE(completed_at, ?)
+                            WHERE document_name = ? AND id = ?
+                            """,
+                            (now, now, row["document_name"], row["id"]),
+                        )
+                        connection.execute(
+                            """
+                            INSERT INTO child_command_events(
+                              session_id, dispatch_id, document_name, parent_id, child_id,
+                              event_type, payload_json, created_at
+                            )
+                            VALUES (?, NULL, ?, ?, NULL, 'session-recovered-failed', ?, ?)
+                            """,
+                            (
+                                row["id"],
+                                row["document_name"],
+                                row["parent_id"],
+                                json.dumps(
+                                    {
+                                        "status": "failed",
+                                        "reason": reason,
+                                        "error": error_text,
+                                    },
+                                    ensure_ascii=False,
+                                    separators=(",", ":"),
+                                ),
+                                now,
+                            ),
+                        )
+
+                project_summary = {
+                    "project": project_name,
+                    "agentRunCount": len(running_runs),
+                    "dispatchCount": len(active_dispatches),
+                    "sessionCount": len(active_sessions),
+                }
+                if any(project_summary[key] for key in ("agentRunCount", "dispatchCount", "sessionCount")):
+                    summary["projects"].append(project_summary)
+                    summary["projectCount"] += 1
+                    summary["agentRunCount"] += len(running_runs)
+                    summary["dispatchCount"] += len(active_dispatches)
+                    summary["sessionCount"] += len(active_sessions)
+            except Exception as exc:
+                self.log_event(
+                    "error",
+                    "powan-db-recover-interrupted-work-project-failed",
+                    {
+                        "project": project_name,
+                        "reason": reason,
+                        "error": repr(exc),
+                    },
+                )
+
+        if summary["agentRunCount"] or summary["dispatchCount"] or summary["sessionCount"]:
+            self.log_event("warn", "powan-db-recover-interrupted-work", {**summary, "reason": reason})
+        return summary
+
     def ensure_schema(self, connection: sqlite3.Connection) -> None:
         connection.executescript(
             """
