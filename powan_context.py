@@ -42,6 +42,8 @@ def build_powan_context(
         "children": [summarize_powan_for_prompt(child, code_limit=code_limit) for child in children],
         "userText": user_text or "",
     }
+    if children:
+        context["childCommandTemplate"] = build_child_command_template(children)
     if include_meaning_tree:
         context["meaningTree"] = build_meaning_tree_text(document, node_id)
     if include_direct_child_code:
@@ -168,6 +170,26 @@ def summarize_direct_child_code_for_prompt(
             }
         )
     return items
+
+
+def build_child_command_template(children: list[dict[str, Any]]) -> dict[str, Any]:
+    return {
+        "purpose": "直下の子ポワンへ個別指示をまとめて渡すためのJSON。instructionsのinstructionだけを埋めて、command-childrenを一回だけ実行してください。",
+        "command": "python .agents/skills/abc-powan/scripts/abc_powan_tool.py command-children --stdin-json",
+        "important": "子ごとにcommand-child-powanを繰り返さないでください。子が8個ならinstructionsを8個埋めたJSONを一回だけ送ります。受信後はアプリがDBへ全員分を保存し、0.1秒ごとに全員を開始します。",
+        "json": {
+            "instruction": "",
+            "instructions": [
+                {
+                    "childId": str(child.get("id") or ""),
+                    "title": str(child.get("title") or ""),
+                    "instruction": "",
+                }
+                for child in children
+            ],
+            "includeMeaningTree": False,
+        },
+    }
 
 
 def build_meaning_tree_text(document: dict[str, Any], current_node_id: str | None) -> str:

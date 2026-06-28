@@ -221,6 +221,7 @@ class CodexPowanBridge:
         codex_command = shutil.which("codex") or shutil.which("codex.cmd") or "codex"
         output_path = Path(tempfile.gettempdir()) / f"abc_canvas_codex_{uuid4().hex}.txt"
         option_args = self.codex_option_args(model=model, reasoning_effort=reasoning_effort)
+        project_root_uri = project_root.resolve().as_uri()
         if thread_id:
             command = [
                 codex_command,
@@ -228,6 +229,8 @@ class CodexPowanBridge:
                 "resume",
                 "--json",
                 *option_args,
+                "-c",
+                f'sandboxCwd="{project_root_uri}"',
                 "--skip-git-repo-check",
                 "-o",
                 str(output_path),
@@ -264,6 +267,21 @@ class CodexPowanBridge:
         returncode = 127
         cancelled = False
         process: subprocess.Popen[str] | None = None
+        if cancel_key:
+            with self.process_lock:
+                active_process = self.active_processes.get(cancel_key)
+                if active_process and active_process.poll() is None:
+                    stderr = "Codex exec already running for this powan"
+                    return CodexRunResult(
+                        text="",
+                        thread_id=thread_id,
+                        returncode=409,
+                        stdout="",
+                        stderr=stderr,
+                        duration_ms=0,
+                        resumed=bool(thread_id),
+                        command=command,
+                    )
         try:
             process = subprocess.Popen(
                 command,

@@ -12,6 +12,8 @@ function preserveLocalNodeLayouts(nextDoc, previousDoc) {
         return node;
       }
       const nextNode = { ...node };
+      nextNode.parent = previous.parent || null;
+      nextNode.children = Array.isArray(previous.children) ? clonePlain(previous.children) : [];
       if (previous.layout) {
         nextNode.layout = clonePlain(previous.layout);
       }
@@ -273,7 +275,10 @@ var powanExplorer = {
     if (resetHistory) {
       clearDocumentHistory(`${reason}-history`);
     }
-    saveState.textContent = status;
+    saveState.textContent = preserveLocalLayouts && documentDirty ? "edited" : status;
+    if (preserveLocalLayouts && documentDirty && typeof scheduleDocumentAutoSave === "function") {
+      scheduleDocumentAutoSave(`${reason}-preserved-local-state`);
+    }
     logEvent("debug", reason, { name, nodeCount: doc.nodes.length });
   },
   setSelected(nodeId, reason = "set-selected") {

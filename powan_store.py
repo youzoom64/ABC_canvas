@@ -190,6 +190,66 @@ class PowanStore:
               updated_at TEXT NOT NULL,
               PRIMARY KEY (document_name, id)
             );
+
+            CREATE TABLE IF NOT EXISTS child_command_sessions (
+              id TEXT NOT NULL,
+              document_name TEXT NOT NULL,
+              parent_id TEXT NOT NULL,
+              status TEXT NOT NULL,
+              instruction TEXT NOT NULL DEFAULT '',
+              request_json TEXT NOT NULL DEFAULT '{}',
+              child_count INTEGER NOT NULL DEFAULT 0,
+              created_at TEXT NOT NULL,
+              updated_at TEXT NOT NULL,
+              completed_at TEXT,
+              PRIMARY KEY (document_name, id)
+            );
+
+            CREATE TABLE IF NOT EXISTS child_command_dispatches (
+              id INTEGER PRIMARY KEY AUTOINCREMENT,
+              session_id TEXT NOT NULL,
+              document_name TEXT NOT NULL,
+              parent_id TEXT NOT NULL,
+              child_id TEXT NOT NULL,
+              child_title TEXT NOT NULL DEFAULT '',
+              status TEXT NOT NULL,
+              instruction TEXT NOT NULL DEFAULT '',
+              rendered_text TEXT NOT NULL DEFAULT '',
+              conversation_id INTEGER,
+              user_message_id INTEGER,
+              assistant_message_id INTEGER,
+              agent_run_id INTEGER,
+              error_text TEXT NOT NULL DEFAULT '',
+              created_at TEXT NOT NULL,
+              sent_at TEXT,
+              started_at TEXT,
+              replied_at TEXT,
+              updated_at TEXT NOT NULL
+            );
+
+            CREATE INDEX IF NOT EXISTS idx_child_command_dispatches_session
+            ON child_command_dispatches(document_name, session_id);
+
+            CREATE INDEX IF NOT EXISTS idx_child_command_dispatches_child
+            ON child_command_dispatches(document_name, child_id, id);
+
+            CREATE TABLE IF NOT EXISTS child_command_events (
+              id INTEGER PRIMARY KEY AUTOINCREMENT,
+              session_id TEXT NOT NULL,
+              dispatch_id INTEGER,
+              document_name TEXT NOT NULL,
+              parent_id TEXT,
+              child_id TEXT,
+              event_type TEXT NOT NULL,
+              payload_json TEXT NOT NULL DEFAULT '{}',
+              created_at TEXT NOT NULL
+            );
+
+            CREATE INDEX IF NOT EXISTS idx_child_command_events_session
+            ON child_command_events(document_name, session_id, id);
+
+            CREATE INDEX IF NOT EXISTS idx_child_command_events_dispatch
+            ON child_command_events(dispatch_id, id);
             """
         )
         connection.execute(
@@ -948,6 +1008,465 @@ class PowanStore:
             "status": status,
             "createdAt": now,
         }
+
+    def start_agent_run(
+        self,
+        project: str,
+        conversation_id: int,
+        powan_id: str,
+        prompt_payload: dict[str, Any],
+    ) -> dict[str, Any]:
+        now = datetime.now().isoformat(timespec="milliseconds")
+        with self.session(project) as connection:
+            cursor = connection.execute(
+                """
+                INSERT INTO agent_runs(
+                  conversation_id, powan_id, status, prompt_json, output_text,
+                  error_text, created_at, updated_at
+                )
+                VALUES (?, ?, 'running', ?, '', '', ?, ?)
+                """,
+                (
+                    conversation_id,
+                    powan_id,
+                    json.dumps(prompt_payload, ensure_ascii=False, separators=(",", ":")),
+                    now,
+                    now,
+                ),
+            )
+            run_id = int(cursor.lastrowid)
+        self.log_event(
+            "info",
+            "powan-db-start-agent-run",
+            {
+                "project": self.safe_project_name(project),
+                "conversationId": conversation_id,
+                "runId": run_id,
+                "nodeId": powan_id,
+                "status": "running",
+            },
+        )
+        return {
+            "id": run_id,
+            "conversationId": conversation_id,
+            "powanId": powan_id,
+            "status": "running",
+            "createdAt": now,
+        }
+
+    def finish_agent_run(
+        self,
+        project: str,
+        run_id: int,
+        status: str,
+        prompt_payload: dict[str, Any],
+        output_text: str = "",
+        error_text: str = "",
+    ) -> dict[str, Any]:
+        now = datetime.now().isoformat(timespec="milliseconds")
+        with self.session(project) as connection:
+            row = connection.execute(
+                """
+                SELECT id, conversation_id, powan_id, created_at
+                FROM agent_runs
+                WHERE id = ?
+                """,
+                (int(run_id),),
+            ).fetchone()
+            if row is None:
+                raise HTTPException(status_code=404, detail="Agent run not found")
+            connection.execute(
+                """
+                UPDATE agent_runs
+                SET status = ?,
+                    prompt_json = ?,
+                    output_text = ?,
+                    error_text = ?,
+                    updated_at = ?
+                WHERE id = ?
+                """,
+                (
+                    status,
+                    json.dumps(prompt_payload, ensure_ascii=False, separators=(",", ":")),
+                    output_text,
+                    error_text,
+                    now,
+                    int(run_id),
+                ),
+            )
+        self.log_event(
+            "info" if status == "completed" else "error" if status == "failed" else "info",
+            "powan-db-finish-agent-run",
+            {
+                "project": self.safe_project_name(project),
+                "conversationId": int(row["conversation_id"]),
+                "runId": int(run_id),
+                "nodeId": row["powan_id"],
+                "status": status,
+                "outputLength": len(output_text),
+                "errorLength": len(error_text),
+            },
+        )
+        return {
+            "id": int(run_id),
+            "conversationId": int(row["conversation_id"]),
+            "powanId": row["powan_id"],
+            "status": status,
+            "createdAt": row["created_at"],
+            "updatedAt": now,
+        }
+
+    def create_child_command_session(
+        self,
+        project: str,
+        document_name: str,
+        session_id: str,
+        parent_id: str,
+        instruction: str,
+        request_payload: dict[str, Any] | list[Any] | None,
+        child_count: int,
+    ) -> dict[str, Any]:
+        document_name = self.safe_powan_name(document_name)
+        now = datetime.now().isoformat(timespec="milliseconds")
+        request_json = json.dumps(request_payload or {}, ensure_ascii=False, separators=(",", ":"))
+        with self.session(project) as connection:
+            connection.execute(
+                """
+                INSERT INTO child_command_sessions(
+                  id, document_name, parent_id, status, instruction,
+                  request_json, child_count, created_at, updated_at
+                )
+                VALUES (?, ?, ?, 'received', ?, ?, ?, ?, ?)
+                """,
+                (
+                    session_id,
+                    document_name,
+                    parent_id,
+                    instruction,
+                    request_json,
+                    int(child_count),
+                    now,
+                    now,
+                ),
+            )
+            connection.execute(
+                """
+                INSERT INTO child_command_events(
+                  session_id, dispatch_id, document_name, parent_id, child_id,
+                  event_type, payload_json, created_at
+                )
+                VALUES (?, NULL, ?, ?, NULL, 'received', ?, ?)
+                """,
+                (
+                    session_id,
+                    document_name,
+                    parent_id,
+                    json.dumps({"childCount": int(child_count)}, ensure_ascii=False, separators=(",", ":")),
+                    now,
+                ),
+            )
+        self.log_event(
+            "info",
+            "powan-db-child-command-session-received",
+            {
+                "project": self.safe_project_name(project),
+                "file": document_name,
+                "sessionId": session_id,
+                "parentId": parent_id,
+                "childCount": int(child_count),
+            },
+        )
+        return {
+            "id": session_id,
+            "documentName": document_name,
+            "parentId": parent_id,
+            "status": "received",
+            "childCount": int(child_count),
+            "createdAt": now,
+        }
+
+    def update_child_command_session_status(
+        self,
+        project: str,
+        document_name: str,
+        session_id: str,
+        status: str,
+    ) -> None:
+        document_name = self.safe_powan_name(document_name)
+        now = datetime.now().isoformat(timespec="milliseconds")
+        completed_at = now if status in {"completed", "failed", "cancelled"} else None
+        with self.session(project) as connection:
+            row = connection.execute(
+                """
+                SELECT parent_id FROM child_command_sessions
+                WHERE document_name = ? AND id = ?
+                """,
+                (document_name, session_id),
+            ).fetchone()
+            parent_id = str(row["parent_id"]) if row is not None else ""
+            if completed_at:
+                connection.execute(
+                    """
+                    UPDATE child_command_sessions
+                    SET status = ?, updated_at = ?, completed_at = ?
+                    WHERE document_name = ? AND id = ?
+                    """,
+                    (status, now, completed_at, document_name, session_id),
+                )
+            else:
+                connection.execute(
+                    """
+                    UPDATE child_command_sessions
+                    SET status = ?, updated_at = ?
+                    WHERE document_name = ? AND id = ?
+                    """,
+                    (status, now, document_name, session_id),
+                )
+            connection.execute(
+                """
+                INSERT INTO child_command_events(
+                  session_id, dispatch_id, document_name, parent_id, child_id,
+                  event_type, payload_json, created_at
+                )
+                VALUES (?, NULL, ?, ?, NULL, ?, ?, ?)
+                """,
+                (
+                    session_id,
+                    document_name,
+                    parent_id,
+                    f"session-{status}",
+                    json.dumps({"status": status}, ensure_ascii=False, separators=(",", ":")),
+                    now,
+                ),
+            )
+        self.log_event(
+            "info" if status == "completed" else "error" if status == "failed" else "info",
+            "powan-db-child-command-session-status",
+            {
+                "project": self.safe_project_name(project),
+                "file": document_name,
+                "sessionId": session_id,
+                "status": status,
+            },
+        )
+
+    def record_child_command_dispatch(
+        self,
+        project: str,
+        document_name: str,
+        session_id: str,
+        parent_id: str,
+        child_id: str,
+        child_title: str,
+        instruction: str,
+        rendered_text: str,
+        conversation_id: int,
+        user_message_id: int,
+    ) -> dict[str, Any]:
+        document_name = self.safe_powan_name(document_name)
+        now = datetime.now().isoformat(timespec="milliseconds")
+        with self.session(project) as connection:
+            cursor = connection.execute(
+                """
+                INSERT INTO child_command_dispatches(
+                  session_id, document_name, parent_id, child_id, child_title,
+                  status, instruction, rendered_text, conversation_id,
+                  user_message_id, created_at, sent_at, updated_at
+                )
+                VALUES (?, ?, ?, ?, ?, 'sent', ?, ?, ?, ?, ?, ?, ?)
+                """,
+                (
+                    session_id,
+                    document_name,
+                    parent_id,
+                    child_id,
+                    child_title,
+                    instruction,
+                    rendered_text,
+                    int(conversation_id),
+                    int(user_message_id),
+                    now,
+                    now,
+                    now,
+                ),
+            )
+            dispatch_id = int(cursor.lastrowid)
+            connection.execute(
+                """
+                INSERT INTO child_command_events(
+                  session_id, dispatch_id, document_name, parent_id, child_id,
+                  event_type, payload_json, created_at
+                )
+                VALUES (?, ?, ?, ?, ?, 'sent', ?, ?)
+                """,
+                (
+                    session_id,
+                    dispatch_id,
+                    document_name,
+                    parent_id,
+                    child_id,
+                    json.dumps(
+                        {
+                            "conversationId": int(conversation_id),
+                            "userMessageId": int(user_message_id),
+                        },
+                        ensure_ascii=False,
+                        separators=(",", ":"),
+                    ),
+                    now,
+                ),
+            )
+        self.log_event(
+            "info",
+            "powan-db-child-command-dispatch-sent",
+            {
+                "project": self.safe_project_name(project),
+                "file": document_name,
+                "sessionId": session_id,
+                "dispatchId": dispatch_id,
+                "parentId": parent_id,
+                "childId": child_id,
+                "conversationId": int(conversation_id),
+                "messageId": int(user_message_id),
+            },
+        )
+        return {
+            "id": dispatch_id,
+            "sessionId": session_id,
+            "documentName": document_name,
+            "parentId": parent_id,
+            "childId": child_id,
+            "status": "sent",
+            "conversationId": int(conversation_id),
+            "userMessageId": int(user_message_id),
+            "createdAt": now,
+            "sentAt": now,
+        }
+
+    def mark_child_command_dispatch_started(self, project: str, dispatch_id: int) -> None:
+        now = datetime.now().isoformat(timespec="milliseconds")
+        with self.session(project) as connection:
+            connection.execute(
+                """
+                UPDATE child_command_dispatches
+                SET status = 'started', started_at = COALESCE(started_at, ?), updated_at = ?
+                WHERE id = ?
+                """,
+                (now, now, int(dispatch_id)),
+            )
+            row = connection.execute(
+                """
+                SELECT session_id, document_name, parent_id, child_id
+                FROM child_command_dispatches
+                WHERE id = ?
+                """,
+                (int(dispatch_id),),
+            ).fetchone()
+            if row is not None:
+                connection.execute(
+                    """
+                    INSERT INTO child_command_events(
+                      session_id, dispatch_id, document_name, parent_id, child_id,
+                      event_type, payload_json, created_at
+                    )
+                    VALUES (?, ?, ?, ?, ?, 'started', '{}', ?)
+                    """,
+                    (
+                        row["session_id"],
+                        int(dispatch_id),
+                        row["document_name"],
+                        row["parent_id"],
+                        row["child_id"],
+                        now,
+                    ),
+                )
+        self.log_event(
+            "info",
+            "powan-db-child-command-dispatch-started",
+            {"project": self.safe_project_name(project), "dispatchId": int(dispatch_id)},
+        )
+
+    def mark_child_command_dispatch_replied(
+        self,
+        project: str,
+        dispatch_id: int,
+        status: str,
+        assistant_message_id: int | None = None,
+        agent_run_id: int | None = None,
+        error_text: str = "",
+    ) -> None:
+        now = datetime.now().isoformat(timespec="milliseconds")
+        clean_status = status if status in {"completed", "failed", "cancelled"} else "completed"
+        with self.session(project) as connection:
+            connection.execute(
+                """
+                UPDATE child_command_dispatches
+                SET status = ?,
+                    assistant_message_id = ?,
+                    agent_run_id = ?,
+                    error_text = ?,
+                    replied_at = ?,
+                    updated_at = ?
+                WHERE id = ?
+                """,
+                (
+                    clean_status,
+                    assistant_message_id,
+                    agent_run_id,
+                    error_text,
+                    now,
+                    now,
+                    int(dispatch_id),
+                ),
+            )
+            row = connection.execute(
+                """
+                SELECT session_id, document_name, parent_id, child_id
+                FROM child_command_dispatches
+                WHERE id = ?
+                """,
+                (int(dispatch_id),),
+            ).fetchone()
+            if row is not None:
+                connection.execute(
+                    """
+                    INSERT INTO child_command_events(
+                      session_id, dispatch_id, document_name, parent_id, child_id,
+                      event_type, payload_json, created_at
+                    )
+                    VALUES (?, ?, ?, ?, ?, 'replied', ?, ?)
+                    """,
+                    (
+                        row["session_id"],
+                        int(dispatch_id),
+                        row["document_name"],
+                        row["parent_id"],
+                        row["child_id"],
+                        json.dumps(
+                            {
+                                "status": clean_status,
+                                "assistantMessageId": assistant_message_id,
+                                "agentRunId": agent_run_id,
+                                "error": error_text,
+                            },
+                            ensure_ascii=False,
+                            separators=(",", ":"),
+                        ),
+                        now,
+                    ),
+                )
+        self.log_event(
+            "info" if clean_status == "completed" else "error",
+            "powan-db-child-command-dispatch-replied",
+            {
+                "project": self.safe_project_name(project),
+                "dispatchId": int(dispatch_id),
+                "status": clean_status,
+                "assistantMessageId": assistant_message_id,
+                "agentRunId": agent_run_id,
+                "error": error_text[:240] if error_text else "",
+            },
+        )
 
     def record_api_action(
         self,

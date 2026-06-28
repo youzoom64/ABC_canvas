@@ -53,6 +53,11 @@ var panelArrangeWorldParentSizeValue = document.querySelector("#panelArrangeWorl
 var shutdownButton = document.querySelector("#shutdownButton");
 var restartButton = document.querySelector("#restartButton");
 var saveState = document.querySelector("#saveState");
+var documentDirty = false;
+var documentDirtyRevision = 0;
+var documentAutoSaveTimer = null;
+var documentAutoSaveInFlight = false;
+var documentAutoSavePendingReason = "";
 var panel = document.querySelector("#panel");
 var panelToggleButton = document.querySelector("#panelToggleButton");
 var panelResizeHandle = document.querySelector("#panelResizeHandle");
@@ -162,12 +167,19 @@ var worldContextMenuDropCenter = null;
 var conversationNodeId = null;
 var conversationTypingTimer = null;
 var conversationTypingNodeId = null;
+var conversationTypingTabId = null;
 var conversationTypingMouthOpen = false;
 var conversationBackgroundSpeakingTimers = new Map();
 var conversationBackgroundSpeakingMouthOpenByNode = new Map();
 var conversationRequestAbortController = null;
 var conversationRequestNodeId = null;
+var conversationRequestTabId = null;
+var conversationRequestConversationId = null;
+var conversationRequestWaitingText = "";
 var conversationPendingMessage = null;
+var conversationActiveRequests = new Map();
+var conversationRequestSerial = 0;
+var conversationQueuedSends = [];
 var conversationWorkPollTimer = null;
 var conversationWorkEventSequence = 0;
 var conversationWorkPollingActive = false;
@@ -1494,8 +1506,13 @@ function isCanvasSpace(target) {
   return target === canvas || target === worldLayer;
 }
 
-function setDirty() {
+function setDirty(reason = "dirty") {
+  documentDirty = true;
+  documentDirtyRevision += 1;
   saveState.textContent = "edited";
+  if (typeof scheduleDocumentAutoSave === "function") {
+    scheduleDocumentAutoSave(reason);
+  }
 }
 
 function clonePlain(value) {

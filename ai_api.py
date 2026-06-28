@@ -517,6 +517,67 @@ class AiPowanExplorer:
             "motion": "soft",
         }
 
+    def same_optional_text(self, left: Any, right: Any) -> bool:
+        return str(left or "").strip() == str(right or "").strip()
+
+    def node_matches_create_request(self, node: dict[str, Any], request: CreatePowanRequest) -> bool:
+        if not self.same_optional_text(node.get("title"), request.title):
+            return False
+        if not self.same_optional_text(node.get("body"), request.body):
+            return False
+        if normalize_powan_kind(node.get("powanKind")) != normalize_powan_kind(request.powanKind):
+            return False
+        if str(node.get("code") or "") != str(request.code or ""):
+            return False
+        requested_language = str(request.codeLanguage or "").strip()
+        if requested_language and str(node.get("codeLanguage") or "").strip() != requested_language:
+            return False
+        return True
+
+    def matching_existing_child(self, parent_id: str, request: CreatePowanRequest) -> dict[str, Any] | None:
+        for child in self.children_of(parent_id):
+            if self.node_matches_create_request(child, request):
+                return child
+        return None
+
+    def create_or_reuse_child_node(
+        self,
+        parent_id: str,
+        request: CreatePowanRequest,
+        *,
+        arrange_after: bool = True,
+        save_after: bool = True,
+    ) -> tuple[dict[str, Any], bool]:
+        existing = self.matching_existing_child(parent_id, request)
+        if existing:
+            self.workspace.log_event(
+                "info",
+                "ai-reuse-child-powan",
+                {
+                    "project": self.project,
+                    "file": self.file,
+                    "parentId": parent_id,
+                    "nodeId": str(existing.get("id") or ""),
+                    "title": str(existing.get("title") or ""),
+                },
+            )
+            return existing, True
+        return self.create_node(request, parent_id=parent_id, arrange_after=arrange_after, save_after=save_after), False
+
+    def tree_node_create_request(self, request: PowanTreeRequest, branch: PowanTreeNode) -> CreatePowanRequest:
+        return CreatePowanRequest(
+            project=request.project,
+            file=request.file,
+            title=branch.title,
+            body=branch.body,
+            powanKind=branch.powanKind,
+            code=branch.code,
+            codeLanguage=branch.codeLanguage,
+            randomStyle=request.randomStyle,
+            layout=branch.layout,
+            style=branch.style,
+        )
+
     def create_node(
         self,
         request: CreatePowanRequest,
@@ -585,40 +646,50 @@ class AiPowanExplorer:
 
     def create_tree_children(self, node_id: str, request: PowanTreeRequest) -> list[dict[str, Any]]:
         self.node(node_id)
-        created: list[dict[str, Any]] = []
+        touched: list[dict[str, Any]] = []
+        created_count = 0
+        reused_count = 0
 
         def create_branch(parent_id: str, branch: PowanTreeNode) -> dict[str, Any]:
-            create_request = CreatePowanRequest(
-                project=request.project,
-                file=request.file,
-                title=branch.title,
-                body=branch.body,
-                powanKind=branch.powanKind,
-                code=branch.code,
-                codeLanguage=branch.codeLanguage,
-                randomStyle=request.randomStyle,
-                layout=branch.layout,
-                style=branch.style,
-            )
-            node = self.create_node(create_request, parent_id=parent_id, arrange_after=False, save_after=False)
-            created.append(node)
+            nonlocal created_count, reused_count
+            create_request = self.tree_node_create_request(request, branch)
+            node, reused = self.create_or_reuse_child_node(parent_id, create_request, arrange_after=False, save_after=False)
+            touched.append(node)
+            if reused:
+                reused_count += 1
+            else:
+                created_count += 1
             for child in branch.children:
                 create_branch(str(node["id"]), child)
             return node
 
         roots = [create_branch(node_id, child) for child in request.children]
         self.normalize_children()
-        self.save(
-            "ai-create-powan-tree",
-            {
-                "message": f"tree created: {node_id}, {len(created)} powans",
-                "nodeId": node_id,
-                "rootCount": len(roots),
-                "createdCount": len(created),
-                "arrangedParentCount": 0,
-            },
-        )
-        return created
+        if created_count:
+            self.save(
+                "ai-create-powan-tree",
+                {
+                    "message": f"tree created: {node_id}, {created_count} powans, reused {reused_count}",
+                    "nodeId": node_id,
+                    "rootCount": len(roots),
+                    "createdCount": created_count,
+                    "reusedCount": reused_count,
+                    "arrangedParentCount": 0,
+                },
+            )
+        else:
+            self.workspace.log_event(
+                "info",
+                "ai-reuse-powan-tree",
+                {
+                    "project": self.project,
+                    "file": self.file,
+                    "nodeId": node_id,
+                    "rootCount": len(roots),
+                    "reusedCount": reused_count,
+                },
+            )
+        return touched
 
     def descendants_of(self, node_id: str) -> list[dict[str, Any]]:
         descendants: list[dict[str, Any]] = []
@@ -1085,8 +1156,8 @@ def create_ai_router(store: PowanStore, default_file: str, log_event: LogFn) -> 
     def ai_create_child(node_id: str, request: CreatePowanRequest) -> dict[str, Any]:
         def handler() -> dict[str, Any]:
             explorer = workspace.explorer(request.project, request.file)
-            node = explorer.create_node(request, parent_id=node_id)
-            return {"project": explorer.project, "file": explorer.file, "powan": explorer.summarize_node(node)}
+            node, reused = explorer.create_or_reuse_child_node(node_id, request)
+            return {"project": explorer.project, "file": explorer.file, "powan": explorer.summarize_node(node), "reused": reused}
 
         return run_logged_action("create-child-powan", node_id, request, handler)
 

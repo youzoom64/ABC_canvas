@@ -144,6 +144,17 @@ function renderInputVolume(value) {
   inputSoundVolumeValue.textContent = `${Math.round(volume * 100)}%`;
 }
 
+function normalizeCodexReasoningEffort(value) {
+  const effort = String(value || "").trim().toLowerCase();
+  if (effort === "very_high" || effort === "very-high") {
+    return "xhigh";
+  }
+  if (["none", "minimal", "low", "medium", "high", "xhigh"].includes(effort)) {
+    return effort;
+  }
+  return "low";
+}
+
 function renderSettings(data) {
   currentSettingsData = { ...(data || {}) };
   soundFolderInput.value = data.soundRoot || "";
@@ -154,7 +165,7 @@ function renderSettings(data) {
   renderInputVolume(data.inputSoundVolume);
   codexSandboxSelect.value = data.codexSandbox || "danger-full-access";
   codexModelInput.value = data.codexModel || "gpt-5.5";
-  codexReasoningEffortSelect.value = data.codexReasoningEffort || "low";
+  codexReasoningEffortSelect.value = normalizeCodexReasoningEffort(data.codexReasoningEffort);
   renderArrange(data);
   restartVisibleConsoleInput.checked = Boolean(data.restartVisibleConsole);
   renderConsoleLogLevels(data);

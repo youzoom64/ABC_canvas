@@ -79,7 +79,11 @@ PROJECT_AGENTS_MD = """## 最初に
 """
 
 
-SKILL_MD = """# ポワン操作
+SKILL_MD = """---
+name: abc-powan
+description: ABC Canvasでポワンの意味、子ポワン、コードを保存するための操作手順
+---
+# ポワン操作
 
 あなたは次のようにツールを使ってくださいね😊
 
@@ -121,14 +125,17 @@ restore_child_powan(title, body, childId, targetParentId)
 
 ## 直接の子ポワン全員に命令する
 
-直接の子ポワン全員に同じ命令を出す時は、 `command-children` でお願いする😊
-同時に動かしたい時は `parallel` を `true` にして、`maxParallel` と `staggerMs` で少しずつ開始をずらす😊
-command_children(instruction, instructions, parallel, maxParallel, staggerMs)
+直接の子ポワン全員、または複数の子ポワンに個別命令を出す時は、必ず `command-children` を1回だけ使う😊
+現在の文脈に `childCommandTemplate` がある時は、その `json.instructions` の各 `instruction` だけを埋めて、そのJSONをそのまま使う😊
+子ポワンが8個なら、8個ぶんの `instructions` を埋めたJSONを1回だけ送る。子ごとに `command-child-powan` を繰り返さない😊
+受け取ったアプリ側が全員分をDBへ先に保存して、0.1秒ごとに全員を開始する😊
+command_children(instruction, instructions)
 `python .agents/skills/abc-powan/scripts/abc_powan_tool.py command-children --stdin-json`
 
 ## 特定の子ポワンに命令する
 
-特定の子ポワンに個別命令を出す時は、 `command-child-powan` でお願いする😊
+本当に子ポワン1人だけに命令する時だけ、 `command-child-powan` でお願いする😊
+複数の子に指示する時は使わない。複数なら `childCommandTemplate` を埋めて `command-children` を1回だけ使う😊
 command_child_powan(title, body, instruction)
 `python .agents/skills/abc-powan/scripts/abc_powan_tool.py command-child-powan --stdin-json`
 
@@ -179,13 +186,16 @@ restore_child_powan(title, body, childId, targetParentId)
 `python .agents/skills/abc-powan/scripts/abc_powan_tool.py restore-child-powan --stdin-json`
 `{"title":"戻す子","body":""}`
 
-command_children(instruction, instructions, parallel, maxParallel, staggerMs)
+command_children(instruction, instructions)
 `python .agents/skills/abc-powan/scripts/abc_powan_tool.py command-children --stdin-json`
-`{"instruction":"各子ポワンは自分の責務に合う形で神経ポワンか臓器ポワンを選び、必要ならwrite_my_codeでコードを保存してください😊","instructions":[],"parallel":true,"maxParallel":3,"staggerMs":1000}`
+複数の子ポワンへ個別指示する時は、現在の文脈にある `childCommandTemplate.json` の `instructions[*].instruction` だけを埋めて、必ずこのコマンドを1回だけ実行する😊
+子が8個なら8個ぶんを埋めたJSONを1回送る。子ごとに `command-child-powan` を繰り返さない😊
+`{"instruction":"","instructions":[{"childId":"子ID","title":"子名","instruction":"この子への指示"}]}`
 
 command_child_powan(title, body, instruction)
 `python .agents/skills/abc-powan/scripts/abc_powan_tool.py command-child-powan --stdin-json`
-`{"title":"対象の子","body":"","instruction":"あなたの責務に合う形で意味やコードを整え、必要ならwrite_my_codeで保存してください😊"}`
+本当に1人だけに指示する時だけ使う😊
+`{"title":"対象の子","body":"","instruction":"この子だけへの指示"}`
 
 write_my_code(codeLanguage, code)
 `python .agents/skills/abc-powan/scripts/abc_powan_tool.py write-my-code --stdin-json`

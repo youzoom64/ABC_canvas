@@ -1092,10 +1092,6 @@ async function sendBulkCommandToSelected() {
           instruction,
         })),
         includeMeaningTree: Boolean(conversationTreeContextInput?.checked),
-        continueOnError: true,
-        parallel: true,
-        maxParallel: 3,
-        staggerMs: 1000,
       };
       if (bulkState) {
         appendBulkCommandMessage("system", `送信開始: ${meaningName(group.parent)} -> ${group.nodes.map(meaningName).join(" / ")}`);
@@ -1106,9 +1102,6 @@ async function sendBulkCommandToSelected() {
         childIds: group.nodes.map((node) => node.id),
         childNames: group.nodes.map(meaningName),
         instructionLength: instruction.length,
-        parallel: payload.parallel,
-        maxParallel: payload.maxParallel,
-        staggerMs: payload.staggerMs,
       });
       const response = await fetch(
         `/api/ai/powans/${encodeURIComponent(group.parent.id)}/actions/command-children`,
@@ -1131,14 +1124,16 @@ async function sendBulkCommandToSelected() {
       const results = data.results || [];
       allResults.push(...results);
       if (bulkState) {
+        const groupLabel = data.detached ? "指示受付" : "送信完了";
         appendBulkCommandMessage(
           "system",
-          `送信完了: ${meaningName(group.parent)}\n${results.map(bulkResultLine).join("\n")}`,
+          `${groupLabel}: ${meaningName(group.parent)}\n${results.map(bulkResultLine).join("\n")}`,
         );
       }
       logEvent("info", "bulk-command-group-fetch-complete", {
         parentId: group.parent.id,
         parentName: meaningName(group.parent),
+        detached: Boolean(data.detached),
         resultCount: results.length,
         results: results.map((result) => ({
           nodeId: result.nodeId,
@@ -1151,9 +1146,17 @@ async function sendBulkCommandToSelected() {
         })),
       });
     }
-    appendBulkCommandMessage("assistant", `一括指示が完了したよ。\n${allResults.length}件の結果を受け取った。`, { forceFollow: true });
+    const detached = allResults.some((result) => result.status === "accepted");
+    appendBulkCommandMessage(
+      "assistant",
+      detached
+        ? `一括指示を子ポワンへ渡したよ。\n親側の送信はここで完了。${allResults.length}件が受け取った。`
+        : `一括指示が完了したよ。\n${allResults.length}件の結果を受け取った。`,
+      { forceFollow: true },
+    );
     saveState.textContent = "bulk done";
     logEvent("info", "bulk-command-submit-complete", {
+      detached,
       resultCount: allResults.length,
       results: allResults.map((result) => ({
         nodeId: result.nodeId,
@@ -1274,6 +1277,183 @@ function rememberConversationTabState(tabId = activeConversationTabId) {
   state.viewingSessionId = normalizeConversationId(conversationViewingSessionId);
   state.viewingAllSessions = Boolean(conversationViewingAllSessions);
   state.autoFollow = Boolean(conversationAutoFollow);
+}
+
+function rememberConversationDraft(tabId = activeConversationTabId) {
+  if (!tabId) {
+    return;
+  }
+  const state = conversationTabState(tabId);
+  state.draft = conversationInput?.value || "";
+  state.attachments = cloneConversationAttachments(conversationPendingAttachments);
+}
+
+function queuedConversationLabel(send) {
+  const target = send?.nodeId ? nodeById(send.nodeId) : null;
+  const name = target ? shortConversationTargetName(target) : "ポワン";
+  const text = shortWorkText(send?.text || (send?.attachments?.length ? "添付を渡す" : ""), 28);
+  return text ? `${name}へ送信待ち / ${text}` : `${name}へ送信待ち`;
+}
+
+function conversationRequestKey(nodeId) {
+  return String(nodeId || "");
+}
+
+function conversationRequestForNode(nodeId) {
+  const key = conversationRequestKey(nodeId);
+  return key ? conversationActiveRequests.get(key) || null : null;
+}
+
+function conversationRequestVisibleInView(request, tabId = activeConversationTabId, nodeId = conversationNodeId) {
+  if (!request || !tabId || !nodeId) {
+    return false;
+  }
+  if (request.tabId !== tabId || request.nodeId !== nodeId) {
+    return false;
+  }
+  const requestConversationId = normalizeConversationId(request.conversationId);
+  const viewingConversationId = normalizeConversationId(conversationViewingSessionId || conversationActiveSessionId);
+  return !requestConversationId || !viewingConversationId || requestConversationId === viewingConversationId;
+}
+
+function visibleConversationRequest(tabId = activeConversationTabId, nodeId = conversationNodeId) {
+  const request = conversationRequestForNode(nodeId);
+  return conversationRequestVisibleInView(request, tabId, nodeId) ? request : null;
+}
+
+function syncVisibleConversationRequestState() {
+  const request = visibleConversationRequest();
+  conversationRequestAbortController = request?.controller || null;
+  conversationRequestNodeId = request?.nodeId || null;
+  conversationRequestTabId = request?.tabId || null;
+  conversationRequestConversationId = request?.conversationId || null;
+  conversationRequestWaitingText = request?.waitingText || "";
+  conversationPendingMessage = request?.pendingMessage || null;
+  conversationCancelRequested = Boolean(request?.cancelRequested);
+  return request;
+}
+
+function setConversationTabRunningStatus(tabId, nodeId, text, conversationId = null) {
+  if (!tabId || !nodeId) {
+    return;
+  }
+  const state = conversationTabState(tabId);
+  state.runningStatus = {
+    nodeId,
+    conversationId: normalizeConversationId(conversationId),
+    text: text || "処理中",
+    updatedAt: historyIsoNow(),
+  };
+}
+
+function clearConversationTabRunningStatus(tabId, nodeId = null) {
+  if (!tabId) {
+    return;
+  }
+  const state = conversationTabStates.get(tabId);
+  if (!state?.runningStatus) {
+    return;
+  }
+  if (nodeId && state.runningStatus.nodeId !== nodeId) {
+    return;
+  }
+  delete state.runningStatus;
+}
+
+function rememberConversationRequestWaitingText(text, request = visibleConversationRequest()) {
+  if (!request) {
+    return;
+  }
+  request.waitingText = text || request.waitingText || "処理中";
+  setConversationTabRunningStatus(
+    request.tabId,
+    request.nodeId,
+    request.waitingText,
+    request.conversationId,
+  );
+  if (conversationRequestVisibleInView(request)) {
+    syncVisibleConversationRequestState();
+  }
+}
+
+function conversationRequestMatchesView(tabId, nodeId) {
+  return Boolean(visibleConversationRequest(tabId, nodeId));
+}
+
+function restoreConversationTransientStatus(tabId, nodeId) {
+  if (!conversationLog || !tabId || !nodeId) {
+    return;
+  }
+  if (conversationPendingMessage && !conversationPendingMessage.isConnected) {
+    conversationPendingMessage = null;
+  }
+  const request = visibleConversationRequest(tabId, nodeId);
+  if (request) {
+    const state = conversationTabState(tabId);
+    const text = state.runningStatus?.text || request.waitingText || "処理中";
+    const pending = appendConversationMessage("system", text, { forceFollow: true });
+    pending.classList.add("pending");
+    setInputWaitingMessageAnimation(pending, text);
+    request.pendingMessage = pending;
+    rememberConversationRequestWaitingText(text, request);
+    syncVisibleConversationRequestState();
+    startInputWaitingSound();
+    startConversationWorkPolling(conversationWorkEventSequence);
+  }
+  if (conversationCanEditSession()) {
+    for (const send of conversationQueuedSends) {
+      if (send.tabId !== tabId || send.nodeId !== nodeId) {
+        continue;
+      }
+      send.statusMessage = appendConversationMessage("system", queuedConversationLabel(send), { forceFollow: true });
+    }
+  }
+}
+
+function queueConversationSend(send) {
+  conversationQueuedSends.push(send);
+  if (activeConversationTabId === send.tabId && conversationNodeId === send.nodeId) {
+    send.statusMessage = appendConversationMessage("system", queuedConversationLabel(send), { forceFollow: true });
+  }
+  conversationInput.value = "";
+  conversationPendingAttachments = [];
+  renderConversationAttachmentTray();
+  rememberConversationDraft(activeConversationTabId);
+  setConversationSending(conversationSending);
+  logEvent("info", "conversation-send-queued", {
+    nodeId: send.nodeId,
+    tabId: send.tabId,
+    queueLength: conversationQueuedSends.length,
+    length: (send.text || "").length,
+    attachmentCount: send.attachments?.length || 0,
+  });
+}
+
+function sendNextQueuedConversation(reason = "conversation-queue-next", nodeId = null) {
+  if (!conversationQueuedSends.length) {
+    return;
+  }
+  const index = conversationQueuedSends.findIndex((send) => {
+    if (nodeId && send.nodeId !== nodeId) {
+      return false;
+    }
+    return !conversationRequestForNode(send.nodeId);
+  });
+  if (index < 0) {
+    return;
+  }
+  const [next] = conversationQueuedSends.splice(index, 1);
+  window.setTimeout(() => {
+    sendConversation({ queuedSend: next }).catch((error) => {
+      logEvent("error", "conversation-queued-send-error", {
+        nodeId: next?.nodeId || null,
+        message: error.message,
+        reason,
+      });
+      console.error(error);
+      sendNextQueuedConversation("conversation-queue-error-next", next?.nodeId || null);
+    });
+  }, 0);
 }
 
 function conversationTabLabel(tab) {
@@ -1566,6 +1746,7 @@ async function loadConversationMessages(nodeId) {
     for (const message of data.messages || []) {
       appendConversationMessage(message.role, message.text || "");
     }
+    restoreConversationTransientStatus(activeConversationTabId, nodeId);
     renderConversationTabs();
     refreshConversationSessions(nodeId, data.conversationId);
     logEvent("debug", "conversation-load-complete", {
@@ -1601,6 +1782,7 @@ async function loadConversationSession(nodeId, conversationId) {
     for (const message of data.messages || []) {
       appendConversationMessage(message.role, message.text || "");
     }
+    restoreConversationTransientStatus(activeConversationTabId, nodeId);
     if (conversationSessionSelect) {
       conversationSessionSelect.value = String(data.conversationId);
     }
@@ -1902,11 +2084,13 @@ function startConversationChunkSound() {
     return;
   }
   const audio = ensureConversationChunkAudio(url);
-  if (conversationSoundIsPlaying) {
+  if (conversationSoundIsPlaying && !audio.paused) {
     return;
   }
   conversationSoundIsPlaying = true;
-  audio.currentTime = 0;
+  if (!audio.paused || audio.ended) {
+    audio.currentTime = 0;
+  }
   audio.play().catch((error) => {
     conversationSoundIsPlaying = false;
     logEvent("warn", "conversation-sound-play-error", { message: error.message, sound: appSettings.conversationSound });
@@ -1919,15 +2103,32 @@ function startInputWaitingSound() {
     return;
   }
   const audio = ensureInputWaitingAudio(url);
-  if (inputSoundIsPlaying) {
+  if (inputSoundIsPlaying && !audio.paused) {
     return;
   }
   inputSoundIsPlaying = true;
-  audio.currentTime = 0;
+  if (!audio.paused || audio.ended) {
+    audio.currentTime = 0;
+  }
   audio.play().catch((error) => {
     inputSoundIsPlaying = false;
     logEvent("warn", "input-sound-play-error", { message: error.message, sound: appSettings.inputSound });
   });
+}
+
+function resumeActiveConversationAudio(reason = "conversation-audio-resume") {
+  if (visibleConversationRequest() && inputSoundIsPlaying && inputWaitingAudio?.paused) {
+    inputWaitingAudio.play().catch((error) => {
+      inputSoundIsPlaying = false;
+      logEvent("warn", "input-sound-resume-error", { message: error.message, reason, sound: appSettings.inputSound });
+    });
+  }
+  if (conversationTypingNodeId && conversationSoundIsPlaying && conversationChunkAudio?.paused) {
+    conversationChunkAudio.play().catch((error) => {
+      conversationSoundIsPlaying = false;
+      logEvent("warn", "conversation-sound-resume-error", { message: error.message, reason, sound: appSettings.conversationSound });
+    });
+  }
 }
 
 function stopConversationChunkSound(reason = "conversation-sound-stop") {
@@ -2159,35 +2360,47 @@ function updatePanelArrangeSettings(reason = "panel-arrange-settings-change") {
 }
 
 function setConversationSending(enabled) {
-  conversationSending = Boolean(enabled);
+  const visibleRequest = syncVisibleConversationRequestState();
   const hasNode = Boolean(conversationNodeId);
   const hasBulkTab = isBulkCommandTab(activeConversationTab());
   const canEdit = conversationCanEditSession();
-  sendConversationButton.disabled = (!hasNode && !hasBulkTab) || conversationSending || !canEdit;
+  const viewBusy = Boolean(visibleRequest) || (hasBulkTab && bulkCommandSending) || (Boolean(enabled) && conversationActiveRequests.size === 0);
+  conversationSending = viewBusy;
+  sendConversationButton.disabled = (!hasNode && !hasBulkTab) || !canEdit;
   if (sendCodeConversationButton) {
-    sendCodeConversationButton.disabled = !hasNode || conversationSending || !canEdit;
+    sendCodeConversationButton.disabled = !hasNode || Boolean(visibleRequest) || !canEdit;
   }
-  conversationInput.disabled = (!hasNode && !hasBulkTab) || conversationSending || !canEdit;
+  conversationInput.disabled = (!hasNode && !hasBulkTab) || !canEdit;
   if (newConversationButton) {
-    newConversationButton.disabled = !hasNode || conversationSending || hasBulkTab;
+    newConversationButton.disabled = !hasNode || Boolean(visibleRequest) || hasBulkTab;
   }
   if (summarizeConversationButton) {
-    summarizeConversationButton.disabled = !hasNode || conversationSending || conversationAutoSummaryInFlight || !canEdit || hasBulkTab;
+    summarizeConversationButton.disabled = !hasNode || Boolean(visibleRequest) || conversationAutoSummaryInFlight || !canEdit || hasBulkTab;
   }
   if (conversationSessionSelect) {
-    conversationSessionSelect.disabled = !hasNode || conversationSending || Boolean(conversationTypingNodeId) || hasBulkTab;
+    conversationSessionSelect.disabled = !hasNode || Boolean(visibleRequest) || Boolean(conversationTypingNodeId) || hasBulkTab;
   }
   if (saveButton) {
-    saveButton.disabled = conversationSending;
+    saveButton.disabled = false;
   }
   if (saveAsButton) {
-    saveAsButton.disabled = conversationSending;
+    saveAsButton.disabled = false;
   }
   updateConversationCancelButton();
 }
 
 function conversationCanCancel() {
-  return Boolean(conversationRequestAbortController || conversationTypingNodeId);
+  const request = visibleConversationRequest();
+  const requestMatchesVisibleConversation = Boolean(
+    request?.controller,
+  );
+  const typingMatchesVisibleConversation = Boolean(
+    conversationTypingNodeId
+      && conversationTypingTabId
+      && activeConversationTabId === conversationTypingTabId
+      && conversationNodeId === conversationTypingNodeId,
+  );
+  return Boolean(requestMatchesVisibleConversation || typingMatchesVisibleConversation);
 }
 
 function updateConversationCancelButton() {
@@ -2197,8 +2410,15 @@ function updateConversationCancelButton() {
   const canCancel = conversationCanCancel();
   cancelConversationButton.hidden = !canCancel;
   cancelConversationButton.disabled = !canCancel;
+  const request = visibleConversationRequest();
+  if (canCancel && request?.nodeId) {
+    const target = nodeById(request.nodeId);
+    cancelConversationButton.title = `${target ? meaningName(target) : "このポワン"}の返事をキャンセル`;
+  } else {
+    cancelConversationButton.title = "";
+  }
   if (conversationSessionSelect) {
-    conversationSessionSelect.disabled = !conversationNodeId || conversationSending || Boolean(conversationTypingNodeId) || isBulkCommandTab(activeConversationTab());
+    conversationSessionSelect.disabled = !conversationNodeId || Boolean(visibleConversationRequest()) || Boolean(conversationTypingNodeId) || isBulkCommandTab(activeConversationTab());
   }
 }
 
@@ -2310,10 +2530,13 @@ function powanWorkEventText(event) {
 }
 
 function updateConversationPendingWorkText(text) {
-  if (!conversationPendingMessage || !conversationPendingMessage.isConnected) {
+  const request = visibleConversationRequest();
+  rememberConversationRequestWaitingText(text || "処理中", request);
+  if (!request?.pendingMessage || !request.pendingMessage.isConnected) {
     return;
   }
-  setInputWaitingMessageAnimation(conversationPendingMessage, text || "処理中");
+  setInputWaitingMessageAnimation(request.pendingMessage, text || "処理中");
+  syncVisibleConversationRequestState();
 }
 
 function stopConversationWorkPolling() {
@@ -2325,7 +2548,8 @@ function stopConversationWorkPolling() {
 }
 
 async function pollConversationWorkEvents() {
-  if (!conversationPendingMessage || !conversationPendingMessage.isConnected || !conversationWorkPollingActive) {
+  const request = visibleConversationRequest();
+  if (!request?.pendingMessage || !request.pendingMessage.isConnected || !conversationWorkPollingActive) {
     stopConversationWorkPolling();
     return;
   }
@@ -2340,7 +2564,11 @@ async function pollConversationWorkEvents() {
   if (!events.length) {
     return;
   }
-  const latest = events[events.length - 1];
+  const matchingEvents = events.filter((event) => event?.to?.id === request.nodeId);
+  if (!matchingEvents.length) {
+    return;
+  }
+  const latest = matchingEvents[matchingEvents.length - 1];
   updateConversationPendingWorkText(powanWorkEventText(latest));
 }
 
@@ -2504,6 +2732,7 @@ function openConversationPanel(nodeId, options = {}) {
   conversationLog.innerHTML = "";
   const state = restoreConversationDraftState(tab.id);
   renderConversationTabs();
+  updateConversationSessionMode();
   focusConversationInputIfOpen();
   logEvent("debug", reason, { nodeId: node.id, tabId: tab.id, tabMode });
   let loader;
@@ -2566,6 +2795,7 @@ function stopConversationTyping() {
   } else if (conversationNodeId) {
     setPowanSpeaking(conversationNodeId, false);
   }
+  conversationTypingTabId = null;
   updateConversationCancelButton();
 }
 
@@ -2688,10 +2918,12 @@ function conversationTypingPauseMs(char) {
 function typeConversationReply(nodeId, text, onComplete = null) {
   stopConversationTyping();
   clearBackgroundSpeaking(nodeId);
+  const typingTabId = activeConversationTabId;
   const message = appendConversationMessage("assistant", "");
   const visibleText = formatConversationText("assistant", text);
   let index = 0;
   conversationTypingNodeId = nodeId;
+  conversationTypingTabId = typingTabId;
   conversationTypingMouthOpen = true;
   updateConversationCancelButton();
   setPowanSpeaking(nodeId, true);
@@ -2699,6 +2931,7 @@ function typeConversationReply(nodeId, text, onComplete = null) {
     setConversationMessageText(message, "assistant", "");
     setPowanSpeaking(nodeId, false);
     conversationTypingNodeId = null;
+    conversationTypingTabId = null;
     conversationTypingMouthOpen = false;
     updateConversationCancelButton();
     logEvent("debug", "conversation-reply-display-complete", {
@@ -2712,10 +2945,12 @@ function typeConversationReply(nodeId, text, onComplete = null) {
     return;
   }
   function tick() {
-    if (conversationNodeId !== nodeId) {
+    if (activeConversationTabId !== typingTabId || conversationNodeId !== nodeId) {
       logEvent("warn", "conversation-reply-display-aborted-node-changed", {
-        message: `reply display skipped: node changed ${nodeId} -> ${conversationNodeId || "none"}`,
+        message: `reply display skipped: target changed ${typingTabId}/${nodeId} -> ${activeConversationTabId || "none"}/${conversationNodeId || "none"}`,
+        tabId: typingTabId,
         nodeId,
+        currentTabId: activeConversationTabId,
         currentNodeId: conversationNodeId,
         typedLength: index,
         length: visibleText.length,
@@ -2723,6 +2958,7 @@ function typeConversationReply(nodeId, text, onComplete = null) {
       setPowanSpeaking(nodeId, false);
       stopConversationChunkSound("conversation-node-changed");
       conversationTypingNodeId = null;
+      conversationTypingTabId = null;
       conversationTypingMouthOpen = false;
       updateConversationCancelButton();
       return;
@@ -2744,6 +2980,7 @@ function typeConversationReply(nodeId, text, onComplete = null) {
       stopConversationChunkSound("conversation-typing-complete");
       setPowanSpeaking(nodeId, false);
       conversationTypingNodeId = null;
+      conversationTypingTabId = null;
       conversationTypingMouthOpen = false;
       updateConversationCancelButton();
       logEvent("debug", "conversation-reply-display-complete", {
@@ -2888,28 +3125,55 @@ function maybeAutoSummarizeConversation(nodeId) {
 }
 
 function markConversationPendingCancelled(text) {
-  if (!conversationPendingMessage || !conversationPendingMessage.isConnected) {
+  const request = visibleConversationRequest();
+  const pendingMessage = request?.pendingMessage || conversationPendingMessage;
+  if (!pendingMessage || !pendingMessage.isConnected) {
     return false;
   }
-  setConversationMessageText(conversationPendingMessage, "system", text);
-  conversationPendingMessage.classList.remove("pending");
+  setConversationMessageText(pendingMessage, "system", text);
+  pendingMessage.classList.remove("pending");
   return true;
 }
 
 async function cancelConversationReply(reason = "conversation-cancel") {
-  const requestNodeId = conversationRequestNodeId;
+  const request = visibleConversationRequest();
+  const requestNodeId = request?.nodeId || null;
+  const requestTabId = request?.tabId || null;
   const typingNodeId = conversationTypingNodeId;
-  if (!requestNodeId && !typingNodeId) {
+  const typingTabId = conversationTypingTabId;
+  const requestMatchesVisibleConversation = Boolean(
+    request?.controller,
+  );
+  const typingMatchesVisibleConversation = Boolean(
+    typingNodeId
+      && typingTabId
+      && activeConversationTabId === typingTabId
+      && conversationNodeId === typingNodeId,
+  );
+  if (!requestMatchesVisibleConversation && !typingMatchesVisibleConversation) {
+    logEvent("warn", "conversation-cancel-ignored-target-mismatch", {
+      reason,
+      activeTabId: activeConversationTabId,
+      activeNodeId: conversationNodeId,
+      requestTabId,
+      requestNodeId,
+      typingTabId,
+      typingNodeId,
+    });
+    updateConversationCancelButton();
     return;
   }
-  conversationCancelRequested = true;
   stopInputWaitingSound(reason);
-  if (conversationRequestAbortController) {
+  if (requestMatchesVisibleConversation) {
+    request.cancelRequested = true;
+    syncVisibleConversationRequestState();
     markConversationPendingCancelled("キャンセル中...");
-    conversationRequestAbortController.abort();
+    request.controller.abort();
     if (requestNodeId) {
       requestCancelPowanCodex(requestNodeId).then((data) => {
         logEvent("info", "conversation-cancel-requested", {
+          reason,
+          tabId: requestTabId,
           nodeId: requestNodeId,
           cancelled: Boolean(data.cancelled),
           running: Boolean(data.running),
@@ -2919,10 +3183,10 @@ async function cancelConversationReply(reason = "conversation-cancel") {
       });
     }
   }
-  if (typingNodeId) {
+  if (typingMatchesVisibleConversation) {
     stopConversationTyping();
     appendConversationMessage("system", "返事をキャンセルしました", { forceFollow: true });
-    logEvent("info", "conversation-typing-cancelled", { nodeId: typingNodeId });
+    logEvent("info", "conversation-typing-cancelled", { reason, tabId: typingTabId, nodeId: typingNodeId });
   }
   setConversationSending(false);
   updateConversationCancelButton();
@@ -3082,6 +3346,12 @@ if (conversationLog) {
   );
 }
 if (conversationInput) {
+  conversationInput.addEventListener("input", () => {
+    rememberConversationDraft(activeConversationTabId);
+  });
+  conversationInput.addEventListener("focus", () => {
+    resumeActiveConversationAudio("conversation-input-focus");
+  });
   conversationInput.addEventListener("keydown", (event) => {
     if (event.key !== "Enter" || event.shiftKey) {
       return;
@@ -3307,27 +3577,57 @@ if (conversationPanel) {
     addConversationAttachmentsFromDrop(event);
   });
 }
-async function sendConversation({ forceDirectChildCode = false } = {}) {
-  if (isBulkCommandTab(activeConversationTab())) {
+async function sendConversation({ forceDirectChildCode = false, queuedSend = null } = {}) {
+  const isQueuedSend = Boolean(queuedSend);
+  if (!isQueuedSend && isBulkCommandTab(activeConversationTab())) {
     await sendBulkCommandToSelected();
     return;
   }
-  const node = nodeById(conversationNodeId);
-  const requestTabId = activeConversationTabId;
-  const text = conversationInput.value.trim();
-  const includeDirectChildCode = forceDirectChildCode || Boolean(conversationDirectChildCodeInput?.checked);
-  const effectiveText = text || (forceDirectChildCode ? "自分のコードを書いて" : "");
-  const attachmentPayloads = conversationPendingAttachments.map(conversationPayloadAttachment);
-  if (!node || (!effectiveText && !attachmentPayloads.length) || conversationSending || !conversationCanEditSession()) {
+  const node = nodeById(isQueuedSend ? queuedSend.nodeId : conversationNodeId);
+  const requestTabId = isQueuedSend ? queuedSend.tabId : activeConversationTabId;
+  const text = isQueuedSend ? String(queuedSend.text || "").trim() : conversationInput.value.trim();
+  const includeMeaningTree = isQueuedSend ? Boolean(queuedSend.includeMeaningTree) : Boolean(conversationTreeContextInput?.checked);
+  const includeDirectChildCode = isQueuedSend
+    ? Boolean(queuedSend.includeDirectChildCode)
+    : forceDirectChildCode || Boolean(conversationDirectChildCodeInput?.checked);
+  const effectiveText = text || (!isQueuedSend && forceDirectChildCode ? "自分のコードを書いて" : "");
+  const displayAttachments = isQueuedSend
+    ? cloneConversationAttachments(queuedSend.attachments || [])
+    : [...conversationPendingAttachments];
+  const attachmentPayloads = displayAttachments.map(conversationPayloadAttachment);
+  const canEdit = isQueuedSend || conversationCanEditSession();
+  if (!node || (!effectiveText && !attachmentPayloads.length) || !canEdit) {
     return;
   }
-  const includeMeaningTree = Boolean(conversationTreeContextInput?.checked);
-  const displayAttachments = [...conversationPendingAttachments];
-  appendConversationMessage("user", effectiveText || "添付を渡す", { forceFollow: true, attachments: displayAttachments });
-  conversationInput.value = "";
-  conversationPendingAttachments = [];
-  renderConversationAttachmentTray();
-  rememberConversationTabState(activeConversationTabId);
+  if (conversationRequestForNode(node.id)) {
+    if (!isQueuedSend) {
+      queueConversationSend({
+        tabId: requestTabId,
+        nodeId: node.id,
+        text: effectiveText,
+        attachments: displayAttachments,
+        includeMeaningTree,
+        includeDirectChildCode,
+        conversationId: normalizeConversationId(conversationViewingSessionId || conversationActiveSessionId),
+      });
+    } else {
+      conversationQueuedSends.unshift(queuedSend);
+    }
+    return;
+  }
+  const requestViewIsActiveAtSend = activeConversationTabId === requestTabId && conversationNodeId === node.id;
+  if (isQueuedSend && queuedSend.statusMessage?.isConnected) {
+    queuedSend.statusMessage.remove();
+  }
+  if (requestViewIsActiveAtSend) {
+    appendConversationMessage("user", effectiveText || "添付を渡す", { forceFollow: true, attachments: displayAttachments });
+    if (!isQueuedSend) {
+      conversationInput.value = "";
+      conversationPendingAttachments = [];
+      renderConversationAttachmentTray();
+      rememberConversationTabState(activeConversationTabId);
+    }
+  }
   logEvent("debug", "conversation-send", {
     nodeId: node.id,
     length: effectiveText.length,
@@ -3337,9 +3637,20 @@ async function sendConversation({ forceDirectChildCode = false } = {}) {
     attachmentPathCount: attachmentPayloads.filter((attachment) => attachment.pathAvailable).length,
   });
   const controller = new AbortController();
-  conversationCancelRequested = false;
-  conversationRequestAbortController = controller;
-  conversationRequestNodeId = node.id;
+  const requestConversationId = isQueuedSend
+    ? normalizeConversationId(queuedSend.conversationId)
+    : normalizeConversationId(conversationViewingSessionId || conversationActiveSessionId);
+  const request = {
+    id: ++conversationRequestSerial,
+    controller,
+    tabId: requestTabId,
+    nodeId: node.id,
+    conversationId: requestConversationId,
+    waitingText: "",
+    pendingMessage: null,
+    cancelRequested: false,
+  };
+  conversationActiveRequests.set(conversationRequestKey(node.id), request);
   setConversationSending(true);
   const waitingText = conversationWaitingText(node, {
     includeMeaningTree,
@@ -3348,28 +3659,41 @@ async function sendConversation({ forceDirectChildCode = false } = {}) {
     status: "送信中",
     workText: effectiveText || (attachmentPayloads.length ? "添付を渡す" : ""),
   });
-  const pendingMessage = appendConversationMessage("system", waitingText, { forceFollow: true });
-  conversationPendingMessage = pendingMessage;
-  pendingMessage.classList.add("pending");
-  setInputWaitingMessageAnimation(pendingMessage, waitingText);
-  startInputWaitingSound();
+  rememberConversationRequestWaitingText(waitingText, request);
+  const pendingMessage = requestViewIsActiveAtSend
+    ? appendConversationMessage("system", waitingText, { forceFollow: true })
+    : document.createElement("div");
+  if (requestViewIsActiveAtSend) {
+    request.pendingMessage = pendingMessage;
+    syncVisibleConversationRequestState();
+    pendingMessage.classList.add("pending");
+    setInputWaitingMessageAnimation(pendingMessage, waitingText);
+    startInputWaitingSound();
+  }
   try {
+    if (documentDirty) {
+      await saveDocument({ reason: "conversation-preflight-save", auto: true });
+    }
     let workEventStartSequence = conversationWorkEventSequence;
     try {
       workEventStartSequence = await currentPowanWorkEventSequence();
     } catch (error) {
       logEvent("debug", "conversation-work-events-start-error", { message: error.message });
     }
-    startConversationWorkPolling(workEventStartSequence);
+    if (requestViewIsActiveAtSend) {
+      startConversationWorkPolling(workEventStartSequence);
+    }
     const data = await requestPowanCodexReply(node.id, effectiveText, {
       signal: controller.signal,
       includeMeaningTree,
       includeDirectChildCode,
       attachments: attachmentPayloads,
     });
-    stopInputWaitingSound("conversation-reply-received");
     const replyConversationId = normalizeConversationId(data.conversationId);
     const requestViewIsActive = activeConversationTabId === requestTabId && conversationNodeId === node.id;
+    if (requestViewIsActive) {
+      stopInputWaitingSound("conversation-reply-received");
+    }
     if (requestViewIsActive) {
       conversationActiveSessionId = replyConversationId;
       conversationViewingSessionId = replyConversationId;
@@ -3399,14 +3723,10 @@ async function sendConversation({ forceDirectChildCode = false } = {}) {
       });
       return;
     }
-    if (conversationRequestAbortController === controller) {
-      conversationRequestAbortController = null;
-      conversationRequestNodeId = null;
+    if (conversationRequestForNode(node.id) === request) {
+      conversationActiveRequests.delete(conversationRequestKey(node.id));
     }
-    const arrangedAfterReply = powanExplorer.arrangeSubtree(node.id, "conversation-agent-arrange-created-children");
-    if (arrangedAfterReply) {
-      await saveDocument();
-    }
+    clearConversationTabRunningStatus(requestTabId, node.id);
     if (requestViewIsActive && pendingMessage.isConnected) {
       pendingMessage.remove();
     }
@@ -3417,39 +3737,50 @@ async function sendConversation({ forceDirectChildCode = false } = {}) {
       typeConversationReplyMouthOnly(node.id, reply);
     }
   } catch (error) {
-    stopInputWaitingSound("conversation-codex-error");
-    if (error.name === "AbortError" || conversationCancelRequested) {
-      markConversationPendingCancelled("キャンセルしました");
+    const requestViewIsActive = activeConversationTabId === requestTabId && conversationNodeId === node.id;
+    if (requestViewIsActive) {
+      stopInputWaitingSound("conversation-codex-error");
+    }
+    if (error.name === "AbortError" || request.cancelRequested) {
+      if (requestViewIsActive) {
+        markConversationPendingCancelled("キャンセルしました");
+      }
       logEvent("info", "conversation-fetch-cancelled", {
         message: `reply fetch cancelled: ${node.id}`,
         nodeId: node.id,
       });
     } else {
-      if (pendingMessage.isConnected) {
+      if (requestViewIsActive && pendingMessage.isConnected) {
         pendingMessage.remove();
       }
-      appendConversationMessage("system", `Codex execで返事できなかった: ${error.message}`, { forceFollow: true });
+      if (requestViewIsActive) {
+        appendConversationMessage("system", `Codex execで返事できなかった: ${error.message}`, { forceFollow: true });
+      }
       logEvent("error", "conversation-codex-error", {
         message: `reply failed: ${node.id}: ${error.message}`,
         nodeId: node.id,
       });
     }
   } finally {
-    stopInputWaitingSound("conversation-send-finally");
-    stopConversationWorkPolling();
-    if (conversationRequestAbortController === controller) {
-      conversationRequestAbortController = null;
-      conversationRequestNodeId = null;
+    const requestViewIsActive = activeConversationTabId === requestTabId && conversationNodeId === node.id;
+    if (requestViewIsActive) {
+      stopInputWaitingSound("conversation-send-finally");
+      stopConversationWorkPolling();
     }
-    if (conversationPendingMessage === pendingMessage) {
-      conversationPendingMessage = null;
+    if (conversationRequestForNode(node.id) === request) {
+      conversationActiveRequests.delete(conversationRequestKey(node.id));
+    }
+    clearConversationTabRunningStatus(requestTabId, node.id);
+    if (request.pendingMessage === pendingMessage) {
+      request.pendingMessage = null;
     }
     setConversationSending(false);
     updateConversationCancelButton();
-    if (conversationNodeId === node.id) {
+    if (requestViewIsActive) {
       focusConversationInputIfOpen();
     }
-    conversationCancelRequested = false;
+    syncVisibleConversationRequestState();
+    sendNextQueuedConversation("conversation-send-finally", node.id);
   }
 }
 
@@ -4030,19 +4361,39 @@ async function loadDocumentFromFile() {
   }
 }
 
-async function saveDocument() {
-  if (conversationRequestAbortController) {
-    saveState.textContent = "agent running";
-    logEvent("warn", "save-document-blocked-during-agent-run", {
-      message: `save blocked: agent running for ${conversationRequestNodeId || conversationNodeId || "unknown"}`,
-      name: documentName,
-      conversationRequestNodeId,
-      console: true,
-    });
+function scheduleDocumentAutoSave(reason = "dirty") {
+  documentAutoSavePendingReason = reason;
+  if (documentAutoSaveTimer) {
+    window.clearTimeout(documentAutoSaveTimer);
+  }
+  documentAutoSaveTimer = window.setTimeout(() => {
+    documentAutoSaveTimer = null;
+    runDocumentAutoSave(documentAutoSavePendingReason);
+  }, 450);
+}
+
+async function runDocumentAutoSave(reason = "auto-save") {
+  if (!documentDirty || documentAutoSaveInFlight || !doc || !projectName || !documentName) {
     return;
   }
-  saveState.textContent = "saving";
+  documentAutoSaveInFlight = true;
+  try {
+    await saveDocument({ reason: `auto-save:${reason}`, auto: true });
+  } finally {
+    documentAutoSaveInFlight = false;
+    if (documentDirty && documentAutoSavePendingReason !== reason) {
+      scheduleDocumentAutoSave(documentAutoSavePendingReason || "auto-save-pending");
+    }
+  }
+}
+
+async function saveDocument({ reason = "manual-save", auto = false } = {}) {
+  if (auto && !documentDirty) {
+    return;
+  }
+  saveState.textContent = auto ? "auto saving" : "saving";
   const savedViewport = saveViewportToDocument();
+  const savedDirtyRevision = documentDirtyRevision;
   const savePayload = JSON.stringify(doc);
   const saveUrl = `/api/doc/${encodeURIComponent(documentName)}?project=${encodeURIComponent(projectName)}`;
   const saveHeaders = {
@@ -4052,21 +4403,28 @@ async function saveDocument() {
     saveHeaders["X-ABC-Document-Snapshot"] = encodeURIComponent(documentSnapshot);
   }
   try {
-    const response = await fetch(saveUrl, {
+    let response = await fetch(saveUrl, {
       method: "POST",
       headers: saveHeaders,
       body: savePayload,
     });
     if (response.status === 409 || response.status === 428) {
-      saveState.textContent = "server updated";
+      saveState.textContent = "resaving";
       logEvent("warn", "save-document-stale-rejected", {
-        message: `save rejected: stale document ${documentName}, status ${response.status}`,
+        message: `save rejected once, retrying visible document: ${documentName}, status ${response.status}`,
         name: documentName,
         status: response.status,
+        reason,
+        auto,
         console: true,
       });
-      await reloadCurrentDocument({ force: true, reason: "save-conflict-reload", restoreViewport: false });
-      return;
+      const latestDocument = await fetchDocument(documentName);
+      saveHeaders["X-ABC-Document-Snapshot"] = encodeURIComponent(await documentSignature(latestDocument));
+      response = await fetch(saveUrl, {
+        method: "POST",
+        headers: saveHeaders,
+        body: savePayload,
+      });
     }
     if (!response.ok) {
       const responseText = await response.text();
@@ -4080,15 +4438,24 @@ async function saveDocument() {
       throw new Error(`save failed: ${response.status}`);
     }
     const data = await response.json();
-    saveState.textContent = "saved";
+    const savedCurrentRevision = savedDirtyRevision === documentDirtyRevision;
+    if (savedCurrentRevision) {
+      documentDirty = false;
+    } else {
+      scheduleDocumentAutoSave("save-dirtied-during-save");
+    }
+    saveState.textContent = savedCurrentRevision ? "saved" : "edited";
     documentSnapshot = data.snapshot || await documentSignature(doc);
     await refreshFiles();
     logEvent("info", "save-document-complete", {
       message: `document saved: ${documentName}, ${doc.nodes.length} nodes`,
       name: documentName,
       nodeCount: doc.nodes.length,
+      reason,
+      auto,
       console: true,
     });
+    return true;
   } catch (error) {
     saveState.textContent = "save error";
     logEvent("error", "save-document-error", {
@@ -4098,6 +4465,7 @@ async function saveDocument() {
       console: true,
     });
     await flushLogQueue();
+    return false;
   }
 }
 
