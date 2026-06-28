@@ -1,4 +1,4 @@
-const ABC_CANVAS_SCRIPT_VERSION = "detached-bulk-command-165";
+const ABC_CANVAS_SCRIPT_VERSION = "talk-tab-reuse-169";
 const ABC_CANVAS_SCRIPTS = [
   "/static/js/workspace.js",
   "/static/js/state.js",

@@ -106,6 +106,9 @@ async function reloadCurrentDocument({ force = false, reason = "reload", restore
     arrangeReloadedNewChildren(newChildParentIds, reason);
     await refreshFiles();
     render();
+    refreshRunningAgentRuns(`${reason}-running-runs`).catch((error) => {
+      logEvent("debug", "auto-reload-running-runs-error", { reason, message: error.message });
+    });
     logEvent("info", reason, { projectName, documentName, nodeCount: doc.nodes.length });
   } catch (error) {
     logEvent("warn", `${reason}-failed`, { projectName, documentName, message: error.message });

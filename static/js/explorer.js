@@ -478,18 +478,8 @@ var powanExplorer = {
       return;
     }
     this.select(node.id);
-    openConversationPanel(node.id);
+    openConversationTabForNode(node.id, { reason: "talk-powan-requested" });
     logEvent("debug", "talk-powan-requested", { nodeId: node.id, name: meaningName(node) });
-  },
-  talkToPowanInNewTab(nodeId) {
-    const node = nodeById(nodeId);
-    if (!node) {
-      logEvent("warn", "talk-powan-new-tab-missing-node", { nodeId });
-      return;
-    }
-    this.select(node.id);
-    openConversationPanel(node.id, { tabMode: "new", reason: "talk-powan-new-tab-requested" });
-    logEvent("debug", "talk-powan-new-tab-requested", { nodeId: node.id, name: meaningName(node) });
   },
   toggleConversation(nodeId) {
     const node = nodeById(nodeId);

@@ -127,6 +127,7 @@ restore_child_powan(title, body, childId, targetParentId)
 
 直接の子ポワン全員、または複数の子ポワンに個別命令を出す時は、必ず `command-children` を1回だけ使う😊
 現在の文脈に `childCommandTemplate` がある時は、その `json.instructions` の各 `instruction` だけを埋めて、そのJSONをそのまま使う😊
+今回の対象ではない子には instruction を入れず、`skip:true` と `skipReason` を入れる。対象外通知だけを送らない😊
 子ポワンが8個なら、8個ぶんの `instructions` を埋めたJSONを1回だけ送る。子ごとに `command-child-powan` を繰り返さない😊
 受け取ったアプリ側が全員分をDBへ先に保存して、0.1秒ごとに全員を開始する😊
 command_children(instruction, instructions)
@@ -189,8 +190,9 @@ restore_child_powan(title, body, childId, targetParentId)
 command_children(instruction, instructions)
 `python .agents/skills/abc-powan/scripts/abc_powan_tool.py command-children --stdin-json`
 複数の子ポワンへ個別指示する時は、現在の文脈にある `childCommandTemplate.json` の `instructions[*].instruction` だけを埋めて、必ずこのコマンドを1回だけ実行する😊
+今回の対象ではない子には `skip:true` と `skipReason` を入れて、会話もCodexも起動しない😊
 子が8個なら8個ぶんを埋めたJSONを1回送る。子ごとに `command-child-powan` を繰り返さない😊
-`{"instruction":"","instructions":[{"childId":"子ID","title":"子名","instruction":"この子への指示"}]}`
+`{"instruction":"","instructions":[{"childId":"子ID","title":"子名","instruction":"この子への指示","skip":false},{"childId":"対象外の子ID","title":"対象外の子名","instruction":"","skip":true,"skipReason":"今回の対象外"}]}`
 
 command_child_powan(title, body, instruction)
 `python .agents/skills/abc-powan/scripts/abc_powan_tool.py command-child-powan --stdin-json`

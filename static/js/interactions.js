@@ -1241,6 +1241,99 @@ function conversationTabState(tabId) {
   return current;
 }
 
+function conversationTabForNode(nodeId) {
+  return conversationTabs.find((tab) => !isBulkCommandTab(tab) && tab.nodeId === nodeId) || null;
+}
+
+function clearConversationTabAttention(tabId, reason = "conversation-tab-attention-clear") {
+  const state = conversationTabStates.get(tabId);
+  if (!state?.attention) {
+    return;
+  }
+  delete state.attention;
+  logEvent("debug", reason, { tabId });
+}
+
+function flashConversationTabOpening(tabId, nodeId, reason = "conversation-tab-open-flash") {
+  if (!tabId || !nodeId) {
+    return;
+  }
+  const state = conversationTabState(tabId);
+  const until = Date.now() + 1100;
+  state.openFlash = { nodeId, until };
+  renderConversationTabs();
+  window.setTimeout(() => {
+    const latest = conversationTabStates.get(tabId);
+    if (!latest?.openFlash || Number(latest.openFlash.until || 0) > Date.now()) {
+      return;
+    }
+    delete latest.openFlash;
+    renderConversationTabs();
+  }, 1150);
+  logEvent("debug", reason, { tabId, nodeId });
+}
+
+function markConversationTabAttention(tabId, nodeId, kind = "reply", text = "", detailId = null) {
+  if (!tabId || !nodeId) {
+    return;
+  }
+  const state = conversationTabState(tabId);
+  state.attention = {
+    nodeId,
+    kind,
+    text: text || (kind === "running" ? "作業中" : "返事あり"),
+    detailId,
+    updatedAt: historyIsoNow(),
+  };
+  renderConversationTabs();
+  logEvent("debug", "conversation-tab-attention-marked", {
+    tabId,
+    nodeId,
+    kind,
+    detailId,
+  });
+}
+
+function openConversationTabForNode(nodeId, { reason = "conversation-tab-open-for-node" } = {}) {
+  const node = nodeById(nodeId);
+  if (!node) {
+    logEvent("warn", "conversation-tab-open-missing-node", { nodeId, reason });
+    return null;
+  }
+  const existing = conversationTabForNode(node.id);
+  const tabMode = existing ? "activate" : "new";
+  const tabId = existing?.id || null;
+  openConversationPanel(node.id, {
+    tabMode,
+    tabId,
+    reason: existing ? `${reason}-existing-tab` : `${reason}-new-tab`,
+  });
+  const opened = existing || activeConversationTab();
+  if (opened?.id) {
+    clearConversationTabAttention(opened.id, "conversation-tab-attention-cleared-open");
+    flashConversationTabOpening(opened.id, node.id, "conversation-tab-opened-flash");
+  }
+  return opened || null;
+}
+
+function ensureConversationTabForNode(nodeId, reason = "conversation-tab-ensure") {
+  const node = nodeById(nodeId);
+  if (!node) {
+    return null;
+  }
+  let tab = conversationTabForNode(nodeId);
+  if (!tab) {
+    tab = createConversationTab(nodeId, reason);
+  }
+  const state = conversationTabState(tab.id);
+  state.nodeId = nodeId;
+  if (conversationPanel?.hidden) {
+    conversationPanel.hidden = false;
+    setConversationPanelCollapsed(false, "conversation-attention-panel-open");
+  }
+  return tab;
+}
+
 function cloneConversationAttachments(attachments) {
   return Array.isArray(attachments)
     ? attachments.map((attachment) => ({ ...attachment }))
@@ -1380,7 +1473,65 @@ function conversationRequestMatchesView(tabId, nodeId) {
   return Boolean(visibleConversationRequest(tabId, nodeId));
 }
 
-function restoreConversationTransientStatus(tabId, nodeId) {
+function rememberRunningPowanRun(run) {
+  if (!run?.powanId) {
+    return;
+  }
+  runningPowanRuns.set(run.powanId, run);
+  schedulePowanFaceRefresh([run.powanId], "running-powan-run-remembered");
+}
+
+function dbRunningConversationText(run, nodeId) {
+  const node = nodeById(nodeId || run?.powanId);
+  const name = node ? shortConversationTargetName(node) : "ポワン";
+  const task = shortWorkText(run?.userText || "");
+  return task ? `${name} / DB上で作業中 / ${task}` : `${name} / DB上で作業中`;
+}
+
+function notifyConversationRunStarted(run, reason = "conversation-run-started") {
+  const nodeId = run?.powanId;
+  if (!nodeId || conversationRunningNotifiedRunIds.has(Number(run.id))) {
+    return;
+  }
+  const tab = ensureConversationTabForNode(nodeId, "conversation-running-tab-created");
+  if (!tab) {
+    return;
+  }
+  conversationRunningNotifiedRunIds.add(Number(run.id));
+  const state = conversationTabState(tab.id);
+  state.activeSessionId = normalizeConversationId(run.conversationId);
+  state.viewingSessionId = normalizeConversationId(run.conversationId);
+  state.viewingAllSessions = false;
+  state.autoFollow = true;
+  setConversationTabRunningStatus(tab.id, nodeId, dbRunningConversationText(run, nodeId), run.conversationId);
+  markConversationTabAttention(tab.id, nodeId, "running", dbRunningConversationText(run, nodeId), run.id);
+  if (!activeConversationTabId) {
+    openConversationPanel(nodeId, { tabMode: "activate", tabId: tab.id, reason: "conversation-running-auto-open" });
+  } else {
+    renderConversationTabs();
+  }
+  logEvent("info", "conversation-running-tab-notified", {
+    nodeId,
+    tabId: tab.id,
+    runId: run.id,
+    reason,
+  });
+}
+
+function notifyConversationRunFinished(nodeId, reason = "conversation-run-finished") {
+  const tab = conversationTabForNode(nodeId);
+  if (!tab) {
+    return;
+  }
+  clearConversationTabRunningStatus(tab.id, nodeId);
+  if (activeConversationTabId === tab.id && conversationNodeId === nodeId) {
+    return;
+  }
+  markConversationTabAttention(tab.id, nodeId, "reply", "返事が届きました", null);
+  logEvent("info", "conversation-reply-tab-notified", { nodeId, tabId: tab.id, reason });
+}
+
+function restoreConversationTransientStatus(tabId, nodeId, activeRun = null) {
   if (!conversationLog || !tabId || !nodeId) {
     return;
   }
@@ -1389,6 +1540,7 @@ function restoreConversationTransientStatus(tabId, nodeId) {
   }
   const request = visibleConversationRequest(tabId, nodeId);
   if (request) {
+    request.soundOwner = request.soundOwner || `conversation-request-${request.id}`;
     const state = conversationTabState(tabId);
     const text = state.runningStatus?.text || request.waitingText || "処理中";
     const pending = appendConversationMessage("system", text, { forceFollow: true });
@@ -1397,8 +1549,19 @@ function restoreConversationTransientStatus(tabId, nodeId) {
     request.pendingMessage = pending;
     rememberConversationRequestWaitingText(text, request);
     syncVisibleConversationRequestState();
-    startInputWaitingSound();
+    startInputWaitingSound(request.soundOwner);
     startConversationWorkPolling(conversationWorkEventSequence);
+    return;
+  }
+  const dbRun = activeRun || (conversationCanEditSession() ? runningPowanRuns.get(nodeId) : null) || null;
+  if (dbRun?.status === "running") {
+    rememberRunningPowanRun(dbRun);
+    const text = dbRunningConversationText(dbRun, nodeId);
+    const pending = appendConversationMessage("system", text, { forceFollow: true });
+    pending.classList.add("pending");
+    setInputWaitingMessageAnimation(pending, text);
+    conversationPendingMessage = pending;
+    setConversationTabRunningStatus(tabId, nodeId, text, dbRun.conversationId);
   }
   if (conversationCanEditSession()) {
     for (const send of conversationQueuedSends) {
@@ -1456,6 +1619,82 @@ function sendNextQueuedConversation(reason = "conversation-queue-next", nodeId =
   }, 0);
 }
 
+async function requestRunningAgentRuns() {
+  const response = await fetch(
+    `/api/agent-runs/running?project=${encodeURIComponent(projectName)}&file=${encodeURIComponent(documentName)}`,
+  );
+  if (!response.ok) {
+    throw new Error(`running runs load failed: ${response.status}`);
+  }
+  return response.json();
+}
+
+function applyRunningAgentRuns(runs = [], reason = "running-runs-refresh") {
+  const previousIds = new Set(runningPowanRuns.keys());
+  const nextMap = new Map();
+  for (const run of runs || []) {
+    if (run?.powanId && run.status === "running") {
+      nextMap.set(run.powanId, run);
+    }
+  }
+  runningPowanRuns = nextMap;
+  for (const run of nextMap.values()) {
+    if (!previousIds.has(run.powanId)) {
+      notifyConversationRunStarted(run, reason);
+    }
+  }
+  const changedIds = new Set([...previousIds, ...runningPowanRuns.keys()]);
+  schedulePowanFaceRefresh([...changedIds], reason);
+  for (const nodeId of previousIds) {
+    if (!nextMap.has(nodeId)) {
+      notifyConversationRunFinished(nodeId, reason);
+    }
+  }
+  const activeNodeWasRunning = conversationNodeId && previousIds.has(conversationNodeId);
+  const activeNodeIsRunning = conversationNodeId && runningPowanRuns.has(conversationNodeId);
+  if (
+    conversationNodeId
+      && !conversationRequestForNode(conversationNodeId)
+      && !activeNodeIsRunning
+      && activeNodeWasRunning
+      && !runningPowanConversationReloading
+  ) {
+    runningPowanConversationReloading = true;
+    loadConversationMessages(conversationNodeId).finally(() => {
+      runningPowanConversationReloading = false;
+    });
+  } else if (
+    conversationNodeId
+      && activeNodeIsRunning
+      && !conversationRequestForNode(conversationNodeId)
+      && !conversationPendingMessage?.isConnected
+  ) {
+    restoreConversationTransientStatus(activeConversationTabId, conversationNodeId, runningPowanRuns.get(conversationNodeId));
+  }
+}
+
+async function refreshRunningAgentRuns(reason = "running-runs-refresh") {
+  if (!projectName || !documentName) {
+    return;
+  }
+  try {
+    const data = await requestRunningAgentRuns();
+    applyRunningAgentRuns(data.runs || [], reason);
+  } catch (error) {
+    logEvent("debug", "running-runs-refresh-error", { message: error.message, reason });
+  }
+}
+
+function startRunningAgentRunRefresh() {
+  if (runningPowanRefreshTimer) {
+    window.clearInterval(runningPowanRefreshTimer);
+  }
+  refreshRunningAgentRuns("running-runs-refresh-start");
+  runningPowanRefreshTimer = window.setInterval(() => {
+    refreshRunningAgentRuns("running-runs-refresh-tick");
+  }, 1500);
+}
+
 function conversationTabLabel(tab) {
   if (isBulkCommandTab(tab)) {
     return "一括送信";
@@ -1485,18 +1724,30 @@ function renderConversationTabs() {
   conversationTabBar.innerHTML = "";
   conversationTabBar.hidden = Boolean(conversationPanel?.hidden);
   for (const tab of conversationTabs) {
+    const state = conversationTabStates.get(tab.id) || {};
+    const openFlashActive = Boolean(state.openFlash && Number(state.openFlash.until || 0) > Date.now());
+    if (state.openFlash && !openFlashActive) {
+      delete state.openFlash;
+    }
+    const tabRunning = Boolean(tab.nodeId && runningPowanRuns.has(tab.nodeId)) || Boolean(state.runningStatus);
+    const tabAttention = Boolean(state.attention);
     const item = document.createElement("div");
     item.className = "conversation-tab";
     item.classList.toggle("active", tab.id === activeConversationTabId);
     item.classList.toggle("blank", !tab.nodeId);
     item.classList.toggle("bulk", isBulkCommandTab(tab));
+    item.classList.toggle("running", tabRunning);
+    item.classList.toggle("attention", tabAttention);
+    item.classList.toggle("reply-ready", tabAttention && state.attention?.kind === "reply");
+    item.classList.toggle("opening", openFlashActive);
     item.role = "tab";
     item.ariaSelected = tab.id === activeConversationTabId ? "true" : "false";
-    item.title = conversationTabLabel(tab);
+    item.title = state.attention?.text || (tabRunning ? "作業中" : conversationTabLabel(tab));
     const label = document.createElement("button");
     label.type = "button";
     label.className = "conversation-tab-label";
-    label.textContent = conversationTabLabel(tab);
+    const marker = tabRunning ? "🫨 " : tabAttention ? "● " : "";
+    label.textContent = `${marker}${conversationTabLabel(tab)}`;
     label.addEventListener("click", () => switchConversationTab(tab.id));
     const close = document.createElement("button");
     close.type = "button";
@@ -1584,10 +1835,12 @@ function switchConversationTab(tabId, reason = "conversation-tab-switch") {
     return;
   }
   if (activeConversationTabId === tab.id && conversationPanel && !conversationPanel.hidden) {
+    clearConversationTabAttention(tab.id, "conversation-tab-attention-cleared-active-click");
     expandConversationPanel(reason);
     renderConversationTabs();
     return;
   }
+  clearConversationTabAttention(tab.id, "conversation-tab-attention-cleared-switch");
   if (!tab.nodeId) {
     if (isBulkCommandTab(tab)) {
       showBulkCommandTab(tab, reason);
@@ -1746,7 +1999,10 @@ async function loadConversationMessages(nodeId) {
     for (const message of data.messages || []) {
       appendConversationMessage(message.role, message.text || "");
     }
-    restoreConversationTransientStatus(activeConversationTabId, nodeId);
+    if (data.activeRun) {
+      rememberRunningPowanRun(data.activeRun);
+    }
+    restoreConversationTransientStatus(activeConversationTabId, nodeId, data.activeRun);
     renderConversationTabs();
     refreshConversationSessions(nodeId, data.conversationId);
     logEvent("debug", "conversation-load-complete", {
@@ -1782,7 +2038,10 @@ async function loadConversationSession(nodeId, conversationId) {
     for (const message of data.messages || []) {
       appendConversationMessage(message.role, message.text || "");
     }
-    restoreConversationTransientStatus(activeConversationTabId, nodeId);
+    if (data.activeRun) {
+      rememberRunningPowanRun(data.activeRun);
+    }
+    restoreConversationTransientStatus(activeConversationTabId, nodeId, data.activeRun);
     if (conversationSessionSelect) {
       conversationSessionSelect.value = String(data.conversationId);
     }
@@ -2097,12 +2356,13 @@ function startConversationChunkSound() {
   });
 }
 
-function startInputWaitingSound() {
+function startInputWaitingSound(owner = "") {
   const url = inputSoundUrl();
   if (!url || appSettings.inputSoundVolume <= 0) {
     return;
   }
   const audio = ensureInputWaitingAudio(url);
+  inputWaitingSoundOwner = owner || inputWaitingSoundOwner || "conversation";
   if (inputSoundIsPlaying && !audio.paused) {
     return;
   }
@@ -2112,6 +2372,7 @@ function startInputWaitingSound() {
   }
   audio.play().catch((error) => {
     inputSoundIsPlaying = false;
+    inputWaitingSoundOwner = "";
     logEvent("warn", "input-sound-play-error", { message: error.message, sound: appSettings.inputSound });
   });
 }
@@ -2148,12 +2409,21 @@ function stopConversationChunkSound(reason = "conversation-sound-stop") {
   }
 }
 
-function stopInputWaitingSound(reason = "input-sound-stop") {
+function stopInputWaitingSound(reason = "input-sound-stop", owner = "") {
   if (!inputWaitingAudio && !inputSoundIsPlaying) {
+    return;
+  }
+  if (owner && inputWaitingSoundOwner && inputWaitingSoundOwner !== owner) {
+    logEvent("debug", "input-sound-stop-ignored-owner-mismatch", {
+      reason,
+      owner,
+      currentOwner: inputWaitingSoundOwner,
+    });
     return;
   }
   const audio = inputWaitingAudio;
   inputSoundIsPlaying = false;
+  inputWaitingSoundOwner = "";
   if (!audio) {
     return;
   }
@@ -3009,6 +3279,7 @@ function rememberInactiveConversationReply(tabId, nodeId, conversationId) {
   state.viewingSessionId = normalizeConversationId(conversationId);
   state.viewingAllSessions = false;
   state.autoFollow = true;
+  markConversationTabAttention(tab.id, nodeId, "reply", "返事が届きました", conversationId);
   logEvent("debug", "conversation-inactive-tab-reply-remembered", {
     tabId: tab.id,
     nodeId,
@@ -3163,7 +3434,7 @@ async function cancelConversationReply(reason = "conversation-cancel") {
     updateConversationCancelButton();
     return;
   }
-  stopInputWaitingSound(reason);
+  stopInputWaitingSound(reason, request?.soundOwner || "");
   if (requestMatchesVisibleConversation) {
     request.cancelRequested = true;
     syncVisibleConversationRequestState();
@@ -3384,16 +3655,6 @@ talkToPowanButton.addEventListener("click", () => {
   }
   powanExplorer.talkToPowan(nodeId);
 });
-if (talkToPowanNewTabButton) {
-  talkToPowanNewTabButton.addEventListener("click", () => {
-    const nodeId = nodeContextMenuNodeId;
-    powanExplorer.closeNodeMenu("talk-new-tab-menu-close");
-    if (!nodeId) {
-      return;
-    }
-    powanExplorer.talkToPowanInNewTab(nodeId);
-  });
-}
 if (bulkCommandMenuButton) {
   bulkCommandMenuButton.addEventListener("click", () => {
     powanExplorer.closeNodeMenu("bulk-command-menu-close");
@@ -3649,8 +3910,18 @@ async function sendConversation({ forceDirectChildCode = false, queuedSend = nul
     waitingText: "",
     pendingMessage: null,
     cancelRequested: false,
+    soundOwner: `conversation-request-${conversationRequestSerial}`,
   };
   conversationActiveRequests.set(conversationRequestKey(node.id), request);
+  runningPowanRuns.set(node.id, {
+    id: null,
+    conversationId: requestConversationId,
+    powanId: node.id,
+    status: "running",
+    userText: effectiveText,
+    source: "conversation",
+  });
+  schedulePowanFaceRefresh([node.id], "conversation-send-running-face");
   setConversationSending(true);
   const waitingText = conversationWaitingText(node, {
     includeMeaningTree,
@@ -3668,7 +3939,7 @@ async function sendConversation({ forceDirectChildCode = false, queuedSend = nul
     syncVisibleConversationRequestState();
     pendingMessage.classList.add("pending");
     setInputWaitingMessageAnimation(pendingMessage, waitingText);
-    startInputWaitingSound();
+    startInputWaitingSound(request.soundOwner);
   }
   try {
     if (documentDirty) {
@@ -3691,9 +3962,7 @@ async function sendConversation({ forceDirectChildCode = false, queuedSend = nul
     });
     const replyConversationId = normalizeConversationId(data.conversationId);
     const requestViewIsActive = activeConversationTabId === requestTabId && conversationNodeId === node.id;
-    if (requestViewIsActive) {
-      stopInputWaitingSound("conversation-reply-received");
-    }
+    stopInputWaitingSound("conversation-reply-received", request.soundOwner);
     if (requestViewIsActive) {
       conversationActiveSessionId = replyConversationId;
       conversationViewingSessionId = replyConversationId;
@@ -3726,6 +3995,8 @@ async function sendConversation({ forceDirectChildCode = false, queuedSend = nul
     if (conversationRequestForNode(node.id) === request) {
       conversationActiveRequests.delete(conversationRequestKey(node.id));
     }
+    runningPowanRuns.delete(node.id);
+    schedulePowanFaceRefresh([node.id], "conversation-send-finished-face");
     clearConversationTabRunningStatus(requestTabId, node.id);
     if (requestViewIsActive && pendingMessage.isConnected) {
       pendingMessage.remove();
@@ -3738,9 +4009,7 @@ async function sendConversation({ forceDirectChildCode = false, queuedSend = nul
     }
   } catch (error) {
     const requestViewIsActive = activeConversationTabId === requestTabId && conversationNodeId === node.id;
-    if (requestViewIsActive) {
-      stopInputWaitingSound("conversation-codex-error");
-    }
+    stopInputWaitingSound("conversation-codex-error", request.soundOwner);
     if (error.name === "AbortError" || request.cancelRequested) {
       if (requestViewIsActive) {
         markConversationPendingCancelled("キャンセルしました");
@@ -3763,13 +4032,15 @@ async function sendConversation({ forceDirectChildCode = false, queuedSend = nul
     }
   } finally {
     const requestViewIsActive = activeConversationTabId === requestTabId && conversationNodeId === node.id;
+    stopInputWaitingSound("conversation-send-finally", request.soundOwner);
     if (requestViewIsActive) {
-      stopInputWaitingSound("conversation-send-finally");
       stopConversationWorkPolling();
     }
     if (conversationRequestForNode(node.id) === request) {
       conversationActiveRequests.delete(conversationRequestKey(node.id));
     }
+    runningPowanRuns.delete(node.id);
+    schedulePowanFaceRefresh([node.id], "conversation-send-finally-face");
     clearConversationTabRunningStatus(requestTabId, node.id);
     if (request.pendingMessage === pendingMessage) {
       request.pendingMessage = null;
@@ -4321,6 +4592,7 @@ async function loadDocument(name = "project.powan") {
   powanExplorer.setDocument(nextDoc, { name, status: "loaded", reason: "load-document-state" });
   await refreshFiles();
   render();
+  startRunningAgentRunRefresh();
   if (activePanelTab === "history") {
     refreshConversationHistory({ reason: "load-document-refresh-history" });
   }

@@ -904,7 +904,73 @@ class PowanStore:
                 {"id": int(row["id"]), "role": row["role"], "text": row["text"], "createdAt": row["created_at"]}
                 for row in rows
             ],
+            "activeRun": self.active_agent_run(project, document_name, powan_id, conversation_id),
         }
+
+    def _agent_run_payload(self, row: sqlite3.Row) -> dict[str, Any]:
+        prompt_payload: dict[str, Any] = {}
+        try:
+            prompt_payload = json.loads(row["prompt_json"] or "{}")
+        except (TypeError, json.JSONDecodeError):
+            prompt_payload = {}
+        return {
+            "id": int(row["id"]),
+            "conversationId": int(row["conversation_id"]) if row["conversation_id"] is not None else None,
+            "powanId": row["powan_id"],
+            "status": row["status"],
+            "source": prompt_payload.get("source") or "",
+            "userText": prompt_payload.get("userText") or "",
+            "createdAt": row["created_at"],
+            "updatedAt": row["updated_at"],
+        }
+
+    def active_agent_run(
+        self,
+        project: str,
+        document_name: str,
+        powan_id: str,
+        conversation_id: int | None = None,
+    ) -> dict[str, Any] | None:
+        document_name = self.safe_powan_name(document_name)
+        parameters: list[Any] = [document_name, powan_id]
+        conversation_filter = ""
+        if conversation_id is not None:
+            conversation_filter = "AND ar.conversation_id = ?"
+            parameters.append(int(conversation_id))
+        with self.session(project) as connection:
+            row = connection.execute(
+                f"""
+                SELECT ar.id, ar.conversation_id, ar.powan_id, ar.status,
+                       ar.prompt_json, ar.created_at, ar.updated_at
+                FROM agent_runs ar
+                JOIN conversations c ON c.id = ar.conversation_id
+                WHERE c.document_name = ?
+                  AND ar.powan_id = ?
+                  AND ar.status = 'running'
+                  {conversation_filter}
+                ORDER BY ar.updated_at DESC, ar.id DESC
+                LIMIT 1
+                """,
+                parameters,
+            ).fetchone()
+        return self._agent_run_payload(row) if row else None
+
+    def list_running_agent_runs(self, project: str, document_name: str) -> list[dict[str, Any]]:
+        document_name = self.safe_powan_name(document_name)
+        with self.session(project) as connection:
+            rows = connection.execute(
+                """
+                SELECT ar.id, ar.conversation_id, ar.powan_id, ar.status,
+                       ar.prompt_json, ar.created_at, ar.updated_at
+                FROM agent_runs ar
+                JOIN conversations c ON c.id = ar.conversation_id
+                WHERE c.document_name = ?
+                  AND ar.status = 'running'
+                ORDER BY ar.updated_at DESC, ar.id DESC
+                """,
+                (document_name,),
+            ).fetchall()
+        return [self._agent_run_payload(row) for row in rows]
 
     def append_conversation_message(
         self,
@@ -914,25 +980,53 @@ class PowanStore:
         role: str,
         text: str,
     ) -> dict[str, Any]:
+        conversation_id = self.active_conversation_id(project, document_name, powan_id)
+        return self.append_conversation_message_to_conversation(
+            project,
+            document_name,
+            powan_id,
+            conversation_id,
+            role,
+            text,
+        )
+
+    def append_conversation_message_to_conversation(
+        self,
+        project: str,
+        document_name: str,
+        powan_id: str,
+        conversation_id: int,
+        role: str,
+        text: str,
+    ) -> dict[str, Any]:
+        document_name = self.safe_powan_name(document_name)
         clean_role = role.strip().lower()
         if clean_role not in {"user", "assistant", "system"}:
             raise HTTPException(status_code=400, detail="Invalid message role")
         clean_text = text.strip()
         if not clean_text:
             raise HTTPException(status_code=400, detail="Message text is required")
-        conversation_id = self.active_conversation_id(project, document_name, powan_id)
         now = datetime.now().isoformat(timespec="milliseconds")
         with self.session(project) as connection:
+            row = connection.execute(
+                """
+                SELECT id FROM conversations
+                WHERE id = ? AND document_name = ? AND powan_id = ?
+                """,
+                (int(conversation_id), document_name, powan_id),
+            ).fetchone()
+            if row is None:
+                raise HTTPException(status_code=404, detail="Conversation not found")
             cursor = connection.execute(
                 """
                 INSERT INTO conversation_messages(conversation_id, role, text, created_at)
                 VALUES (?, ?, ?, ?)
                 """,
-                (conversation_id, clean_role, clean_text, now),
+                (int(conversation_id), clean_role, clean_text, now),
             )
             connection.execute(
                 "UPDATE conversations SET updated_at = ? WHERE id = ?",
-                (now, conversation_id),
+                (now, int(conversation_id)),
             )
             message_id = int(cursor.lastrowid)
         self.log_event(
@@ -942,7 +1036,7 @@ class PowanStore:
                 "project": self.safe_project_name(project),
                 "file": self.safe_powan_name(document_name),
                 "nodeId": powan_id,
-                "conversationId": conversation_id,
+                "conversationId": int(conversation_id),
                 "messageId": message_id,
                 "role": clean_role,
                 "length": len(clean_text),
@@ -950,7 +1044,7 @@ class PowanStore:
         )
         return {
             "id": message_id,
-            "conversationId": conversation_id,
+            "conversationId": int(conversation_id),
             "role": clean_role,
             "text": clean_text,
             "createdAt": now,

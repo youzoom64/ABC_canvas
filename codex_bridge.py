@@ -43,6 +43,67 @@ class CodexPowanBridge:
     def cancel_key(self, project: str, document_name: str, node_id: str) -> str:
         return f"{project}\n{document_name}\n{node_id}"
 
+    def codex_event_context(self, tool_env: dict[str, str] | None) -> dict[str, str]:
+        if not tool_env:
+            return {}
+        return {
+            "project": tool_env.get("ABC_POWAN_PROJECT", ""),
+            "file": tool_env.get("ABC_POWAN_FILE", ""),
+            "nodeId": tool_env.get("ABC_POWAN_NODE_ID", ""),
+        }
+
+    def terminate_process_tree(self, process: subprocess.Popen[str]) -> dict[str, Any]:
+        pid = process.pid
+        if process.poll() is not None:
+            return {"pid": pid, "alreadyExited": True, "treeKill": False}
+        if os.name == "nt":
+            command = ["taskkill", "/PID", str(pid), "/T", "/F"]
+            try:
+                result = subprocess.run(
+                    command,
+                    stdout=subprocess.PIPE,
+                    stderr=subprocess.PIPE,
+                    text=True,
+                    encoding="utf-8",
+                    errors="replace",
+                    timeout=10,
+                    creationflags=getattr(subprocess, "CREATE_NO_WINDOW", 0),
+                )
+                fallback_kill = False
+                fallback_error = ""
+                if result.returncode != 0:
+                    time.sleep(0.2)
+                    if process.poll() is None:
+                        try:
+                            process.kill()
+                            fallback_kill = True
+                        except OSError as exc:
+                            fallback_error = str(exc)
+                return {
+                    "pid": pid,
+                    "treeKill": True,
+                    "taskkillReturncode": result.returncode,
+                    "taskkillStdout": (result.stdout or "")[-1000:],
+                    "taskkillStderr": (result.stderr or "")[-1000:],
+                    "fallbackKill": fallback_kill,
+                    "fallbackError": fallback_error,
+                }
+            except (OSError, subprocess.TimeoutExpired) as exc:
+                fallback_error = ""
+                try:
+                    process.kill()
+                except OSError as kill_exc:
+                    fallback_error = str(kill_exc)
+                return {
+                    "pid": pid,
+                    "treeKill": False,
+                    "fallbackKill": True,
+                    "error": str(exc),
+                    "fallbackError": fallback_error,
+                }
+        process.terminate()
+        return {"pid": pid, "treeKill": False, "terminated": True}
+
     def cancel(self, *, project: str, document_name: str, node_id: str) -> dict[str, Any]:
         key = self.cancel_key(project, document_name, node_id)
         with self.process_lock:
@@ -52,7 +113,7 @@ class CodexPowanBridge:
             self.cancelled_keys.add(key)
             pid = process.pid
         try:
-            process.terminate()
+            kill_info = self.terminate_process_tree(process)
         except OSError as exc:
             self.log_event(
                 "warn",
@@ -63,9 +124,9 @@ class CodexPowanBridge:
         self.log_event(
             "info",
             "codex-exec-cancel-requested",
-            {"project": project, "file": document_name, "nodeId": node_id, "pid": pid},
+            {"project": project, "file": document_name, "nodeId": node_id, **kill_info},
         )
-        return {"cancelled": True, "running": True, "pid": pid}
+        return {"cancelled": True, "running": True, **kill_info}
 
     def run(
         self,
@@ -295,6 +356,19 @@ class CodexPowanBridge:
                 env=env,
                 creationflags=getattr(subprocess, "CREATE_NO_WINDOW", 0),
             )
+            self.log_event(
+                "info",
+                "codex-exec-process-started",
+                {
+                    **self.codex_event_context(tool_env),
+                    "pid": process.pid,
+                    "cwd": str(project_root),
+                    "resumed": bool(thread_id),
+                    "sandbox": sandbox,
+                    "model": model,
+                    "reasoningEffort": reasoning_effort,
+                },
+            )
             if cancel_key:
                 with self.process_lock:
                     self.active_processes[cancel_key] = process
@@ -312,7 +386,16 @@ class CodexPowanBridge:
             stderr = f"{stderr}\nCodex exec timed out after {self.timeout_seconds}s".strip()
             returncode = 124
             if process:
-                process.kill()
+                kill_info = self.terminate_process_tree(process)
+                self.log_event(
+                    "warn",
+                    "codex-exec-timeout-kill",
+                    {
+                        **self.codex_event_context(tool_env),
+                        **kill_info,
+                        "timeoutSeconds": self.timeout_seconds,
+                    },
+                )
                 try:
                     extra_stdout, extra_stderr = process.communicate(timeout=3)
                     stdout = f"{stdout}{extra_stdout or ''}"

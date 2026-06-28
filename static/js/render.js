@@ -205,6 +205,9 @@ function sleepyPowanFaceEmoji(baseEmoji, elapsedMs) {
 }
 
 function powanFaceEmoji(node, element = null) {
+  if (node?.id && (runningPowanRuns?.has?.(node.id) || conversationActiveRequests?.has?.(String(node.id)))) {
+    return "🫨";
+  }
   if (element?.classList?.contains("speaking")) {
     return element.classList.contains("mouth-closed") ? "🙂" : "😀";
   }
