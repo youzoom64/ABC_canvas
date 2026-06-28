@@ -1627,6 +1627,58 @@ function worldPathIds(node) {
   return worldPathNodes(node).map((item) => item.id);
 }
 
+function focusedAncestorIds() {
+  const ids = new Set();
+  const addPathThroughNode = (node) => {
+    for (const item of worldPathNodes(node)) {
+      ids.add(item.id);
+    }
+  };
+  const addStrictAncestors = (node) => {
+    const path = worldPathNodes(node);
+    for (const item of path.slice(0, -1)) {
+      ids.add(item.id);
+    }
+  };
+
+  const worldParent = currentWorldParent();
+  if (worldParent) {
+    addPathThroughNode(worldParent);
+  }
+
+  const editParent = childEditParentId ? nodeById(childEditParentId) : null;
+  if (editParent) {
+    addPathThroughNode(editParent);
+  }
+
+  const selected = typeof selectedNodeIds === "function"
+    ? selectedNodeIds()
+    : (selectedId ? [selectedId] : []);
+  for (const id of selected) {
+    const node = nodeById(id);
+    if (node) {
+      addStrictAncestors(node);
+    }
+  }
+
+  return ids;
+}
+
+function isFocusedAncestor(nodeId) {
+  return Boolean(nodeId && focusedAncestorIds().has(nodeId));
+}
+
+function syncFocusedAncestorTextVisuals() {
+  const ids = focusedAncestorIds();
+  const toggle = (element) => element.classList.toggle("focus-ancestor-text", ids.has(element.dataset.id));
+  if (worldLayer) {
+    worldLayer.querySelectorAll(".node, .nested-meaning, .nested-preview-meaning").forEach(toggle);
+  }
+  if (treeList) {
+    treeList.querySelectorAll(".tree-item").forEach(toggle);
+  }
+}
+
 function waitForWorldTransition() {
   return new Promise((resolve) => window.setTimeout(resolve, WORLD_TRANSITION_MS));
 }

@@ -23,6 +23,7 @@ function appendTreeItem(node, depth) {
   item.classList.toggle("current-world", node.id === openParentId);
   item.classList.toggle("collapsed", isCollapsed);
   item.classList.toggle("has-code", Boolean((node.code || "").trim()));
+  item.classList.toggle("focus-ancestor-text", isFocusedAncestor(node.id));
   item.style.setProperty("--depth", String(depth));
   item.dataset.id = node.id;
   item.draggable = true;

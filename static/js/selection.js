@@ -48,6 +48,9 @@ function refreshSelectionVisuals() {
       item.classList.toggle("selected", isNodeSelected(item.dataset.id));
     });
   }
+  if (typeof syncFocusedAncestorTextVisuals === "function") {
+    syncFocusedAncestorTextVisuals();
+  }
   updateCoordinateBadge(nodeById(selectedId));
   syncSelectionControls();
 }

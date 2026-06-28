@@ -721,6 +721,16 @@ body.resizing-tree {
   color: #715111;
 }
 
+.tree-item.focus-ancestor-text .tree-label {
+  opacity: 0.44;
+  transition: opacity 0.18s ease-in-out;
+}
+
+.tree-item.focus-ancestor-text.current-world .tree-label,
+.tree-item.focus-ancestor-text.selected .tree-label {
+  opacity: 0.54;
+}
+
 .tree-toggle,
 .tree-label {
   min-width: 0;
@@ -2972,6 +2982,19 @@ body.panning-canvas * {
 
 .node-body::placeholder {
   color: rgba(56, 85, 99, 0.42);
+}
+
+.node.focus-ancestor-text > .node-body,
+.nested-meaning.focus-ancestor-text > .node-body,
+.nested-preview-meaning.focus-ancestor-text > .node-body {
+  opacity: 0.38;
+  transition:
+    opacity 0.18s ease-in-out,
+    color 0.18s ease-in-out;
+}
+
+.node.focus-ancestor-text.open-parent > .node-body {
+  opacity: 0.48;
 }
 
 .nested-meaning > .node-body,

@@ -12,6 +12,9 @@ function updateWorldStatus() {
 function selectNode(id) {
   const node = nodeById(id);
   powanFocus.applySelected(id);
+  if (typeof syncFocusedAncestorTextVisuals === "function") {
+    syncFocusedAncestorTextVisuals();
+  }
   updateCoordinateBadge(node);
   if (!node) {
     return;
@@ -423,6 +426,7 @@ function createPowanSurface(node, layout, { mode = "world", depth = 0, softBody 
   element.classList.toggle("has-name", hasMeaningText(node));
   element.classList.toggle("has-code", Boolean((node.code || "").trim()));
   element.classList.toggle("has-attachment", Boolean(node.attachment));
+  element.classList.toggle("focus-ancestor-text", isFocusedAncestor(node.id));
   powanFocus.markSelected(element);
   element.append(createPowanDragHitFrame());
   element.append(createPowanFaceButton(node, element));
