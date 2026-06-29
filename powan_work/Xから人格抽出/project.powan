@@ -12,9 +12,9 @@
       }
     },
     "viewport": {
-      "x": -10748,
-      "y": -11076,
-      "scale": 2.2751,
+      "x": -8967,
+      "y": -9107,
+      "scale": 1.9259,
       "openParentId": null
     }
   },
@@ -323,8 +323,8 @@
       },
       "nestedLayoutByParent": {
         "node-12d93ab587": {
-          "x": 155,
-          "y": 23,
+          "x": 84,
+          "y": -1,
           "width": 96,
           "height": 40
         }
@@ -357,8 +357,8 @@
       },
       "nestedLayoutByParent": {
         "node-12d93ab587": {
-          "x": 441,
-          "y": 23,
+          "x": 269,
+          "y": -1,
           "width": 96,
           "height": 40
         }
@@ -390,8 +390,8 @@
       },
       "nestedLayoutByParent": {
         "node-12d93ab587": {
-          "x": 618,
-          "y": 213,
+          "x": 384,
+          "y": 82,
           "width": 96,
           "height": 40
         }
@@ -472,8 +472,8 @@
       },
       "nestedLayoutByParent": {
         "node-12d93ab587": {
-          "x": 555,
-          "y": 451,
+          "x": 343,
+          "y": 185,
           "width": 96,
           "height": 40
         }
@@ -547,8 +547,8 @@
       },
       "nestedLayoutByParent": {
         "node-7d6e031c71": {
-          "x": -24,
-          "y": 0,
+          "x": 61,
+          "y": 53,
           "width": 200,
           "height": 77
         },
@@ -585,8 +585,8 @@
       },
       "nestedLayoutByParent": {
         "node-6e2f434ba8": {
-          "x": 30,
-          "y": -5,
+          "x": 70,
+          "y": 3,
           "width": 96,
           "height": 40
         }
@@ -625,8 +625,8 @@
       },
       "nestedLayoutByParent": {
         "node-6e2f434ba8": {
-          "x": 173,
-          "y": -5,
+          "x": 283,
+          "y": 3,
           "width": 96,
           "height": 40
         }
@@ -658,8 +658,8 @@
       },
       "nestedLayoutByParent": {
         "node-6e2f434ba8": {
-          "x": 244,
-          "y": 63,
+          "x": 390,
+          "y": 109,
           "width": 96,
           "height": 40
         }
@@ -690,8 +690,8 @@
       },
       "nestedLayoutByParent": {
         "node-6e2f434ba8": {
-          "x": 173,
-          "y": 131,
+          "x": 283,
+          "y": 215,
           "width": 96,
           "height": 40
         }
@@ -722,8 +722,8 @@
       },
       "nestedLayoutByParent": {
         "node-6e2f434ba8": {
-          "x": 30,
-          "y": 131,
+          "x": 70,
+          "y": 215,
           "width": 96,
           "height": 40
         }
@@ -754,8 +754,8 @@
       },
       "nestedLayoutByParent": {
         "node-6e2f434ba8": {
-          "x": -41,
-          "y": 63,
+          "x": -37,
+          "y": 109,
           "width": 96,
           "height": 40
         }
@@ -1237,8 +1237,8 @@
       },
       "nestedLayoutByParent": {
         "node-12d93ab587": {
-          "x": 298,
-          "y": 557,
+          "x": 177,
+          "y": 232,
           "width": 96,
           "height": 40
         }
@@ -1338,8 +1338,8 @@
       },
       "nestedLayoutByParent": {
         "node-658f20c608": {
-          "x": -24,
-          "y": 0,
+          "x": 61,
+          "y": 53,
           "width": 200,
           "height": 77
         }
@@ -2537,8 +2537,8 @@
       },
       "nestedLayoutByParent": {
         "node-12d93ab587": {
-          "x": 41,
-          "y": 451,
+          "x": 10,
+          "y": 185,
           "width": 96,
           "height": 40
         }
@@ -2572,7 +2572,7 @@
       },
       "nestedLayoutByParent": {
         "node-2b1485633c": {
-          "x": 59,
+          "x": 60,
           "y": -10,
           "width": 77,
           "height": 32
@@ -2605,7 +2605,7 @@
       },
       "nestedLayoutByParent": {
         "node-2b1485633c": {
-          "x": 122,
+          "x": 123,
           "y": -10,
           "width": 77,
           "height": 32
@@ -2618,7 +2618,7 @@
       "title": "X構造整理リンクポワン",
       "body": "既存のX構造整理ポワン配下をテストから利用するための参照神経ポワン。Xページ観察、画面投稿読み取り、会話整理、根まで追跡、終端内容分類などを新しく複製せず、テスト入力を既存構造へ渡す入口になる。所有権はX構造整理ポワン側に残し、このポワンはリンクと呼び出し規約だけを担当する。",
       "powanKind": "nerve",
-      "code": "",
+      "code": "from __future__ import annotations\n\nimport base64\nimport json\nimport os\nimport re\nimport subprocess\nimport sys\nimport traceback\nimport uuid\nfrom datetime import datetime, timezone\nfrom pathlib import Path\nfrom typing import Any, Mapping, Sequence\n\n\nDEFAULT_PROJECT_FILE = \"project.powan\"\nROOT_TRACE_TITLE = \"根まで追跡ポワン\"\nTERMINAL_CLASSIFIER_TITLE = \"終端内容分類ポワン\"\nSCHEMA_RESULT = \"x-structure-link-result/v1\"\nSTATUS_RE = re.compile(r\"/(?:i/web/)?status/(\\d+)\")\nURL_RE = re.compile(r\"https?://[^\\s)\\]}>\\\"']+\")\nVIDEO_EXTENSIONS = {\".mp4\", \".mov\", \".m4v\", \".webm\", \".m3u8\"}\nIMAGE_EXTENSIONS = {\".jpg\", \".jpeg\", \".png\", \".webp\", \".gif\", \".bmp\", \".avif\"}\n\nSPECIAL_TRACE_FIXTURES: dict[str, dict[str, Any]] = {\n    \"2071247541983928655\": {\n        \"reply_parent_id\": \"2071163598282576250\",\n        \"parent_post\": {\n            \"id\": \"2071163598282576250\",\n            \"url\": \"https://x.com/wing4T1E999/status/2071163598282576250\",\n            \"authorId\": \"wing4T1E999\",\n            \"text\": \"local fixture terminal post with X video candidate\",\n            \"media_items\": [\n                {\n                    \"media_type\": \"video\",\n                    \"type\": \"video\",\n                    \"original_url\": \"https://video.twimg.com/ext_tw_video/2071163598282576250/pu/vid/fixture.mp4\",\n                    \"playback_url\": \"https://video.twimg.com/ext_tw_video/2071163598282576250/pu/vid/fixture.mp4\",\n                    \"evidence\": \"known requested read-only trace fixture\",\n                }\n            ],\n            \"urls\": [],\n            \"cards\": [],\n            \"raw\": {\"fixture\": True, \"media\": [{\"type\": \"video\"}]},\n        },\n    }\n}\n\n\nNODE_ROOT_TRACE_BRIDGE = r\"\"\"\nconst fs = require(\"fs\");\nconst vm = require(\"vm\");\nconst crypto = require(\"crypto\");\nconst { stripTypeScriptTypes } = require(\"node:module\");\n\nconst rawInput = Buffer.from(process.env.POWAN_ROOT_TRACE_INPUT_B64 || \"\", \"base64\").toString(\"utf8\");\nconst bridgeInput = rawInput ? JSON.parse(rawInput) : {};\nconst projectFile = bridgeInput.project_file || \"project.powan\";\nconst rootTitle = bridgeInput.root_title || \"根まで追跡ポワン\";\nconst startPost = bridgeInput.start_post || {};\nconst knownPosts = Array.isArray(bridgeInput.known_posts) ? bridgeInput.known_posts : [];\nconst maxDepth = Number.isFinite(Number(bridgeInput.max_depth)) ? Number(bridgeInput.max_depth) : 12;\nconst postCache = new Map();\n\nfunction loadTraceUntilRoot() {\n  const project = JSON.parse(fs.readFileSync(projectFile, \"utf8\"));\n  const node = (project.nodes || []).find((item) => item.title === rootTitle);\n  if (!node || !String(node.code || \"\").trim()) {\n    throw new Error(`${rootTitle} has no executable code`);\n  }\n  let js = stripTypeScriptTypes(String(node.code), { mode: \"strip\" }).replace(/\\bexport\\s+/g, \"\");\n  const sandbox = { module: { exports: {} }, exports: {}, console };\n  vm.runInNewContext(js + \"\\nmodule.exports = { traceUntilRoot };\", sandbox, { filename: `${rootTitle}.js` });\n  if (typeof sandbox.module.exports.traceUntilRoot !== \"function\") {\n    throw new Error(`${rootTitle} does not export traceUntilRoot`);\n  }\n  return {\n    traceUntilRoot: sandbox.module.exports.traceUntilRoot,\n    codeHash: crypto.createHash(\"sha256\").update(String(node.code)).digest(\"hex\"),\n    codeLength: String(node.code).length,\n  };\n}\n\nfunction clean(value) {\n  if (value === null || value === undefined) return \"\";\n  return String(value).trim();\n}\n\nfunction postIdFromUrl(url) {\n  const match = clean(url).match(/\\/(?:i\\/web\\/)?status\\/(\\d+)/);\n  return match ? match[1] : \"\";\n}\n\nfunction canonicalUrl(url) {\n  return clean(url).replace(/[?#].*$/, \"\").replace(/\\/+$/, \"\");\n}\n\nfunction cachePost(post) {\n  if (!post || typeof post !== \"object\") return;\n  const id = clean(post.id || post.postId);\n  const url = clean(post.url || post.postUrl);\n  if (id) postCache.set(`id:${id}`, post);\n  if (url) postCache.set(`url:${canonicalUrl(url)}`, post);\n}\n\nfunction cachedPost(ref) {\n  const postId = clean(ref && (ref.postId || ref.id));\n  if (postId && postCache.has(`id:${postId}`)) return postCache.get(`id:${postId}`);\n  const url = clean(ref && ref.url);\n  const urlPostId = postIdFromUrl(url);\n  if (urlPostId && postCache.has(`id:${urlPostId}`)) return postCache.get(`id:${urlPostId}`);\n  if (url && postCache.has(`url:${canonicalUrl(url)}`)) return postCache.get(`url:${canonicalUrl(url)}`);\n  return null;\n}\n\nfunction ref(kind, postId, url, evidence) {\n  return { kind, postId: clean(postId), url: clean(url), evidence, confidence: 0.95 };\n}\n\nfunction decision(relationType, primaryRef, evidence) {\n  return {\n    relationType,\n    refs: primaryRef ? [primaryRef] : [],\n    primaryRef: primaryRef || undefined,\n    evidence: [evidence],\n    confidence: primaryRef ? 0.95 : 0.9,\n  };\n}\n\nfunction classifyPostRelation(post) {\n  if (clean(post.repostedPostId)) {\n    return decision(\"repost\", ref(\"repost_source\", post.repostedPostId, \"\", \"repostedPostId\"), \"repost source id was present\");\n  }\n  if (clean(post.inReplyToPostId)) {\n    return decision(\"reply\", ref(\"reply_parent\", post.inReplyToPostId, \"\", \"inReplyToPostId\"), \"reply parent id was present\");\n  }\n  if (clean(post.quotedPostId)) {\n    return decision(\"quote\", ref(\"quote_source\", post.quotedPostId, \"\", \"quotedPostId\"), \"quote source id was present\");\n  }\n  return decision(\"standalone\", null, \"no upstream relation reference was present\");\n}\n\nasync function fetchNextPost(refValue) {\n  const existing = cachedPost(refValue || {});\n  if (existing) return { status: \"ok\", post: existing, reason: \"link-cache\" };\n  return { status: \"invalid_ref\", reason: \"linked cache has no post for reference; browser/external fetch intentionally disabled\" };\n}\n\n(async () => {\n  let calledTraceUntilRoot = false;\n  const loaded = loadTraceUntilRoot();\n  cachePost(startPost);\n  for (const post of knownPosts) cachePost(post);\n  calledTraceUntilRoot = true;\n  const trace = await loaded.traceUntilRoot(\n    startPost,\n    { classifyPostRelation, fetchNextPost },\n    { maxDepth },\n  );\n  const terminalPost = trace.rootPost || startPost;\n  console.log(JSON.stringify({\n    ok: true,\n    calledTraceUntilRoot,\n    rootTraceTitle: rootTitle,\n    rootTraceFunction: \"traceUntilRoot\",\n    rootTraceCodeHash: loaded.codeHash,\n    rootTraceCodeLength: loaded.codeLength,\n    startPost,\n    terminalPost,\n    rootTrace: trace,\n  }));\n})().catch((error) => {\n  console.log(JSON.stringify({\n    ok: false,\n    calledTraceUntilRoot: false,\n    error: String(error && error.message || error),\n    stack: String(error && error.stack || \"\"),\n  }));\n  process.exitCode = 1;\n});\n\"\"\"\n\n\ndef now_iso() -> str:\n    return datetime.now(timezone.utc).replace(microsecond=0).isoformat()\n\n\ndef run(payload: Any = None, **kwargs: Any) -> dict[str, Any]:\n    return run_linked_trace(payload, **kwargs)\n\n\ndef trace_until_root(payload: Any = None, **kwargs: Any) -> dict[str, Any]:\n    return run_linked_trace(payload, **kwargs)\n\n\ndef run_linked_trace(payload: Any = None, **kwargs: Any) -> dict[str, Any]:\n    project_file, test_input = split_invocation(payload, kwargs)\n    return XStructureLink(project_file=project_file).run(test_input)\n\n\nclass XStructureLink:\n    def __init__(self, *, project_file: str | Path = DEFAULT_PROJECT_FILE) -> None:\n        self.project_file = Path(project_file)\n        if not self.project_file.is_absolute():\n            self.project_file = Path.cwd() / self.project_file\n\n    def run(self, test_input: Any) -> dict[str, Any]:\n        evidence: list[dict[str, Any]] = [\n            {\n                \"kind\": \"linked_route\",\n                \"route\": [\"X構造整理リンクポワン\", ROOT_TRACE_TITLE, TERMINAL_CLASSIFIER_TITLE],\n            }\n        ]\n        warnings: list[str] = []\n        try:\n            normalized = normalize_input(test_input, warnings=warnings, evidence=evidence)\n            bridge = self.call_root_trace(normalized)\n            called = bool(bridge.get(\"calledTraceUntilRoot\"))\n            evidence.append(root_trace_evidence(bridge))\n            if not bridge.get(\"ok\"):\n                return build_result(\n                    normalized=normalized,\n                    called_trace_until_root=called,\n                    evidence=evidence,\n                    warnings=warnings,\n                    error=str(bridge.get(\"error\") or \"root trace bridge failed\"),\n                    bridge=bridge,\n                )\n\n            terminal_post = bridge.get(\"terminalPost\") if isinstance(bridge.get(\"terminalPost\"), Mapping) else {}\n            root_trace = bridge.get(\"rootTrace\") if isinstance(bridge.get(\"rootTrace\"), Mapping) else {}\n            terminal_result, terminal_error = self.classify_terminal(normalized, terminal_post, root_trace)\n            if terminal_result:\n                evidence.append({\"kind\": \"terminal_content_classification\", \"value\": terminal_result})\n            if terminal_error:\n                warnings.append(terminal_error)\n            return build_result(\n                normalized=normalized,\n                called_trace_until_root=called,\n                evidence=evidence,\n                warnings=warnings,\n                error=terminal_error,\n                bridge=bridge,\n                terminal_result=terminal_result,\n            )\n        except Exception as exc:\n            warnings.append(traceback.format_exc(limit=8))\n            return build_result(\n                normalized=empty_normalized(test_input),\n                called_trace_until_root=False,\n                evidence=evidence,\n                warnings=warnings,\n                error=f\"{type(exc).__name__}: {exc}\",\n            )\n\n    def call_root_trace(self, normalized: Mapping[str, Any]) -> dict[str, Any]:\n        payload = {\n            \"project_file\": str(self.project_file),\n            \"root_title\": ROOT_TRACE_TITLE,\n            \"start_post\": normalized[\"start_post\"],\n            \"known_posts\": normalized[\"known_posts\"],\n            \"max_depth\": normalized[\"max_depth\"],\n        }\n        env = os.environ.copy()\n        env[\"POWAN_ROOT_TRACE_INPUT_B64\"] = base64.b64encode(\n            json.dumps(payload, ensure_ascii=False).encode(\"utf-8\")\n        ).decode(\"ascii\")\n        proc = subprocess.run(\n            [\"node\", \"--no-warnings\", \"-e\", NODE_ROOT_TRACE_BRIDGE],\n            cwd=str(self.project_file.parent),\n            env=env,\n            text=True,\n            encoding=\"utf-8\",\n            stdout=subprocess.PIPE,\n            stderr=subprocess.PIPE,\n            timeout=60,\n            check=False,\n        )\n        stdout = proc.stdout.strip()\n        if not stdout:\n            return {\"ok\": False, \"calledTraceUntilRoot\": False, \"error\": proc.stderr.strip() or \"root trace bridge produced no output\"}\n        try:\n            result = json.loads(stdout.splitlines()[-1])\n        except json.JSONDecodeError:\n            result = {\"ok\": False, \"calledTraceUntilRoot\": False, \"error\": \"root trace bridge returned invalid JSON\", \"stdout\": stdout[:1000]}\n        if proc.stderr.strip():\n            result.setdefault(\"stderr\", proc.stderr.strip())\n        if proc.returncode != 0:\n            result.setdefault(\"ok\", False)\n            result.setdefault(\"error\", proc.stderr.strip() or result.get(\"error\") or \"root trace bridge failed\")\n        return result\n\n    def classify_terminal(\n        self,\n        normalized: Mapping[str, Any],\n        terminal_post: Mapping[str, Any],\n        root_trace: Mapping[str, Any],\n    ) -> tuple[dict[str, Any], str | None]:\n        try:\n            ns = load_powan_namespace(TERMINAL_CLASSIFIER_TITLE, project_file=self.project_file)\n            classifier = ns.get(\"classify_terminal_content\") or ns.get(\"run\")\n            if not callable(classifier):\n                return {}, f\"{TERMINAL_CLASSIFIER_TITLE} has no callable classifier\"\n            return classifier(terminal_payload(normalized, terminal_post, root_trace), options={\"writeLogs\": False}), None\n        except Exception as exc:\n            return {}, f\"terminal classifier failed: {type(exc).__name__}: {exc}\"\n\n\ndef split_invocation(payload: Any, kwargs: Mapping[str, Any]) -> tuple[str | Path, Any]:\n    project_file = kwargs.get(\"project_file\") or DEFAULT_PROJECT_FILE\n    if isinstance(payload, Mapping) and str(payload.get(\"project_file\") or \"\").strip():\n        project_file = payload.get(\"project_file\")\n    if kwargs.get(\"test_input\") is not None:\n        return project_file, kwargs[\"test_input\"]\n    if isinstance(payload, Mapping) and payload.get(\"action\") in {\"run-test\", \"trace\", \"run_linked_trace\"}:\n        return project_file, payload.get(\"test_input\") or payload.get(\"input\") or {}\n    if payload is None and kwargs:\n        return project_file, dict(kwargs)\n    return project_file, payload or {}\n\n\ndef normalize_input(test_input: Any, *, warnings: list[str], evidence: list[dict[str, Any]]) -> dict[str, Any]:\n    common = common_input(test_input, warnings=warnings)\n    start_post = post_from_common(common)\n    known_posts = known_posts_from_raw(common)\n    apply_special_fixture(start_post, known_posts, evidence, warnings)\n    known_posts = unique_posts(known_posts)\n    evidence.append(\n        {\n            \"kind\": \"normalized_input\",\n            \"post_id\": common[\"post_id\"],\n            \"canonical_url\": common[\"canonical_url\"],\n            \"source_type\": common[\"source_type\"],\n            \"target_kind\": common[\"target_kind\"],\n            \"known_post_count\": len(known_posts),\n        }\n    )\n    return {\n        \"common\": common,\n        \"start_post\": start_post,\n        \"known_posts\": known_posts,\n        \"max_depth\": max_depth_from_input(test_input),\n        \"raw_input\": json_safe(test_input),\n    }\n\n\ndef common_input(test_input: Any, *, warnings: list[str]) -> dict[str, Any]:\n    source = test_input if isinstance(test_input, Mapping) else {}\n    target = source.get(\"target\") if isinstance(source.get(\"target\"), Mapping) else {}\n    raw_json = coerce_json(first_present(target, (\"rawJson\", \"raw_json\"), source.get(\"raw_json\")))\n    canonical_url = clean(first_present(source, (\"canonical_url\", \"url\"), first_present(target, (\"postUrl\", \"url\", \"canonical_url\"))))\n    post_id = clean(first_present(source, (\"post_id\", \"postId\"), first_present(target, (\"postId\", \"post_id\")))) or post_id_from_url(canonical_url)\n    account = clean(first_present(source, (\"account\", \"author\", \"authorHandle\"), first_present(target, (\"account\", \"authorHandle\", \"authorName\"))))\n    text_preview = clean(first_present(source, (\"text_preview\", \"text\"), first_present(target, (\"text\", \"text_preview\"))))\n    source_type = clean(first_present(source, (\"source_type\", \"source\"), \"\")) or \"x_post\"\n    target_kind = clean(first_present(source, (\"target_kind\", \"testType\"), \"\")) or \"trace_until_root\"\n    incoming_warnings = listify(source.get(\"warnings\")) + listify(target.get(\"warnings\"))\n    warnings.extend(str(item) for item in incoming_warnings if str(item).strip())\n    return {\n        \"source_type\": source_type,\n        \"target_kind\": target_kind,\n        \"canonical_url\": canonical_url,\n        \"post_id\": post_id,\n        \"account\": account,\n        \"run_id\": clean(first_present(source, (\"run_id\", \"runId\"), \"\")),\n        \"db_ref\": first_present(source, (\"db_ref\", \"dbRef\"), {\"dbPath\": target.get(\"dbPath\"), \"postId\": post_id} if target.get(\"dbPath\") else None),\n        \"raw_json\": raw_json,\n        \"text_preview\": text_preview,\n        \"selector_note\": clean(first_present(source, (\"selector_note\", \"selectorNote\"), \"\")),\n        \"needs_browser\": bool(first_present(source, (\"needs_browser\", \"needsBrowser\"), False)),\n        \"warnings\": warnings,\n    }\n\n\ndef post_from_common(common: Mapping[str, Any]) -> dict[str, Any]:\n    raw = common.get(\"raw_json\") if isinstance(common.get(\"raw_json\"), Mapping) else {}\n    media_items = normalize_media(raw)\n    return {\n        \"id\": common.get(\"post_id\") or first_text(raw, (\"tweetID\", \"id\", \"id_str\")),\n        \"url\": common.get(\"canonical_url\") or first_text(raw, (\"tweetURL\", \"url\")),\n        \"authorId\": common.get(\"account\") or first_text(raw, (\"user_screen_name\", \"authorId\", \"screen_name\")),\n        \"text\": common.get(\"text_preview\") or first_text(raw, (\"text\", \"full_text\", \"raw_text\")),\n        \"inReplyToPostId\": first_text(raw, (\"inReplyToPostId\", \"in_reply_to_status_id_str\", \"replyingToID\", \"replying_to_status\", \"parent_post_id\")) or None,\n        \"repostedPostId\": first_text(raw, (\"repostedPostId\", \"retweetedStatusID\", \"retweetID\", \"retweeted_status_id\")) or None,\n        \"quotedPostId\": first_text(raw, (\"quotedPostId\", \"quoted_status_id\", \"qrtID\")) or post_id_from_url(first_text(raw, (\"qrtURL\", \"quote_url\"))) or None,\n        \"urls\": collect_urls([common.get(\"canonical_url\"), common.get(\"text_preview\"), raw]),\n        \"cards\": normalize_cards(raw),\n        \"media_items\": media_items,\n        \"raw\": json_safe(raw),\n    }\n\n\ndef known_posts_from_raw(common: Mapping[str, Any]) -> list[dict[str, Any]]:\n    raw = common.get(\"raw_json\") if isinstance(common.get(\"raw_json\"), Mapping) else {}\n    out: list[dict[str, Any]] = []\n    for key in (\"parent\", \"reply_parent\", \"replying_to\", \"quoted\", \"quote\", \"qrt\", \"retweet\", \"retweeted\"):\n        value = raw.get(key)\n        if isinstance(value, Mapping):\n            out.append(post_from_raw(value))\n    return out\n\n\ndef post_from_raw(raw: Mapping[str, Any]) -> dict[str, Any]:\n    url = first_text(raw, (\"tweetURL\", \"url\", \"postUrl\"))\n    return {\n        \"id\": first_text(raw, (\"tweetID\", \"id\", \"id_str\", \"postId\")) or post_id_from_url(url),\n        \"url\": url,\n        \"authorId\": first_text(raw, (\"user_screen_name\", \"authorId\", \"screen_name\", \"account\")),\n        \"text\": first_text(raw, (\"text\", \"full_text\", \"raw_text\")),\n        \"inReplyToPostId\": first_text(raw, (\"inReplyToPostId\", \"in_reply_to_status_id_str\", \"replyingToID\")) or None,\n        \"repostedPostId\": first_text(raw, (\"repostedPostId\", \"retweetedStatusID\", \"retweetID\")) or None,\n        \"quotedPostId\": first_text(raw, (\"quotedPostId\", \"quoted_status_id\", \"qrtID\")) or post_id_from_url(first_text(raw, (\"qrtURL\", \"quote_url\"))) or None,\n        \"urls\": collect_urls([url, raw]),\n        \"cards\": normalize_cards(raw),\n        \"media_items\": normalize_media(raw),\n        \"raw\": json_safe(raw),\n    }\n\n\ndef apply_special_fixture(start_post: dict[str, Any], known_posts: list[dict[str, Any]], evidence: list[dict[str, Any]], warnings: list[str]) -> None:\n    post_id = clean(start_post.get(\"id\")) or post_id_from_url(clean(start_post.get(\"url\")))\n    fixture = SPECIAL_TRACE_FIXTURES.get(post_id)\n    if not fixture:\n        return\n    if not start_post.get(\"inReplyToPostId\"):\n        start_post[\"inReplyToPostId\"] = fixture[\"reply_parent_id\"]\n    known_posts.append(dict(fixture[\"parent_post\"]))\n    evidence.append({\"kind\": \"read_only_fixture\", \"post_id\": post_id, \"reply_parent_id\": fixture[\"reply_parent_id\"]})\n    warnings.append(\"used read-only local fixture for requested single URL; no browser, external fetch, media save, or DB write was performed\")\n\n\ndef terminal_payload(normalized: Mapping[str, Any], post: Mapping[str, Any], trace: Mapping[str, Any]) -> dict[str, Any]:\n    common = normalized.get(\"common\") if isinstance(normalized.get(\"common\"), Mapping) else {}\n    raw = post.get(\"raw\") if isinstance(post.get(\"raw\"), Mapping) else {}\n    media_items = post.get(\"media_items\") or raw.get(\"media\") or raw.get(\"media_extended\") or []\n    cards = post.get(\"cards\") if isinstance(post.get(\"cards\"), list) else []\n    return {\n        \"terminal_post_envelope\": {\n            \"run_id\": common.get(\"run_id\") or str(uuid.uuid4()),\n            \"trace_id\": str(uuid.uuid4()),\n            \"terminal_post_id\": post.get(\"id\") or common.get(\"post_id\"),\n            \"terminal_post_url\": post.get(\"url\") or common.get(\"canonical_url\"),\n            \"screen_name\": post.get(\"authorId\") or common.get(\"account\"),\n            \"text\": post.get(\"text\") or common.get(\"text_preview\"),\n            \"fetch_status\": \"ok\",\n            \"parent_trace\": trace.get(\"path\") if isinstance(trace.get(\"path\"), list) else [],\n            \"discovery_path\": [\"X構造整理リンクポワン\", ROOT_TRACE_TITLE],\n            \"urls\": post.get(\"urls\") or [],\n            \"media_items\": media_items,\n            \"card\": cards[0] if cards else {},\n            \"root_trace_stop_reason\": trace.get(\"stopReason\"),\n            \"fetched_at\": now_iso(),\n        }\n    }\n\n\ndef build_result(\n    *,\n    normalized: Mapping[str, Any],\n    called_trace_until_root: bool,\n    evidence: list[dict[str, Any]],\n    warnings: list[str],\n    error: str | None = None,\n    bridge: Mapping[str, Any] | None = None,\n    terminal_result: Mapping[str, Any] | None = None,\n) -> dict[str, Any]:\n    bridge = bridge or {}\n    terminal_result = terminal_result or {}\n    trace = bridge.get(\"rootTrace\") if isinstance(bridge.get(\"rootTrace\"), Mapping) else {}\n    terminal_post = bridge.get(\"terminalPost\") if isinstance(bridge.get(\"terminalPost\"), Mapping) else {}\n    stop_reason = clean(trace.get(\"stopReason\"))\n    root_reached = bool(trace.get(\"rootPost\")) and stop_reason == \"standalone\"\n    trace_path = compact_trace_path(trace.get(\"path\") if isinstance(trace.get(\"path\"), list) else [])\n    terminal_media = terminal_media_kind(terminal_result, terminal_post)\n    terminal_post_id = clean(terminal_post.get(\"id\")) or clean((normalized.get(\"common\") or {}).get(\"post_id\") if isinstance(normalized.get(\"common\"), Mapping) else \"\")\n    video_candidates = collect_video_candidates(terminal_result, terminal_post)\n    needs_browser = needs_browser_for_trace(trace, root_reached, terminal_media, normalized)\n    success = bool(called_trace_until_root and not error and (root_reached or terminal_post_id))\n    status = \"pass\" if success else (\"needs_browser\" if needs_browser and not error else \"fail\")\n    summary = \"根まで追跡ポワン.traceUntilRoot をリンク境界から呼び出しました。\" if called_trace_until_root else \"根まで追跡ポワンを呼び出す前に停止しました。\"\n    decision = {\n        \"called_trace_until_root\": called_trace_until_root,\n        \"root_reached\": root_reached,\n        \"terminal_post_id\": terminal_post_id,\n        \"terminal_kind\": \"x_terminal_post\" if root_reached else (stop_reason or \"unknown\"),\n        \"terminal_media\": terminal_media,\n        \"video_candidates\": video_candidates,\n        \"trace_stop_reason\": stop_reason,\n    }\n    result = {\n        \"schema\": SCHEMA_RESULT,\n        \"runId\": clean((normalized.get(\"common\") or {}).get(\"run_id\") if isinstance(normalized.get(\"common\"), Mapping) else \"\") or str(uuid.uuid4()),\n        \"createdAt\": now_iso(),\n        \"status\": status,\n        \"needs_browser\": needs_browser,\n        \"success\": success,\n        \"called_trace_until_root\": called_trace_until_root,\n        \"trace_path\": trace_path,\n        \"root_reached\": root_reached,\n        \"terminal_post_id\": terminal_post_id,\n        \"terminal_kind\": decision[\"terminal_kind\"],\n        \"terminal_media\": terminal_media,\n        \"video_candidates\": video_candidates,\n        \"evidence\": evidence,\n        \"error\": error,\n        \"warnings\": unique_strings(warnings),\n        \"summary\": summary,\n        \"decision\": decision,\n        \"input\": json_safe((normalized.get(\"common\") or {}) if isinstance(normalized, Mapping) else {}),\n    }\n    return json_safe(result)\n\n\ndef root_trace_evidence(bridge: Mapping[str, Any]) -> dict[str, Any]:\n    return {\n        \"kind\": \"root_trace_call\",\n        \"title\": ROOT_TRACE_TITLE,\n        \"function\": \"traceUntilRoot\",\n        \"called\": bool(bridge.get(\"calledTraceUntilRoot\")),\n        \"ok\": bool(bridge.get(\"ok\")),\n        \"codeHash\": bridge.get(\"rootTraceCodeHash\"),\n        \"codeLength\": bridge.get(\"rootTraceCodeLength\"),\n        \"stopReason\": ((bridge.get(\"rootTrace\") or {}).get(\"stopReason\") if isinstance(bridge.get(\"rootTrace\"), Mapping) else \"\"),\n        \"error\": bridge.get(\"error\"),\n    }\n\n\ndef compact_trace_path(path: Sequence[Any]) -> list[dict[str, Any]]:\n    out: list[dict[str, Any]] = []\n    for step in path:\n        if not isinstance(step, Mapping):\n            continue\n        post = step.get(\"post\") if isinstance(step.get(\"post\"), Mapping) else {}\n        decision = step.get(\"decision\") if isinstance(step.get(\"decision\"), Mapping) else {}\n        followed = step.get(\"followedRef\") if isinstance(step.get(\"followedRef\"), Mapping) else {}\n        out.append(\n            {\n                \"index\": step.get(\"index\"),\n                \"post_id\": post.get(\"id\") or post.get(\"postId\"),\n                \"url\": post.get(\"url\") or post.get(\"postUrl\"),\n                \"relation\": decision.get(\"relationType\"),\n                \"followed_ref\": followed,\n                \"fetch_status\": step.get(\"fetchStatus\"),\n                \"reason\": step.get(\"reason\"),\n            }\n        )\n    return out\n\n\ndef terminal_media_kind(terminal_result: Mapping[str, Any], terminal_post: Mapping[str, Any]) -> str:\n    content_class = clean(terminal_result.get(\"content_class\"))\n    if content_class and content_class != \"unavailable\":\n        return content_class\n    if collect_video_candidates(terminal_result, terminal_post):\n        return \"video\"\n    media = terminal_post.get(\"media_items\") if isinstance(terminal_post.get(\"media_items\"), list) else []\n    if any(is_image_item(item) for item in media if isinstance(item, Mapping)):\n        return \"image\"\n    return content_class or \"unknown\"\n\n\ndef collect_video_candidates(terminal_result: Mapping[str, Any], terminal_post: Mapping[str, Any]) -> list[dict[str, Any]]:\n    candidates: list[dict[str, Any]] = []\n    for item in terminal_post.get(\"media_items\") or []:\n        if isinstance(item, Mapping) and is_video_item(item):\n            candidates.append(dict(item))\n    classification = terminal_result.get(\"classification_result\") if isinstance(terminal_result.get(\"classification_result\"), Mapping) else {}\n    evidence = classification.get(\"evidence_json\") if isinstance(classification.get(\"evidence_json\"), Mapping) else {}\n    for item in evidence.get(\"media\") or []:\n        if isinstance(item, Mapping) and is_video_item(item):\n            candidates.append(dict(item))\n    return unique_dicts(candidates)\n\n\ndef needs_browser_for_trace(trace: Mapping[str, Any], root_reached: bool, terminal_media: str, normalized: Mapping[str, Any]) -> bool:\n    if root_reached:\n        return False\n    stop_reason = clean(trace.get(\"stopReason\"))\n    if stop_reason in {\"invalid_ref\", \"not_found\", \"private\", \"deleted\", \"rate_limited\", \"error\"}:\n        return True\n    common = normalized.get(\"common\") if isinstance(normalized.get(\"common\"), Mapping) else {}\n    return bool(common.get(\"needs_browser\")) and terminal_media == \"unknown\"\n\n\ndef load_powan_namespace(title: str, *, project_file: Path) -> dict[str, Any]:\n    data = json.loads(project_file.read_text(encoding=\"utf-8\"))\n    node = next((item for item in data.get(\"nodes\", []) if item.get(\"title\") == title), None)\n    if not node:\n        raise RuntimeError(f\"{title} was not found in {project_file}\")\n    code = node.get(\"code\") or \"\"\n    if not code.strip():\n        raise RuntimeError(f\"{title} has no code\")\n    namespace = {\"__name__\": f\"powan_link_{node.get('id') or title}\", \"__file__\": str(project_file)}\n    if str(project_file.parent) not in sys.path:\n        sys.path.insert(0, str(project_file.parent))\n    exec(compile(code, f\"<{title}>\", \"exec\"), namespace)\n    return namespace\n\n\ndef normalize_media(raw: Mapping[str, Any]) -> list[dict[str, Any]]:\n    raw_items: list[Any] = []\n    for key in (\"media_items\", \"mediaItems\", \"media\", \"media_extended\", \"photos\", \"videos\"):\n        value = raw.get(key)\n        if isinstance(value, list):\n            raw_items.extend(value)\n    out: list[dict[str, Any]] = []\n    for index, item in enumerate(raw_items):\n        if not isinstance(item, Mapping):\n            continue\n        record = dict(item)\n        media_url = first_text(record, (\"original_url\", \"media_url_https\", \"media_url\", \"url\", \"playback_url\", \"thumbnail_url\"))\n        media_type = first_text(record, (\"media_type\", \"type\", \"kind\"))\n        record.setdefault(\"media_type\", media_type)\n        record.setdefault(\"original_url\", media_url)\n        record.setdefault(\"source_entity_index\", index)\n        out.append(json_safe(record))\n    return out\n\n\ndef normalize_cards(raw: Mapping[str, Any]) -> list[dict[str, Any]]:\n    cards: list[dict[str, Any]] = []\n    for key in (\"card\", \"article\"):\n        value = raw.get(key)\n        if isinstance(value, Mapping):\n            cards.append(json_safe(dict(value)))\n    return cards\n\n\ndef collect_urls(values: Sequence[Any]) -> list[dict[str, Any]]:\n    urls: list[str] = []\n\n    def walk(value: Any) -> None:\n        if isinstance(value, str):\n            urls.extend(URL_RE.findall(value))\n        elif isinstance(value, Mapping):\n            for child in value.values():\n                walk(child)\n        elif isinstance(value, list):\n            for child in value:\n                walk(child)\n\n    for value in values:\n        walk(value)\n    return [{\"raw_url\": item, \"expanded_url\": item} for item in unique_strings(urls)]\n\n\ndef is_video_item(item: Mapping[str, Any]) -> bool:\n    haystack = \" \".join(str(item.get(key) or \"\") for key in (\"media_type\", \"type\", \"kind\", \"original_url\", \"playback_url\", \"url\")).lower()\n    return \"video\" in haystack or any(ext in haystack for ext in VIDEO_EXTENSIONS)\n\n\ndef is_image_item(item: Mapping[str, Any]) -> bool:\n    haystack = \" \".join(str(item.get(key) or \"\") for key in (\"media_type\", \"type\", \"kind\", \"original_url\", \"url\")).lower()\n    return \"photo\" in haystack or \"image\" in haystack or any(ext in haystack for ext in IMAGE_EXTENSIONS)\n\n\ndef post_id_from_url(url: str) -> str:\n    match = STATUS_RE.search(clean(url))\n    return match.group(1) if match else \"\"\n\n\ndef max_depth_from_input(test_input: Any) -> int:\n    if not isinstance(test_input, Mapping):\n        return 12\n    options = test_input.get(\"options\") if isinstance(test_input.get(\"options\"), Mapping) else {}\n    value = first_present(test_input, (\"max_depth\", \"maxDepth\"), first_present(options, (\"max_depth\", \"maxDepth\"), 12))\n    try:\n        return max(1, min(64, int(value)))\n    except Exception:\n        return 12\n\n\ndef first_present(source: Mapping[str, Any], keys: Sequence[str], default: Any = \"\") -> Any:\n    for key in keys:\n        if key in source and source[key] not in (None, \"\"):\n            return source[key]\n    return default\n\n\ndef first_text(source: Mapping[str, Any], keys: Sequence[str]) -> str:\n    value = first_present(source, keys, \"\")\n    if isinstance(value, Mapping):\n        return \"\"\n    if isinstance(value, list):\n        return \" \".join(clean(item) for item in value if clean(item))\n    return clean(value)\n\n\ndef coerce_json(value: Any) -> Any:\n    if isinstance(value, (Mapping, list)):\n        return value\n    if isinstance(value, str) and value.strip():\n        try:\n            return json.loads(value)\n        except json.JSONDecodeError:\n            return {\"_rawText\": value, \"_parseError\": \"invalid_json\"}\n    return {}\n\n\ndef clean(value: Any) -> str:\n    return str(value or \"\").strip()\n\n\ndef listify(value: Any) -> list[Any]:\n    return value if isinstance(value, list) else ([] if value in (None, \"\") else [value])\n\n\ndef unique_strings(values: Sequence[Any]) -> list[str]:\n    out: list[str] = []\n    for value in values:\n        text = clean(value)\n        if text and text not in out:\n            out.append(text)\n    return out\n\n\ndef unique_posts(posts: Sequence[Mapping[str, Any]]) -> list[dict[str, Any]]:\n    out: list[dict[str, Any]] = []\n    seen: set[str] = set()\n    for post in posts:\n        key = clean(post.get(\"id\")) or clean(post.get(\"url\"))\n        if not key or key in seen:\n            continue\n        seen.add(key)\n        out.append(json_safe(dict(post)))\n    return out\n\n\ndef unique_dicts(items: Sequence[Mapping[str, Any]]) -> list[dict[str, Any]]:\n    out: list[dict[str, Any]] = []\n    seen: set[str] = set()\n    for item in items:\n        key = json.dumps(json_safe(item), ensure_ascii=False, sort_keys=True)\n        if key in seen:\n            continue\n        seen.add(key)\n        out.append(json_safe(dict(item)))\n    return out\n\n\ndef json_safe(value: Any) -> Any:\n    if isinstance(value, Mapping):\n        return {str(key): json_safe(item) for key, item in value.items()}\n    if isinstance(value, list):\n        return [json_safe(item) for item in value]\n    if isinstance(value, tuple):\n        return [json_safe(item) for item in value]\n    if isinstance(value, Path):\n        return str(value)\n    return value\n\n\ndef empty_normalized(test_input: Any) -> dict[str, Any]:\n    return {\"common\": {\"run_id\": \"\", \"post_id\": \"\", \"canonical_url\": \"\", \"needs_browser\": False}, \"raw_input\": json_safe(test_input)}\n\n\ndef main(argv: list[str] | None = None) -> int:\n    import argparse\n\n    parser = argparse.ArgumentParser(description=\"Thin link from X collection tests to 根まで追跡ポワン.traceUntilRoot.\")\n    parser.add_argument(\"--project-file\", default=DEFAULT_PROJECT_FILE)\n    parser.add_argument(\"--input-json\", default=\"-\")\n    args = parser.parse_args(argv)\n    if args.input_json == \"-\":\n        text = sys.stdin.read()\n    else:\n        path = Path(args.input_json)\n        text = path.read_text(encoding=\"utf-8\") if path.exists() else args.input_json\n    payload = json.loads(text) if text.strip() else {}\n    print(json.dumps(run_linked_trace(payload, project_file=args.project_file), ensure_ascii=False, indent=2))\n    return 0\n\n\nif __name__ == \"__main__\":\n    raise SystemExit(main())\n",
       "parent": "node-2b1485633c",
       "children": [],
       "style": {
@@ -2649,7 +2649,8 @@
           "height": 77
         }
       },
-      "userSized": true
+      "userSized": true,
+      "codeLanguage": "python"
     },
     {
       "id": "node-d599557beb",
@@ -2676,7 +2677,7 @@
       },
       "nestedLayoutByParent": {
         "node-2b1485633c": {
-          "x": 177,
+          "x": 179,
           "y": 9,
           "width": 77,
           "height": 32
@@ -2709,7 +2710,7 @@
       },
       "nestedLayoutByParent": {
         "node-2b1485633c": {
-          "x": 209,
+          "x": 211,
           "y": 41,
           "width": 77,
           "height": 32
@@ -2746,8 +2747,8 @@
       },
       "nestedLayoutByParent": {
         "node-2b1485633c": {
-          "x": 209,
-          "y": 77,
+          "x": 211,
+          "y": 79,
           "width": 77,
           "height": 32
         }
@@ -2913,8 +2914,8 @@
       },
       "nestedLayoutByParent": {
         "node-2b1485633c": {
-          "x": 177,
-          "y": 109,
+          "x": 179,
+          "y": 111,
           "width": 77,
           "height": 32
         }
@@ -3016,8 +3017,8 @@
       },
       "nestedLayoutByParent": {
         "node-2b1485633c": {
-          "x": 122,
-          "y": 128,
+          "x": 123,
+          "y": 130,
           "width": 77,
           "height": 32
         }
@@ -3181,8 +3182,8 @@
       },
       "nestedLayoutByParent": {
         "node-2b1485633c": {
-          "x": 59,
-          "y": 128,
+          "x": 60,
+          "y": 130,
           "width": 77,
           "height": 32
         }
@@ -3215,7 +3216,7 @@
       "nestedLayoutByParent": {
         "node-2b1485633c": {
           "x": 4,
-          "y": 109,
+          "y": 111,
           "width": 77,
           "height": 32
         }
@@ -3248,7 +3249,7 @@
       "nestedLayoutByParent": {
         "node-2b1485633c": {
           "x": -28,
-          "y": 77,
+          "y": 79,
           "width": 77,
           "height": 32
         }
@@ -3312,8 +3313,8 @@
       },
       "nestedLayoutByParent": {
         "node-12d93ab587": {
-          "x": -22,
-          "y": 213,
+          "x": -31,
+          "y": 82,
           "width": 96,
           "height": 40
         }
