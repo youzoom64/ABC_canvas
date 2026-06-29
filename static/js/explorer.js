@@ -1336,30 +1336,67 @@ var powanExplorer = {
     const ids = selectedNodeIds();
     const nodesToDelete = ids.map((id) => nodeById(id)).filter(Boolean);
     const activeCount = activeNodes().length;
-    if (!nodesToDelete.length || activeCount <= nodesToDelete.length) {
+    if (!nodesToDelete.length) {
       logEvent("warn", "delete-node-rejected", {
         nodeIds: ids,
         nodeCount: activeCount,
       });
       return;
     }
+    const childIdsOf = (node) => {
+      const childIds = new Set(Array.isArray(node?.children) ? node.children : []);
+      for (const candidate of activeNodes()) {
+        if (candidate.parent === node?.id) {
+          childIds.add(candidate.id);
+        }
+      }
+      return [...childIds].filter((childId) => nodeById(childId));
+    };
+    const deleteIds = new Set();
+    const stack = nodesToDelete.map((node) => node.id);
+    while (stack.length) {
+      const nodeId = stack.pop();
+      if (!nodeId || deleteIds.has(nodeId)) {
+        continue;
+      }
+      const node = nodeById(nodeId);
+      if (!node) {
+        continue;
+      }
+      deleteIds.add(node.id);
+      for (const childId of childIdsOf(node)) {
+        if (!deleteIds.has(childId)) {
+          stack.push(childId);
+        }
+      }
+    }
+    if (activeCount <= deleteIds.size) {
+      logEvent("warn", "delete-node-rejected", {
+        nodeIds: [...deleteIds],
+        nodeCount: activeCount,
+        reason: "would-delete-all-active-nodes",
+      });
+      return;
+    }
+    const nearestSurvivingParentId = (nodeId) => {
+      let parentId = nodeById(nodeId)?.parent || null;
+      while (parentId) {
+        const parent = nodeById(parentId);
+        if (parent && !deleteIds.has(parent.id)) {
+          return parent.id;
+        }
+        parentId = parent?.parent || null;
+      }
+      return null;
+    };
+    const nextOpenParentId = openParentId && deleteIds.has(openParentId)
+      ? nearestSurvivingParentId(openParentId)
+      : openParentId;
     this.recordHistory(nodesToDelete.length > 1 ? "delete-nodes" : "delete-node");
-    const deleteIds = new Set(nodesToDelete.map((node) => node.id));
     const touchedIds = new Set();
     for (const node of nodesToDelete) {
       if (node.parent) {
         touchedIds.add(node.parent);
-      }
-      const childIds = this.childrenOf(node).map((child) => child.id);
-      for (const childId of childIds) {
-        if (deleteIds.has(childId)) {
-          continue;
-        }
-        const child = nodeById(childId);
-        if (child) {
-          child.parent = null;
-          touchedIds.add(child.id);
-        }
       }
     }
     for (const node of activeNodes()) {
@@ -1376,12 +1413,30 @@ var powanExplorer = {
     }
     this.touchPowans([...touchedIds], "delete-node-touch");
     doc.nodes = doc.nodes.filter((item) => !deleteIds.has(item.id));
+    if (openParentId && deleteIds.has(openParentId)) {
+      openParentId = nextOpenParentId;
+    }
+    if (childEditParentId && deleteIds.has(childEditParentId)) {
+      childEditParentId = null;
+    }
+    if (codePanelNodeId && deleteIds.has(codePanelNodeId)) {
+      codePanelNodeId = null;
+    }
+    if (conversationNodeId && deleteIds.has(conversationNodeId)) {
+      conversationNodeId = null;
+    }
+    if (typeof cleanupConversationTabs === "function") {
+      cleanupConversationTabs();
+    }
     this.setSelected(firstActiveNode()?.id || null, "delete-node-select-next");
     setDirty();
     render();
     logEvent("debug", "delete-node", {
       nodeIds: [...deleteIds],
-      releasedIds: [...touchedIds].filter((id) => !deleteIds.has(id)),
+      rootNodeIds: nodesToDelete.map((node) => node.id),
+      deletedCount: deleteIds.size,
+      touchedIds: [...touchedIds].filter((id) => !deleteIds.has(id)),
+      openParentId: openParentId || null,
     });
   },
   beginPowanDragMotion(element, offsetX, offsetY) {
