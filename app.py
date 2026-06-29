@@ -2329,6 +2329,7 @@ def origin_judgement_template() -> dict[str, str]:
         "status": "achieved",
         "reason": "判定理由",
         "returnInstruction": "",
+        "report": "人間にそのまま見せる自由文の報告本文",
     }
 
 
@@ -2353,6 +2354,10 @@ def origin_judgement_text(
             "",
             "status は achieved か unmet のどちらかです。",
             "unmet の時だけ returnInstruction に下流への具体的な差し戻し指示を書いてください。",
+            "report には人間が読むための自由文報告を書いてください。",
+            "達成時の report には、何が終わったか、誰が何を担当したか、成果の要点を具体的に含めてください。",
+            "未達時の report には、何が足りないか、誰へ何を戻すか、次に必要なことを具体的に含めてください。",
+            "reason は短い判定根拠、report はそのまま会話に表示する本文です。",
             "",
             "返答は次のJSONだけにしてください。",
             json.dumps(origin_judgement_template(), ensure_ascii=False, indent=2),
@@ -2457,10 +2462,24 @@ def parse_origin_judgement_response(text: str) -> tuple[dict[str, Any] | None, s
     ).strip()
     if status == "unmet" and not return_instruction:
         return None, "status が unmet の時は returnInstruction が必要です。"
+    report = str(
+        payload.get("report")
+        or payload.get("humanReport")
+        or payload.get("finalReport")
+        or payload.get("message")
+        or ""
+    ).strip()
+    if not report:
+        return None, "report が空です。人間に見せる自由文報告を書いてください。"
+    if len(report) < 20:
+        return None, "report が短すぎます。成果や不足点を人間が読める自由文で具体的に書いてください。"
+    if compact_origin_report_text(report, 10000) == compact_origin_report_text(reason, 10000):
+        return None, "report は reason のコピーではなく、読ませるための具体的な報告本文にしてください。"
     return {
         "status": status,
         "reason": reason,
         "returnInstruction": return_instruction,
+        "report": report,
         "raw": payload,
     }, ""
 
@@ -2501,6 +2520,7 @@ def render_origin_judgement_decision_message(
     upstream = required_judgement.get("upstream") if isinstance(required_judgement.get("upstream"), dict) else None
     downstream_reports = required_judgement.get("downstreamReports")
     reports = downstream_reports if isinstance(downstream_reports, list) else []
+    report_text = str(decision.get("report") or "").strip()
     lines = [
         f"由来つき作業: {title}",
         "",
@@ -2509,7 +2529,6 @@ def render_origin_judgement_decision_message(
     if achieved:
         upstream_label = str((upstream or {}).get("name") or "").strip()
         lines.append(f"上げ先: {upstream_label or 'ここで完了'}")
-        lines.extend(["", "完了内容:"])
     else:
         return_targets = [
             str(report.get("childName") or report.get("childId") or "").strip()
@@ -2518,9 +2537,12 @@ def render_origin_judgement_decision_message(
         ]
         return_targets = [target for target in return_targets if target]
         lines.append(f"差し戻し先: {', '.join(return_targets) if return_targets else '下流ポワン'}")
-        lines.extend(["", "未達内容:"])
+
+    if report_text:
+        lines.extend(["", "報告:", report_text])
 
     if reports:
+        lines.extend(["", "下流からの返答:"])
         for report in reports[:10]:
             if not isinstance(report, dict):
                 continue
@@ -2533,8 +2555,8 @@ def render_origin_judgement_decision_message(
         if len(reports) > 10:
             lines.append(f"- 他 {len(reports) - 10} 件")
     else:
-        report_text = compact_origin_report_text(required_judgement.get("reportText"), 320)
-        lines.append(f"- {report_text or '報告本文なし'}")
+        previous_report_text = compact_origin_report_text(required_judgement.get("reportText"), 320)
+        lines.extend(["", "下流からの返答:", f"- {previous_report_text or '報告本文なし'}"])
 
     reason_label = "判定理由" if achieved else "未達理由"
     lines.extend(["", f"{reason_label}:", str(decision.get("reason") or "").strip()])
@@ -2895,10 +2917,14 @@ def render_origin_promoted_report(
     decision: dict[str, Any],
     report_text: str,
 ) -> str:
+    decision_report = str(decision.get("report") or "").strip()
     lines = [
         f"{judge_label} が由来つき報告を達成として上流へ上げました。",
         "",
-        f"理由: {decision.get('reason') or ''}",
+        "報告:",
+        decision_report or "報告本文なし。",
+        "",
+        f"判定理由: {decision.get('reason') or ''}",
         "",
         "--- 下流からの報告 ---",
         report_text.strip(),
@@ -2914,6 +2940,9 @@ def render_origin_unmet_instruction(
 ) -> str:
     lines = [
         f"上位ポワン「{judge_label}」から、由来つき作業の差し戻しです。",
+        "",
+        "--- 報告 ---",
+        str(decision.get("report") or "").strip() or "報告本文なし。",
         "",
         "--- 差し戻し指示 ---",
         str(decision.get("returnInstruction") or "").strip(),
@@ -3016,6 +3045,14 @@ def route_origin_achieved(
     report_text = str(required_judgement.get("reportText") or "").strip()
     if not upstream:
         conversation = STORE.active_conversation(project, file, node_id)
+        resolved_lines = [
+            "由来つき報告を達成として完了しました。",
+            "",
+            "報告:",
+            str(decision.get("report") or "").strip() or "報告本文なし。",
+            "",
+            f"判定理由: {decision.get('reason') or ''}",
+        ]
         emit_conversation_event(
             project=project,
             file=file,
@@ -3023,7 +3060,7 @@ def route_origin_achieved(
             conversation_id=int(conversation["id"]),
             kind="origin_report_resolved",
             role="system",
-            text=f"由来つき報告を達成として完了しました。\n理由: {decision.get('reason') or ''}",
+            text="\n".join(resolved_lines).strip(),
             receiver_label=receiver_label,
             source="origin-report-judgement",
             metadata={"originSchema": ORIGIN_JUDGEMENT_SCHEMA},
