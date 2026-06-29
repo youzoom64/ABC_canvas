@@ -202,6 +202,7 @@ var powanExplorer = {
     const previousOpenParentId = openParentId;
     const previousChildEditParentId = childEditParentId;
     const previousCodePanelNodeId = codePanelNodeId;
+    const previousDesignPanelNodeId = designPanelNodeId;
     const previousConversationNodeId = conversationNodeId;
     const previousCollapsedIds = new Set(collapsedTreeNodeIds);
     const preserved = preserveLocalLayouts
@@ -230,6 +231,7 @@ var powanExplorer = {
       openParentId = null;
       childEditParentId = null;
       codePanelNodeId = null;
+      designPanelNodeId = null;
       conversationNodeId = null;
       conversationTabs = [];
       conversationTabStates.clear();
@@ -239,6 +241,7 @@ var powanExplorer = {
       openParentId = nodeById(previousOpenParentId) ? previousOpenParentId : null;
       childEditParentId = nodeById(previousChildEditParentId) ? previousChildEditParentId : null;
       codePanelNodeId = nodeById(previousCodePanelNodeId) ? previousCodePanelNodeId : null;
+      designPanelNodeId = nodeById(previousDesignPanelNodeId) ? previousDesignPanelNodeId : null;
       conversationNodeId = nodeById(previousConversationNodeId) ? previousConversationNodeId : null;
       conversationTabs = conversationTabs.filter((tab) => !tab.nodeId || nodeById(tab.nodeId));
       const tabIds = new Set(conversationTabs.map((tab) => tab.id));
@@ -532,6 +535,7 @@ var powanExplorer = {
     openParentId = null;
     childEditParentId = null;
     codePanelNodeId = null;
+    designPanelNodeId = null;
   },
   setNodeLayout(nodeId, patch, reason = "set-node-layout") {
     const node = nodeById(nodeId);
@@ -1422,6 +1426,9 @@ var powanExplorer = {
     if (codePanelNodeId && deleteIds.has(codePanelNodeId)) {
       codePanelNodeId = null;
     }
+    if (designPanelNodeId && deleteIds.has(designPanelNodeId)) {
+      designPanelNodeId = null;
+    }
     if (conversationNodeId && deleteIds.has(conversationNodeId)) {
       conversationNodeId = null;
     }
@@ -2061,6 +2068,9 @@ var powanExplorer = {
   },
   openCode(nodeId) {
     return openCodeEditor(nodeId);
+  },
+  openDesign(nodeId) {
+    return openDesignViewer(nodeId);
   },
   closeCodeEditor() {
     this.closeCode("explorer-close-code");

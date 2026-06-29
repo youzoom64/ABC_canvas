@@ -3745,6 +3745,12 @@ if (panelSettingsTab) {
 if (panelHistoryTab) {
   panelHistoryTab.addEventListener("click", () => setPanelTab("history", { reason: "panel-history-tab-click" }));
 }
+if (panelDesignTab) {
+  panelDesignTab.addEventListener("click", () => setPanelTab("design", { reason: "panel-design-tab-click" }));
+}
+if (panelGitHistoryTab) {
+  panelGitHistoryTab.addEventListener("click", () => setPanelTab("git-history", { reason: "panel-git-history-tab-click" }));
+}
 if (panelCodeTab) {
   panelCodeTab.addEventListener("click", () => setPanelTab("code", { reason: "panel-code-tab-click" }));
 }
@@ -3758,6 +3764,32 @@ if (conversationHistorySortSelect) {
 if (conversationHistoryRefreshButton) {
   conversationHistoryRefreshButton.addEventListener("click", () => {
     refreshConversationHistory({ reason: "conversation-history-refresh-button" });
+  });
+}
+if (gitHistoryRefreshButton) {
+  gitHistoryRefreshButton.addEventListener("click", () => {
+    refreshPowanGitHistory({ reason: "git-history-refresh-button" });
+  });
+}
+if (copyDesignButton) {
+  copyDesignButton.addEventListener("click", () => {
+    const node = nodeById(designPanelNodeId);
+    const design = String(node?.designMarkdown || "");
+    if (!design.trim()) {
+      saveState.textContent = "design empty";
+      return;
+    }
+    copyTextToClipboard(design).then((copied) => {
+      if (!copied) {
+        throw new Error("copy failed");
+      }
+      saveState.textContent = "design copied";
+      logEvent("info", "copy-design-complete", { nodeId: node.id, length: design.length });
+    }).catch((error) => {
+      saveState.textContent = "copy design error";
+      logEvent("error", "copy-design-error", { nodeId: node?.id || null, message: error.message });
+      console.error(error);
+    });
   });
 }
 if (conversationPanel) {
@@ -3875,6 +3907,16 @@ if (bulkCommandMenuButton) {
   bulkCommandMenuButton.addEventListener("click", () => {
     powanExplorer.closeNodeMenu("bulk-command-menu-close");
     openBulkCommandDialog();
+  });
+}
+if (openDesignMenuButton) {
+  openDesignMenuButton.addEventListener("click", () => {
+    const nodeId = nodeContextMenuNodeId;
+    powanExplorer.closeNodeMenu("open-design-menu-close");
+    if (!nodeId) {
+      return;
+    }
+    powanExplorer.openDesign(nodeId);
   });
 }
 openCodeMenuButton.addEventListener("click", () => {
@@ -4861,6 +4903,10 @@ async function loadDocument(name = "project.powan") {
   startRunningAgentRunRefresh();
   if (activePanelTab === "history") {
     refreshConversationHistory({ reason: "load-document-refresh-history" });
+  } else if (activePanelTab === "git-history") {
+    refreshPowanGitHistory({ reason: "load-document-refresh-git-history" });
+  } else if (activePanelTab === "design") {
+    syncDesignPanel();
   }
   startAutoReload();
   logEvent("debug", "load-document-complete", {
@@ -4985,6 +5031,9 @@ async function saveDocument({ reason = "manual-save", auto = false } = {}) {
     saveState.textContent = savedCurrentRevision ? "saved" : "edited";
     documentSnapshot = data.snapshot || await documentSignature(doc);
     await refreshFiles();
+    if (activePanelTab === "git-history") {
+      refreshPowanGitHistory({ reason: "save-document-refresh-git-history" });
+    }
     logEvent("info", "save-document-complete", {
       message: `document saved: ${documentName}, ${doc.nodes.length} nodes`,
       name: documentName,

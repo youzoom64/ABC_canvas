@@ -1562,6 +1562,71 @@ def list_files(project: str) -> dict[str, list[str]]:
     return {"files": STORE.list_documents(project)}
 
 
+@app.get("/api/powan-git-history")
+def list_powan_git_history(project: str, file: str = DEFAULT_FILE, limit: int = 50) -> dict[str, Any]:
+    safe_project = STORE.safe_project_name(project)
+    document_name = STORE.safe_powan_name(file)
+    history_root = STORE.project_root(safe_project) / ".powan_history"
+    snapshot_rel = (Path("documents") / f"{Path(document_name).stem}.semantic.json").as_posix()
+    safe_limit = max(1, min(int(limit or 50), 200))
+    if not (history_root / ".git").exists():
+        return {
+            "project": safe_project,
+            "file": document_name,
+            "historyExists": False,
+            "commits": [],
+        }
+    result = subprocess.run(
+        [
+            "git",
+            "log",
+            f"--max-count={safe_limit}",
+            "--date=iso-strict",
+            "--format=%H%x1f%h%x1f%an%x1f%ad%x1f%B%x1e",
+            "--",
+            snapshot_rel,
+        ],
+        cwd=history_root,
+        stdout=subprocess.PIPE,
+        stderr=subprocess.PIPE,
+        text=True,
+        encoding="utf-8",
+        errors="replace",
+        timeout=10,
+        creationflags=getattr(subprocess, "CREATE_NO_WINDOW", 0),
+    )
+    if result.returncode != 0:
+        raise HTTPException(status_code=500, detail=result.stderr.strip() or result.stdout.strip() or "git log failed")
+    commits: list[dict[str, Any]] = []
+    for raw_record in result.stdout.split("\x1e"):
+        record = raw_record.strip()
+        if not record:
+            continue
+        parts = record.split("\x1f", 4)
+        if len(parts) < 5:
+            continue
+        sha, short_sha, author, date, message = parts
+        clean_message = message.strip()
+        subject = clean_message.splitlines()[0] if clean_message else short_sha
+        commits.append(
+            {
+                "sha": sha,
+                "shortSha": short_sha,
+                "author": author,
+                "date": date,
+                "subject": subject,
+                "message": clean_message,
+            }
+        )
+    return {
+        "project": safe_project,
+        "file": document_name,
+        "historyExists": True,
+        "snapshot": snapshot_rel,
+        "commits": commits,
+    }
+
+
 @app.get("/api/settings")
 def get_settings() -> dict[str, Any]:
     return setting_payload()

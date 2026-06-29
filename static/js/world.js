@@ -3,12 +3,14 @@ function panelTabEntries() {
     { id: "world", button: panelWorldTab, pane: panelWorldPane },
     { id: "settings", button: panelSettingsTab, pane: panelSettingsPane },
     { id: "history", button: panelHistoryTab, pane: panelHistoryPane },
+    { id: "design", button: panelDesignTab, pane: panelDesignPane },
+    { id: "git-history", button: panelGitHistoryTab, pane: panelGitHistoryPane },
     { id: "code", button: panelCodeTab, pane: codePanel },
   ];
 }
 
 function normalizePanelTab(tab) {
-  return ["world", "settings", "history", "code"].includes(tab) ? tab : "world";
+  return ["world", "settings", "history", "design", "git-history", "code"].includes(tab) ? tab : "world";
 }
 
 function syncPanelTabs({ focus = false } = {}) {
@@ -40,14 +42,152 @@ function setPanelTab(tab, { focus = false, reason = "set-panel-tab" } = {}) {
   activePanelTab = normalizePanelTab(tab);
   if (activePanelTab === "code" && nodeById(selectedId) && codePanelNodeId !== selectedId) {
     powanExplorer.setCodeNode(selectedId, `${reason}-code-node`);
+  } else if (activePanelTab === "design" && nodeById(selectedId) && designPanelNodeId !== selectedId) {
+    setDesignNode(selectedId, `${reason}-design-node`);
   }
   syncPanelTabs({ focus });
   if (activePanelTab === "code") {
     syncCodePanel();
+  } else if (activePanelTab === "design") {
+    syncDesignPanel();
+  } else if (activePanelTab === "git-history" && typeof refreshPowanGitHistory === "function") {
+    refreshPowanGitHistory({ reason });
   } else if (activePanelTab === "history" && typeof refreshConversationHistory === "function") {
     refreshConversationHistory({ reason });
   }
   logEvent("debug", reason, { tab: activePanelTab });
+}
+
+function setDesignNode(nodeId, reason = "set-design-node") {
+  designPanelNodeId = nodeById(nodeId) ? nodeId : null;
+  logEvent("debug", reason, { nodeId: designPanelNodeId });
+  syncDesignPanel();
+}
+
+function openDesignViewer(nodeId) {
+  const node = nodeById(nodeId);
+  if (!node) {
+    logEvent("warn", "open-design-missing-node", { nodeId });
+    return;
+  }
+  powanExplorer.touchPowan(node.id, "open-design-touch");
+  powanExplorer.setSelected(node.id, "open-design-select");
+  selectNode(node.id);
+  setDesignNode(node.id, "open-design-set-node");
+  setPanelTab("design", { reason: "open-design-tab" });
+}
+
+function syncDesignPanel() {
+  if (activePanelTab === "design" && !nodeById(designPanelNodeId) && nodeById(selectedId)) {
+    designPanelNodeId = selectedId;
+  }
+  const node = nodeById(designPanelNodeId);
+  if (!designPanelNodeName || !designMarkdownView) {
+    return;
+  }
+  if (!node) {
+    designPanelNodeName.textContent = "ポワン未選択";
+    designMarkdownView.textContent = "設計Markdownはまだありません。";
+    if (copyDesignButton) {
+      copyDesignButton.disabled = true;
+    }
+    return;
+  }
+  const design = String(node.designMarkdown || "");
+  designPanelNodeName.textContent = meaningName(node);
+  designMarkdownView.textContent = design.trim() ? design : "設計Markdownはまだありません。";
+  if (copyDesignButton) {
+    copyDesignButton.disabled = !design.trim();
+  }
+}
+
+async function refreshPowanGitHistory({ reason = "git-history-refresh" } = {}) {
+  if (!gitHistoryList || !projectName || !documentName || gitHistoryLoading) {
+    return;
+  }
+  gitHistoryLoading = true;
+  gitHistoryList.innerHTML = "";
+  const loading = document.createElement("div");
+  loading.className = "conversation-history-loading";
+  loading.textContent = "Git履歴を読んでいます...";
+  gitHistoryList.append(loading);
+  try {
+    const response = await fetch(
+      `/api/powan-git-history?project=${encodeURIComponent(projectName)}&file=${encodeURIComponent(documentName)}&limit=80`,
+    );
+    const body = await response.json().catch(() => ({ detail: `git history failed: ${response.status}` }));
+    if (!response.ok) {
+      throw new Error(body.detail || `git history failed: ${response.status}`);
+    }
+    renderPowanGitHistory(body);
+    logEvent("debug", reason, {
+      count: Array.isArray(body.commits) ? body.commits.length : 0,
+      historyExists: Boolean(body.historyExists),
+    });
+  } catch (error) {
+    gitHistoryList.innerHTML = "";
+    const item = document.createElement("div");
+    item.className = "conversation-history-empty";
+    item.textContent = `Git履歴を読めませんでした: ${error.message}`;
+    gitHistoryList.append(item);
+    logEvent("error", "git-history-refresh-error", { message: error.message });
+  } finally {
+    gitHistoryLoading = false;
+  }
+}
+
+function renderPowanGitHistory(data) {
+  gitHistoryList.innerHTML = "";
+  const commits = Array.isArray(data?.commits) ? data.commits : [];
+  if (gitHistoryMeta) {
+    gitHistoryMeta.textContent = data?.snapshot || "semantic history";
+  }
+  if (!data?.historyExists) {
+    const empty = document.createElement("div");
+    empty.className = "conversation-history-empty";
+    empty.textContent = ".powan_history はまだありません。保存すると作られます。";
+    gitHistoryList.append(empty);
+    return;
+  }
+  if (!commits.length) {
+    const empty = document.createElement("div");
+    empty.className = "conversation-history-empty";
+    empty.textContent = "このpowanファイルのGit履歴はまだありません。";
+    gitHistoryList.append(empty);
+    return;
+  }
+  for (const commit of commits) {
+    const item = document.createElement("article");
+    item.className = "git-history-item";
+    const subject = document.createElement("div");
+    subject.className = "git-history-subject";
+    subject.textContent = commit.subject || commit.shortSha || "commit";
+    const meta = document.createElement("div");
+    meta.className = "conversation-history-meta";
+    meta.textContent = `${commit.shortSha || ""} / ${formatHistoryTime(commit.date)} / ${commit.author || ""}`;
+    const detail = document.createElement("pre");
+    detail.className = "git-history-detail";
+    detail.textContent = commit.message || "";
+    item.append(subject, meta, detail);
+    gitHistoryList.append(item);
+  }
+}
+
+function formatHistoryTime(value) {
+  if (!value) {
+    return "";
+  }
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) {
+    return String(value);
+  }
+  return date.toLocaleString("ja-JP", {
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit",
+    hour: "2-digit",
+    minute: "2-digit",
+  });
 }
 
 function openCodeEditor(nodeId) {

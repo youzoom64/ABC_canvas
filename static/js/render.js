@@ -22,6 +22,9 @@ function selectNode(id) {
   if (activePanelTab === "code" && codePanelNodeId !== id) {
     powanExplorer.setCodeNode(id, "selection-updates-code");
   }
+  if (activePanelTab === "design" && designPanelNodeId !== id) {
+    setDesignNode(id, "selection-updates-design");
+  }
   titleInput.value = node.title || "";
   bodyInput.value = node.body || "";
   powanKindInput.value = node.powanKind === "organ" ? "organ" : "nerve";
@@ -29,6 +32,7 @@ function selectNode(id) {
     powanExplorer.setCodeNode(null, "selection-clears-missing-code");
   }
   syncCodePanel();
+  syncDesignPanel();
   shapeInput.value = node.style?.shape || "cloud";
   colorInput.value = node.style?.color || "#ffffff";
   accentInput.value = node.style?.accent || "#8ddcff";

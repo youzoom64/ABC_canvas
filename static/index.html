@@ -117,6 +117,8 @@
           <button id="panelWorldTab" class="panel-tab active" type="button" role="tab" aria-selected="true" aria-controls="panelWorldPane">今いる世界</button>
           <button id="panelSettingsTab" class="panel-tab" type="button" role="tab" aria-selected="false" aria-controls="panelSettingsPane">設定</button>
           <button id="panelHistoryTab" class="panel-tab" type="button" role="tab" aria-selected="false" aria-controls="panelHistoryPane">会話履歴</button>
+          <button id="panelDesignTab" class="panel-tab" type="button" role="tab" aria-selected="false" aria-controls="panelDesignPane">設計</button>
+          <button id="panelGitHistoryTab" class="panel-tab" type="button" role="tab" aria-selected="false" aria-controls="panelGitHistoryPane">Git履歴</button>
           <button id="panelCodeTab" class="panel-tab" type="button" role="tab" aria-selected="false" aria-controls="codePanel">コード</button>
         </div>
         <div id="normalPanel" class="normal-panel">
@@ -297,6 +299,32 @@
               <div id="conversationHistoryList" class="conversation-history-list"></div>
             </div>
           </div>
+
+          <div id="panelDesignPane" class="panel-tab-pane" role="tabpanel" aria-labelledby="panelDesignTab" hidden>
+            <div class="panel-section design-panel">
+              <div class="conversation-history-head">
+                <div>
+                  <div class="world-label">設計図</div>
+                  <div id="designPanelNodeName" class="design-panel-node">ポワン未選択</div>
+                </div>
+                <button id="copyDesignButton" type="button">Copy</button>
+              </div>
+              <pre id="designMarkdownView" class="design-markdown-view">設計Markdownはまだありません。</pre>
+            </div>
+          </div>
+
+          <div id="panelGitHistoryPane" class="panel-tab-pane" role="tabpanel" aria-labelledby="panelGitHistoryTab" hidden>
+            <div class="panel-section git-history-panel">
+              <div class="conversation-history-head">
+                <div>
+                  <div class="world-label">Git履歴</div>
+                  <div id="gitHistoryMeta" class="git-history-meta">semantic history</div>
+                </div>
+                <button id="gitHistoryRefreshButton" type="button">更新</button>
+              </div>
+              <div id="gitHistoryList" class="git-history-list"></div>
+            </div>
+          </div>
         </div>
 
         <div id="codePanel" class="code-panel panel-tab-pane" role="tabpanel" aria-labelledby="panelCodeTab" hidden>
@@ -330,6 +358,7 @@
       <button id="editMeaningMenuButton" type="button">意味を入力</button>
       <button id="talkToPowanButton" type="button">ポワンに話しかける</button>
       <button id="bulkCommandMenuButton" type="button">一括指示ウインドウで話しかける</button>
+      <button id="openDesignMenuButton" type="button">設計図を開く</button>
       <button id="openCodeMenuButton" type="button">コードを開く</button>
       <button id="arrangePowanMenuButton" type="button">整列</button>
       <button id="selectChildPowansMenuButton" type="button">中の子ポワン全選択</button>
