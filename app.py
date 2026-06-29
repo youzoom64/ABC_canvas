@@ -2433,17 +2433,28 @@ def short_codex_command(command: str) -> str:
     return f"{clean[:220]}..."
 
 
+def is_child_command_execution(command: str) -> bool:
+    clean = str(command or "")
+    return (
+        "command-children" in clean
+        or '"instructions"' in clean
+        or '\\"instructions\\"' in clean
+    )
+
+
 def codex_event_progress_text(event: dict[str, Any]) -> str:
     event_type = str(event.get("type") or "").strip()
     item = event.get("item") if isinstance(event.get("item"), dict) else {}
     item_type = str(item.get("type") or "").strip()
     if event_type == "item.started" and item_type == "command_execution":
-        command = short_codex_command(str(item.get("command") or ""))
-        if "command-children" in command or '"instructions"' in command:
+        raw_command = str(item.get("command") or "")
+        command = short_codex_command(raw_command)
+        if is_child_command_execution(raw_command):
             return "子ポワンへの指示を送信中..."
-        return f"コマンド開始: `{command}`" if command else "コマンド開始"
+        return f"コマンド開始: `{compact_console_text(command, 30)}`" if command else "コマンド開始"
     if event_type == "item.completed" and item_type == "command_execution":
-        command = short_codex_command(str(item.get("command") or ""))
+        raw_command = str(item.get("command") or "")
+        command = short_codex_command(raw_command)
         exit_code = item.get("exit_code")
         output = str(item.get("aggregated_output") or "").strip()
         if output.startswith("{"):
@@ -2479,7 +2490,7 @@ def codex_event_progress_text(event: dict[str, Any]) -> str:
         head = "コマンド完了"
         if exit_code is not None:
             head += f" exit={exit_code}"
-        if "command-children" in command or '"instructions"' in command:
+        if is_child_command_execution(raw_command):
             return f"子ポワンへの指示送信完了 exit={exit_code}"
         if command:
             head += f": `{compact_console_text(command, 30)}`"
