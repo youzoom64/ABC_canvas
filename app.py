@@ -2992,6 +2992,14 @@ def run_powan_codex_message(
             raise HTTPException(status_code=409, detail="Codex exec already running for this powan")
         mark_codex_disconnected_safe(project, file, node_id, int(conversation["id"]), "codex-exec-failed")
         raise HTTPException(status_code=502, detail="Codex exec failed")
+    agent_run = STORE.finish_agent_run(
+        project,
+        agent_run["id"],
+        "completed",
+        run_payload,
+        output_text=result.text,
+        error_text=result.stderr[-4000:],
+    )
     assistant_message = emit_conversation_event(
         project=project,
         file=file,
@@ -3002,14 +3010,6 @@ def run_powan_codex_message(
         text=result.text,
         receiver_label=receiver_label,
         source=source,
-    )
-    agent_run = STORE.finish_agent_run(
-        project,
-        agent_run["id"],
-        "completed",
-        run_payload,
-        output_text=result.text,
-        error_text=result.stderr[-4000:],
     )
     log_server_event(
         "info",
