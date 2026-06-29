@@ -87,6 +87,7 @@ function syncDesignPanel() {
   }
   if (!node) {
     designPanelNodeName.textContent = "ポワン未選択";
+    designMarkdownView.classList.add("is-empty");
     designMarkdownView.textContent = "設計Markdownはまだありません。";
     if (copyDesignButton) {
       copyDesignButton.disabled = true;
@@ -95,10 +96,183 @@ function syncDesignPanel() {
   }
   const design = String(node.designMarkdown || "");
   designPanelNodeName.textContent = meaningName(node);
-  designMarkdownView.textContent = design.trim() ? design : "設計Markdownはまだありません。";
+  if (design.trim()) {
+    designMarkdownView.classList.remove("is-empty");
+    designMarkdownView.innerHTML = renderDesignMarkdown(design);
+  } else {
+    designMarkdownView.classList.add("is-empty");
+    designMarkdownView.textContent = "設計Markdownはまだありません。";
+  }
   if (copyDesignButton) {
     copyDesignButton.disabled = !design.trim();
   }
+}
+
+function renderDesignMarkdown(markdown) {
+  const lines = String(markdown || "").replace(/\r\n/g, "\n").replace(/\r/g, "\n").split("\n");
+  const html = [];
+  for (let index = 0; index < lines.length;) {
+    const rawLine = lines[index] || "";
+    const trimmed = rawLine.trim();
+    if (!trimmed) {
+      index += 1;
+      continue;
+    }
+    const fenceMatch = trimmed.match(/^```([A-Za-z0-9_+.-]*)\s*$/);
+    if (fenceMatch) {
+      const codeLines = [];
+      index += 1;
+      while (index < lines.length && !String(lines[index] || "").trim().startsWith("```")) {
+        codeLines.push(lines[index] || "");
+        index += 1;
+      }
+      if (index < lines.length) {
+        index += 1;
+      }
+      const language = fenceMatch[1] ? ` data-language="${escapeHtml(fenceMatch[1])}"` : "";
+      html.push(`<pre class="design-code-block"${language}><code>${escapeHtml(codeLines.join("\n"))}</code></pre>`);
+      continue;
+    }
+    const headingMatch = trimmed.match(/^(#{1,6})\s+(.+)$/);
+    if (headingMatch) {
+      const level = Math.min(headingMatch[1].length, 6);
+      html.push(`<h${level}>${renderMarkdownInline(headingMatch[2])}</h${level}>`);
+      index += 1;
+      continue;
+    }
+    if (/^(-{3,}|\*{3,}|_{3,})$/.test(trimmed)) {
+      html.push("<hr>");
+      index += 1;
+      continue;
+    }
+    if (isMarkdownTableStart(lines, index)) {
+      const headers = splitMarkdownTableRow(lines[index]);
+      index += 2;
+      const rows = [];
+      while (index < lines.length && splitMarkdownTableRow(lines[index]).length > 1 && lines[index].trim()) {
+        rows.push(splitMarkdownTableRow(lines[index]));
+        index += 1;
+      }
+      html.push(renderMarkdownTable(headers, rows));
+      continue;
+    }
+    if (/^\s*>/.test(rawLine)) {
+      const quoteLines = [];
+      while (index < lines.length && /^\s*>/.test(lines[index] || "")) {
+        quoteLines.push(String(lines[index] || "").replace(/^\s*>\s?/, ""));
+        index += 1;
+      }
+      html.push(`<blockquote>${renderDesignMarkdown(quoteLines.join("\n"))}</blockquote>`);
+      continue;
+    }
+    const ordered = /^\s*\d+[.)]\s+/.test(rawLine);
+    const unordered = /^\s*[-*+]\s+/.test(rawLine);
+    if (ordered || unordered) {
+      const items = [];
+      const markerPattern = ordered ? /^\s*\d+[.)]\s+/ : /^\s*[-*+]\s+/;
+      while (index < lines.length && markerPattern.test(lines[index] || "")) {
+        items.push(String(lines[index] || "").replace(markerPattern, ""));
+        index += 1;
+      }
+      const tag = ordered ? "ol" : "ul";
+      html.push(`<${tag}>${items.map((item) => `<li>${renderMarkdownInline(item)}</li>`).join("")}</${tag}>`);
+      continue;
+    }
+    const paragraphLines = [trimmed];
+    index += 1;
+    while (index < lines.length && lines[index].trim() && !isMarkdownBlockStart(lines, index)) {
+      paragraphLines.push(lines[index].trim());
+      index += 1;
+    }
+    html.push(`<p>${renderMarkdownInline(paragraphLines.join(" "))}</p>`);
+  }
+  return html.join("");
+}
+
+function isMarkdownBlockStart(lines, index) {
+  const line = String(lines[index] || "");
+  const trimmed = line.trim();
+  return (
+    /^```/.test(trimmed)
+    || /^(#{1,6})\s+/.test(trimmed)
+    || /^(-{3,}|\*{3,}|_{3,})$/.test(trimmed)
+    || /^\s*>/.test(line)
+    || /^\s*\d+[.)]\s+/.test(line)
+    || /^\s*[-*+]\s+/.test(line)
+    || isMarkdownTableStart(lines, index)
+  );
+}
+
+function isMarkdownTableStart(lines, index) {
+  const line = String(lines[index] || "");
+  const next = String(lines[index + 1] || "");
+  return (
+    splitMarkdownTableRow(line).length > 1
+    && /^\s*\|?\s*:?-{3,}:?\s*(\|\s*:?-{3,}:?\s*)+\|?\s*$/.test(next)
+  );
+}
+
+function splitMarkdownTableRow(line) {
+  const trimmed = String(line || "").trim();
+  if (!trimmed.includes("|")) {
+    return [];
+  }
+  const withoutEdges = trimmed.replace(/^\|/, "").replace(/\|$/, "");
+  return withoutEdges.split("|").map((cell) => cell.trim());
+}
+
+function renderMarkdownTable(headers, rows) {
+  const head = headers.map((cell) => `<th>${renderMarkdownInline(cell)}</th>`).join("");
+  const body = rows
+    .map((row) => `<tr>${headers.map((_, index) => `<td>${renderMarkdownInline(row[index] || "")}</td>`).join("")}</tr>`)
+    .join("");
+  return `<div class="design-table-wrap"><table><thead><tr>${head}</tr></thead><tbody>${body}</tbody></table></div>`;
+}
+
+function renderMarkdownInline(value) {
+  let text = escapeHtml(value);
+  text = text.replace(/`([^`]+)`/g, "<code>$1</code>");
+  text = text.replace(/\[([^\]]+)\]\(([^)\s]+)(?:\s+&quot;[^&]*&quot;)?\)/g, (_match, label, href) => {
+    const safeHref = safeMarkdownHref(href);
+    if (!safeHref) {
+      return label;
+    }
+    return `<a href="${safeHref}" target="_blank" rel="noreferrer noopener">${label}</a>`;
+  });
+  text = text.replace(/\*\*([^*]+)\*\*/g, "<strong>$1</strong>");
+  text = text.replace(/__([^_]+)__/g, "<strong>$1</strong>");
+  text = text.replace(/(^|[\s(])\*([^*\n]+)\*/g, "$1<em>$2</em>");
+  text = text.replace(/(^|[\s(])_([^_\n]+)_/g, "$1<em>$2</em>");
+  return text;
+}
+
+function escapeHtml(value) {
+  return String(value || "")
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;")
+    .replace(/'/g, "&#39;");
+}
+
+function safeMarkdownHref(value) {
+  const href = String(value || "").trim();
+  if (!href) {
+    return "";
+  }
+  const lowered = href.toLowerCase();
+  if (
+    lowered.startsWith("http://")
+    || lowered.startsWith("https://")
+    || lowered.startsWith("mailto:")
+    || lowered.startsWith("#")
+    || lowered.startsWith("/")
+    || lowered.startsWith("./")
+    || lowered.startsWith("../")
+  ) {
+    return href;
+  }
+  return "";
 }
 
 async function refreshPowanGitHistory({ reason = "git-history-refresh" } = {}) {

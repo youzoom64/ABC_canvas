@@ -1824,16 +1824,161 @@ body.panning-canvas * {
   min-height: 220px;
   max-height: calc(100vh - 260px);
   overflow: auto;
-  padding: 12px;
+  padding: 14px 16px;
   border: 1px solid rgba(68, 127, 153, 0.18);
   border-radius: 6px;
-  background: rgba(255, 255, 255, 0.78);
-  color: #244f62;
+  background: rgba(255, 255, 255, 0.86);
+  color: #233f4d;
+  font-size: 13px;
+  line-height: 1.62;
+  word-break: break-word;
+}
+
+.design-markdown-view.is-empty {
+  color: #6f8792;
+  font-size: 12px;
+  font-weight: 800;
+}
+
+.design-markdown-view h1,
+.design-markdown-view h2,
+.design-markdown-view h3,
+.design-markdown-view h4,
+.design-markdown-view h5,
+.design-markdown-view h6 {
+  margin: 18px 0 8px;
+  color: #17394a;
+  font-weight: 900;
+  line-height: 1.28;
+}
+
+.design-markdown-view h1:first-child,
+.design-markdown-view h2:first-child,
+.design-markdown-view h3:first-child {
+  margin-top: 0;
+}
+
+.design-markdown-view h1 {
+  padding-bottom: 8px;
+  border-bottom: 1px solid rgba(68, 127, 153, 0.2);
+  font-size: 22px;
+}
+
+.design-markdown-view h2 {
+  padding-bottom: 6px;
+  border-bottom: 1px solid rgba(68, 127, 153, 0.16);
+  font-size: 18px;
+}
+
+.design-markdown-view h3 {
+  font-size: 15px;
+}
+
+.design-markdown-view h4,
+.design-markdown-view h5,
+.design-markdown-view h6 {
+  font-size: 13px;
+}
+
+.design-markdown-view p {
+  margin: 8px 0;
+}
+
+.design-markdown-view ul,
+.design-markdown-view ol {
+  margin: 8px 0;
+  padding-left: 22px;
+}
+
+.design-markdown-view li {
+  margin: 3px 0;
+}
+
+.design-markdown-view blockquote {
+  margin: 10px 0;
+  padding: 2px 0 2px 12px;
+  border-left: 3px solid rgba(53, 112, 139, 0.38);
+  color: #526f7b;
+}
+
+.design-markdown-view blockquote p {
+  margin: 5px 0;
+}
+
+.design-markdown-view hr {
+  height: 1px;
+  margin: 16px 0;
+  border: 0;
+  background: rgba(68, 127, 153, 0.18);
+}
+
+.design-markdown-view code {
+  padding: 1px 4px;
+  border-radius: 4px;
+  background: rgba(38, 83, 104, 0.09);
+  color: #1d596f;
   font-family: "Cascadia Mono", "Consolas", monospace;
   font-size: 12px;
+}
+
+.design-markdown-view .design-code-block {
+  margin: 10px 0;
+  padding: 10px 12px;
+  overflow: auto;
+  border: 1px solid rgba(68, 127, 153, 0.16);
+  border-radius: 6px;
+  background: rgba(241, 247, 250, 0.92);
+}
+
+.design-markdown-view .design-code-block code {
+  display: block;
+  padding: 0;
+  background: transparent;
+  color: #23495a;
+  font-size: 12px;
   line-height: 1.55;
-  white-space: pre-wrap;
-  word-break: break-word;
+  white-space: pre;
+}
+
+.design-markdown-view a {
+  color: #176f91;
+  font-weight: 800;
+  text-decoration: none;
+}
+
+.design-markdown-view a:hover {
+  text-decoration: underline;
+}
+
+.design-table-wrap {
+  max-width: 100%;
+  margin: 10px 0;
+  overflow: auto;
+}
+
+.design-markdown-view table {
+  width: max-content;
+  min-width: min(100%, 420px);
+  border-collapse: collapse;
+  font-size: 12px;
+}
+
+.design-markdown-view th,
+.design-markdown-view td {
+  padding: 6px 8px;
+  border: 1px solid rgba(68, 127, 153, 0.2);
+  text-align: left;
+  vertical-align: top;
+}
+
+.design-markdown-view th {
+  background: rgba(221, 239, 247, 0.76);
+  color: #20495b;
+  font-weight: 900;
+}
+
+.design-markdown-view tr:nth-child(even) td {
+  background: rgba(244, 250, 252, 0.72);
 }
 
 .git-history-list {
