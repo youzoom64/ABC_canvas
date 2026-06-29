@@ -6,6 +6,7 @@ import hashlib
 import json
 import os
 import random
+import shutil
 import subprocess
 import sys
 import threading
@@ -32,6 +33,7 @@ from powan_store import PowanStore
 APP_ROOT = Path(__file__).resolve().parent
 STATIC_ROOT = APP_ROOT / "static"
 POWAN_WORK_ROOT = APP_ROOT / "powan_work"
+CODEX_WORKSPACE_ROOT = APP_ROOT / ".codex_powan_workspaces"
 SETTING_ROOT = APP_ROOT / "setting"
 DEFAULT_SOUND_ROOT = SETTING_ROOT / "sound"
 SETTINGS_PATH = SETTING_ROOT / "settings.json"
@@ -129,6 +131,7 @@ POWAN_COLOR_PALETTE = [
 ]
 
 POWAN_WORK_ROOT.mkdir(parents=True, exist_ok=True)
+CODEX_WORKSPACE_ROOT.mkdir(parents=True, exist_ok=True)
 SETTING_ROOT.mkdir(parents=True, exist_ok=True)
 DEFAULT_SOUND_ROOT.mkdir(parents=True, exist_ok=True)
 LOG_ROOT.mkdir(parents=True, exist_ok=True)
@@ -1774,6 +1777,55 @@ def ensure_powan_exists(project: str, file: str, node_id: str) -> None:
         raise HTTPException(status_code=404, detail="Powan not found")
 
 
+def codex_workspace_root(project: str) -> Path:
+    safe_project = STORE.safe_project_name(project)
+    digest = hashlib.sha1(safe_project.encode("utf-8")).hexdigest()[:12]
+    return (CODEX_WORKSPACE_ROOT / f"{safe_project}-{digest}").resolve()
+
+
+def sync_codex_workspace(project: str) -> Path:
+    source_root = STORE.project_root(project)
+    workspace_root = codex_workspace_root(project)
+    workspace_parent = CODEX_WORKSPACE_ROOT.resolve()
+    if workspace_parent not in workspace_root.parents and workspace_root != workspace_parent:
+        raise HTTPException(status_code=400, detail="Invalid Codex workspace path")
+    workspace_root.mkdir(parents=True, exist_ok=True)
+
+    for forbidden_name in (DEFAULT_FILE, "powan.db"):
+        forbidden_path = workspace_root / forbidden_name
+        if forbidden_path.exists():
+            if forbidden_path.is_dir():
+                shutil.rmtree(forbidden_path)
+            else:
+                forbidden_path.unlink()
+
+    agents_source = source_root / ".agents"
+    agents_target = workspace_root / ".agents"
+    if agents_source.exists():
+        if agents_target.exists():
+            shutil.rmtree(agents_target)
+        shutil.copytree(agents_source, agents_target)
+
+    agents_md_source = source_root / "AGENTS.md"
+    if agents_md_source.exists():
+        shutil.copy2(agents_md_source, workspace_root / "AGENTS.md")
+
+    (workspace_root / ".abc_canvas_workspace.json").write_text(
+        json.dumps(
+            {
+                "project": STORE.safe_project_name(project),
+                "realProjectRoot": str(source_root),
+                "note": "Codex用の隔離作業場所です。ポワン状態はAPIツール経由で保存します。",
+            },
+            ensure_ascii=False,
+            indent=2,
+        )
+        + "\n",
+        encoding="utf-8",
+    )
+    return workspace_root
+
+
 def mark_codex_disconnected_safe(
     project: str,
     file: str,
@@ -2468,9 +2520,10 @@ def run_powan_codex_message(
         conversation_id=int(conversation["id"]),
         user_message_id=int(user_message["id"]) if user_message.get("id") is not None else None,
     )
-    project_root_path = STORE.project_root(project)
+    project_root_path = sync_codex_workspace(project)
     settings = load_app_settings()
-    codex_sandbox = normalize_codex_sandbox(settings.get("codexSandbox"))
+    requested_codex_sandbox = normalize_codex_sandbox(settings.get("codexSandbox"))
+    codex_sandbox = "workspace-write" if requested_codex_sandbox == "danger-full-access" else requested_codex_sandbox
     codex_model = normalize_codex_model(settings.get("codexModel"))
     codex_reasoning_effort = normalize_codex_reasoning_effort(settings.get("codexReasoningEffort"))
     log_server_event(
@@ -2489,8 +2542,10 @@ def run_powan_codex_message(
             "attachmentCount": len(materialized_attachments),
             "attachmentPathCount": sum(1 for attachment in materialized_attachments if isinstance(attachment, dict) and attachment.get("path")),
             "codexSandbox": codex_sandbox,
+            "requestedCodexSandbox": requested_codex_sandbox,
             "codexModel": codex_model,
             "codexReasoningEffort": codex_reasoning_effort,
+            "codexWorkspace": str(project_root_path),
         },
     )
     log_powan_work_status(
@@ -2507,6 +2562,7 @@ def run_powan_codex_message(
             "textPreview": compact_console_text(text),
             "hasThread": bool(conversation.get("codexThreadId")),
             "codexSandbox": codex_sandbox,
+            "requestedCodexSandbox": requested_codex_sandbox,
             "codexModel": codex_model,
             "codexReasoningEffort": codex_reasoning_effort,
             "includeDirectChildCode": bool(include_direct_child_code),
@@ -3162,7 +3218,7 @@ def summarize_conversation(node_id: str, project: str, file: str = DEFAULT_FILE)
             "messages": [],
         }
     old_conversation = STORE.active_conversation(project, file, node_id)
-    project_root_path = STORE.project_root(project)
+    project_root_path = sync_codex_workspace(project)
     settings = load_app_settings()
     codex_model = normalize_codex_model(settings.get("codexModel"))
     codex_reasoning_effort = normalize_codex_reasoning_effort(settings.get("codexReasoningEffort"))
@@ -3177,6 +3233,7 @@ def summarize_conversation(node_id: str, project: str, file: str = DEFAULT_FILE)
             "messageCount": len(messages),
             "codexModel": codex_model,
             "codexReasoningEffort": codex_reasoning_effort,
+            "codexWorkspace": str(project_root_path),
         },
     )
     try:
