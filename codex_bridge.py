@@ -413,7 +413,37 @@ class CodexPowanBridge:
         messages: list[dict[str, Any]],
         codex_model: str = "",
         codex_reasoning_effort: str = "",
+        agent_run_id: int | None = None,
+        on_process_started: Callable[[int], None] | None = None,
     ) -> CodexRunResult:
+        cancel_key = self.cancel_key(project, document_name, node_id)
+        if self.active_run_conflicts(
+            project=project,
+            document_name=document_name,
+            node_id=node_id,
+            run_id=agent_run_id,
+        ):
+            return CodexRunResult(
+                text="",
+                thread_id=None,
+                returncode=409,
+                stdout="",
+                stderr="Codex exec already running for this powan",
+                duration_ms=0,
+                resumed=False,
+                command=[],
+            )
+        if not self.begin_active_run(project=project, document_name=document_name, node_id=node_id, run_id=agent_run_id):
+            return CodexRunResult(
+                text="",
+                thread_id=None,
+                returncode=409,
+                stdout="",
+                stderr="Codex exec already running for this powan",
+                duration_ms=0,
+                resumed=False,
+                command=[],
+            )
         source = self.build_summary_source(messages)
         tool_env = {
             "ABC_CANVAS_API_BASE": os.environ.get("ABC_CANVAS_API_BASE", "http://127.0.0.1:8790"),
@@ -421,50 +451,59 @@ class CodexPowanBridge:
             "ABC_POWAN_FILE": document_name,
             "ABC_POWAN_NODE_ID": node_id,
         }
-        max_chars = 3000
-        prompt = self.render_summary_prompt(source["text"], max_chars=max_chars)
-        result = self.run_codex(
-            project_root,
-            prompt,
-            thread_id=None,
-            tool_env=tool_env,
-            ignore_rules=True,
-            model=codex_model,
-            reasoning_effort=codex_reasoning_effort,
-        )
-        if result.returncode != 0 or not result.text:
-            result.input_chars = source["input_chars"]
-            result.turn_count = source["turn_count"]
-            return result
-        retry_count = 0
-        trimmed_chars = 0
-        if len(result.text) > max_chars:
-            retry_count = 1
-            retry_prompt = self.render_summary_retry_prompt(result.text, max_chars=max_chars)
-            retry_result = self.run_codex(
+        try:
+            max_chars = 3000
+            prompt = self.render_summary_prompt(source["text"], max_chars=max_chars)
+            result = self.run_codex(
                 project_root,
-                retry_prompt,
+                prompt,
                 thread_id=None,
                 tool_env=tool_env,
                 ignore_rules=True,
                 model=codex_model,
                 reasoning_effort=codex_reasoning_effort,
+                cancel_key=cancel_key,
+                agent_run_id=agent_run_id,
+                on_process_started=on_process_started,
             )
-            if retry_result.returncode == 0 and retry_result.text:
-                retry_result.stdout = f"{result.stdout}\n{retry_result.stdout}".strip()
-                retry_result.stderr = f"{result.stderr}\n{retry_result.stderr}".strip()
-                retry_result.duration_ms += result.duration_ms
-                result = retry_result
-            else:
-                result.stderr = f"{result.stderr}\nsummary retry failed: {retry_result.stderr}".strip()
-        if len(result.text) > max_chars:
-            trimmed_chars = len(result.text) - max_chars
-            result.text = result.text[-max_chars:].lstrip()
-        result.input_chars = source["input_chars"]
-        result.turn_count = source["turn_count"]
-        result.retry_count = retry_count
-        result.trimmed_chars = trimmed_chars
-        return result
+            if result.returncode != 0 or not result.text:
+                result.input_chars = source["input_chars"]
+                result.turn_count = source["turn_count"]
+                return result
+            retry_count = 0
+            trimmed_chars = 0
+            if len(result.text) > max_chars:
+                retry_count = 1
+                retry_prompt = self.render_summary_retry_prompt(result.text, max_chars=max_chars)
+                retry_result = self.run_codex(
+                    project_root,
+                    retry_prompt,
+                    thread_id=None,
+                    tool_env=tool_env,
+                    ignore_rules=True,
+                    model=codex_model,
+                    reasoning_effort=codex_reasoning_effort,
+                    cancel_key=cancel_key,
+                    agent_run_id=agent_run_id,
+                    on_process_started=on_process_started,
+                )
+                if retry_result.returncode == 0 and retry_result.text:
+                    retry_result.stdout = f"{result.stdout}\n{retry_result.stdout}".strip()
+                    retry_result.stderr = f"{result.stderr}\n{retry_result.stderr}".strip()
+                    retry_result.duration_ms += result.duration_ms
+                    result = retry_result
+                else:
+                    result.stderr = f"{result.stderr}\nsummary retry failed: {retry_result.stderr}".strip()
+            if len(result.text) > max_chars:
+                trimmed_chars = len(result.text) - max_chars
+                result.text = result.text[-max_chars:].lstrip()
+            result.input_chars = source["input_chars"]
+            result.turn_count = source["turn_count"]
+            result.retry_count = retry_count
+            result.trimmed_chars = trimmed_chars
+            return result
+        finally:
+            self.end_active_run(project=project, document_name=document_name, node_id=node_id, run_id=agent_run_id)
 
     def run_codex(
         self,

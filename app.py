@@ -3430,9 +3430,47 @@ def drain_pending_codex_messages(project: str, file: str, node_id: str, drain_ke
                         report_text=str(required_for_text.get("reportText") or text),
                         required_judgement=required_for_text,
                     )
+                target_conversation_id = int(conversation_id)
+                if not any(pending_item_requires_origin_judgement(item) for item in group):
+                    active_conversation = STORE.active_conversation(project, file, node_id)
+                    active_conversation_id = int(active_conversation["id"])
+                    if active_conversation_id != int(conversation_id):
+                        copied_message = STORE.append_conversation_message_to_conversation(
+                            project,
+                            file,
+                            node_id,
+                            active_conversation_id,
+                            "user",
+                            text,
+                        )
+                        group = [
+                            {
+                                **item,
+                                "conversationId": active_conversation_id,
+                                "messageId": int(copied_message["id"]),
+                                "text": text,
+                                "messageCreatedAt": copied_message.get("createdAt") or "",
+                            }
+                            for item in group
+                        ]
+                        target_conversation_id = active_conversation_id
+                        log_server_event(
+                            "info",
+                            "pending-codex-message-moved-to-active-conversation",
+                            {
+                                "console": True,
+                                "project": STORE.safe_project_name(project),
+                                "file": STORE.safe_powan_name(file),
+                                "nodeId": node_id,
+                                "fromConversationId": int(conversation_id),
+                                "toConversationId": active_conversation_id,
+                                "pendingIds": pending_ids,
+                                "messageId": int(copied_message["id"]),
+                            },
+                        )
                 pre_message = {
                     "id": int(group[-1]["messageId"]),
-                    "conversationId": int(conversation_id),
+                    "conversationId": int(target_conversation_id),
                     "role": group[-1].get("role") or "user",
                     "text": group[-1].get("text") or "",
                     "createdAt": group[-1].get("messageCreatedAt") or group[-1].get("createdAt") or "",
@@ -3453,7 +3491,7 @@ def drain_pending_codex_messages(project: str, file: str, node_id: str, drain_ke
                         "project": STORE.safe_project_name(project),
                         "file": STORE.safe_powan_name(file),
                         "nodeId": node_id,
-                        "conversationId": int(conversation_id),
+                        "conversationId": int(target_conversation_id),
                         "count": len(group),
                         "pendingIds": pending_ids,
                         "reason": reason,
@@ -5017,6 +5055,17 @@ def summarize_conversation(node_id: str, project: str, file: str = DEFAULT_FILE)
             "codexWorkspace": str(project_root_path),
         },
     )
+    run_payload = {
+        "type": "conversation-summary",
+        "project": STORE.safe_project_name(project),
+        "file": STORE.safe_powan_name(file),
+        "nodeId": node_id,
+        "conversationId": old_conversation["id"],
+        "messageCount": len(messages),
+        "codexModel": codex_model,
+        "codexReasoningEffort": codex_reasoning_effort,
+    }
+    agent_run = STORE.start_agent_run(project, old_conversation["id"], node_id, run_payload)
     try:
         result = CODEX_BRIDGE.summarize_conversation(
             project_root=project_root_path,
@@ -5026,9 +5075,21 @@ def summarize_conversation(node_id: str, project: str, file: str = DEFAULT_FILE)
             messages=messages,
             codex_model=codex_model,
             codex_reasoning_effort=codex_reasoning_effort,
+            agent_run_id=int(agent_run["id"]),
+            on_process_started=lambda pid: STORE.set_agent_run_pid(project, int(agent_run["id"]), int(pid)),
         )
     except Exception as exc:
         detail = f"Codex exec crashed before summarizing: {exc}"
+        STORE.finish_agent_run(
+            project,
+            agent_run["id"],
+            "failed",
+            {
+                **run_payload,
+                "crashed": True,
+            },
+            error_text=detail,
+        )
         log_server_event(
             "error",
             "conversation-summary-crashed",
@@ -5040,19 +5101,46 @@ def summarize_conversation(node_id: str, project: str, file: str = DEFAULT_FILE)
                 "error": repr(exc),
             },
         )
+        schedule_pending_codex_drain(project, file, node_id, reason="conversation-summary-crashed")
         raise HTTPException(status_code=502, detail=detail) from exc
-    if result.returncode != 0 or not result.text:
-        STORE.record_agent_run(
+    try:
+        if result.returncode != 0 or not result.text:
+            STORE.finish_agent_run(
+                project,
+                agent_run["id"],
+                "failed",
+                {
+                    **run_payload,
+                    "durationMs": result.duration_ms,
+                    "inputChars": result.input_chars,
+                    "turnCount": result.turn_count,
+                    "retryCount": result.retry_count,
+                    "trimmedChars": result.trimmed_chars,
+                },
+                output_text=result.text,
+                error_text=result.stderr[-4000:],
+            )
+            log_server_event(
+                "error",
+                "conversation-summary-failed",
+                {
+                    "project": STORE.safe_project_name(project),
+                    "file": STORE.safe_powan_name(file),
+                    "nodeId": node_id,
+                    "conversationId": old_conversation["id"],
+                    "returncode": result.returncode,
+                    "stderr": result.stderr[-1000:],
+                },
+            )
+            if codex_result_already_running(result):
+                raise HTTPException(status_code=409, detail="Codex exec already running for this powan")
+            raise HTTPException(status_code=502, detail="Codex exec summary failed")
+        STORE.finish_agent_run(
             project,
-            old_conversation["id"],
-            node_id,
-            "failed",
+            agent_run["id"],
+            "completed",
             {
-                "type": "conversation-summary",
-                "project": STORE.safe_project_name(project),
-                "file": STORE.safe_powan_name(file),
-                "nodeId": node_id,
-                "conversationId": old_conversation["id"],
+                **run_payload,
                 "durationMs": result.duration_ms,
                 "inputChars": result.input_chars,
                 "turnCount": result.turn_count,
@@ -5062,67 +5150,36 @@ def summarize_conversation(node_id: str, project: str, file: str = DEFAULT_FILE)
             output_text=result.text,
             error_text=result.stderr[-4000:],
         )
+        conversation = STORE.start_new_conversation(project, file, node_id, title="要約から再開", summary_text=result.text)
+        payload = STORE.list_conversation_messages(project, file, node_id)
         log_server_event(
-            "error",
-            "conversation-summary-failed",
+            "info",
+            "conversation-summary-complete",
             {
                 "project": STORE.safe_project_name(project),
                 "file": STORE.safe_powan_name(file),
                 "nodeId": node_id,
-                "conversationId": old_conversation["id"],
-                "returncode": result.returncode,
-                "stderr": result.stderr[-1000:],
+                "oldConversationId": old_conversation["id"],
+                "conversationId": conversation["id"],
+                "summaryLength": len(result.text),
+                "inputChars": result.input_chars,
+                "turnCount": result.turn_count,
+                "retryCount": result.retry_count,
+                "trimmedChars": result.trimmed_chars,
             },
         )
-        raise HTTPException(status_code=502, detail="Codex exec summary failed")
-    STORE.record_agent_run(
-        project,
-        old_conversation["id"],
-        node_id,
-        "completed",
-        {
-            "type": "conversation-summary",
-            "project": STORE.safe_project_name(project),
-            "file": STORE.safe_powan_name(file),
-            "nodeId": node_id,
-            "conversationId": old_conversation["id"],
-            "durationMs": result.duration_ms,
-            "inputChars": result.input_chars,
-            "turnCount": result.turn_count,
-            "retryCount": result.retry_count,
-            "trimmedChars": result.trimmed_chars,
-        },
-        output_text=result.text,
-        error_text=result.stderr[-4000:],
-    )
-    conversation = STORE.start_new_conversation(project, file, node_id, title="要約から再開", summary_text=result.text)
-    payload = STORE.list_conversation_messages(project, file, node_id)
-    log_server_event(
-        "info",
-        "conversation-summary-complete",
-        {
-            "project": STORE.safe_project_name(project),
-            "file": STORE.safe_powan_name(file),
-            "nodeId": node_id,
-            "oldConversationId": old_conversation["id"],
+        return {
             "conversationId": conversation["id"],
-            "summaryLength": len(result.text),
+            "conversation": conversation,
+            "summary": result.text,
             "inputChars": result.input_chars,
             "turnCount": result.turn_count,
             "retryCount": result.retry_count,
             "trimmedChars": result.trimmed_chars,
-        },
-    )
-    return {
-        "conversationId": conversation["id"],
-        "conversation": conversation,
-        "summary": result.text,
-        "inputChars": result.input_chars,
-        "turnCount": result.turn_count,
-        "retryCount": result.retry_count,
-        "trimmedChars": result.trimmed_chars,
-        "messages": payload["messages"],
-    }
+            "messages": payload["messages"],
+        }
+    finally:
+        schedule_pending_codex_drain(project, file, node_id, reason="conversation-summary-finished")
 
 
 @app.post("/api/conversations/{node_id}/codex")
