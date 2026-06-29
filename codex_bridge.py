@@ -7,9 +7,11 @@ import subprocess
 import tempfile
 import threading
 import time
+import ctypes
+import ctypes.wintypes
 from dataclasses import dataclass
 from pathlib import Path
-from typing import Any
+from typing import Any, Callable
 from uuid import uuid4
 
 from powan_context import build_powan_context
@@ -37,6 +39,7 @@ class CodexPowanBridge:
         self.log_event = log_event
         self.timeout_seconds = timeout_seconds
         self.active_processes: dict[str, subprocess.Popen[str]] = {}
+        self.active_runs: dict[str, dict[str, Any]] = {}
         self.cancelled_keys: set[str] = set()
         self.process_lock = threading.RLock()
 
@@ -128,6 +131,159 @@ class CodexPowanBridge:
         )
         return {"cancelled": True, "running": True, **kill_info}
 
+    def begin_active_run(
+        self,
+        *,
+        project: str,
+        document_name: str,
+        node_id: str,
+        run_id: int | None,
+    ) -> bool:
+        if run_id is None:
+            return True
+        key = self.cancel_key(project, document_name, node_id)
+        with self.process_lock:
+            existing = self.active_runs.get(key)
+            if (
+                existing
+                and existing.get("runId") != int(run_id)
+            ):
+                return False
+            self.active_runs[key] = {
+                "runId": int(run_id),
+                "project": project,
+                "documentName": document_name,
+                "nodeId": node_id,
+                "pid": None,
+                "startedAt": time.monotonic(),
+            }
+        return True
+
+    def active_run_conflicts(
+        self,
+        *,
+        project: str,
+        document_name: str,
+        node_id: str,
+        run_id: int | None,
+    ) -> bool:
+        if run_id is None:
+            return False
+        key = self.cancel_key(project, document_name, node_id)
+        with self.process_lock:
+            active = self.active_runs.get(key)
+            return bool(active and active.get("runId") != int(run_id))
+
+    def end_active_run(
+        self,
+        *,
+        project: str,
+        document_name: str,
+        node_id: str,
+        run_id: int | None,
+    ) -> None:
+        if run_id is None:
+            return
+        key = self.cancel_key(project, document_name, node_id)
+        with self.process_lock:
+            active = self.active_runs.get(key)
+            if active and active.get("runId") == int(run_id):
+                self.active_runs.pop(key, None)
+
+    def mark_active_run_process(
+        self,
+        *,
+        project: str,
+        document_name: str,
+        node_id: str,
+        run_id: int | None,
+        pid: int,
+    ) -> None:
+        if run_id is None:
+            return
+        key = self.cancel_key(project, document_name, node_id)
+        with self.process_lock:
+            active = self.active_runs.get(key)
+            if active and active.get("runId") == int(run_id):
+                active["pid"] = int(pid)
+
+    def is_agent_run_active(
+        self,
+        *,
+        project: str,
+        document_name: str,
+        node_id: str,
+        run_id: int | None,
+    ) -> bool:
+        if run_id is None:
+            return False
+        key = self.cancel_key(project, document_name, node_id)
+        with self.process_lock:
+            active = self.active_runs.get(key)
+            if not active or active.get("runId") != int(run_id):
+                return False
+            process = self.active_processes.get(key)
+            if process is not None and process.poll() is not None:
+                self.active_processes.pop(key, None)
+            return True
+
+    def active_run_info(
+        self,
+        *,
+        project: str,
+        document_name: str,
+        node_id: str,
+        run_id: int | None,
+    ) -> dict[str, Any] | None:
+        if run_id is None:
+            return None
+        key = self.cancel_key(project, document_name, node_id)
+        with self.process_lock:
+            active = self.active_runs.get(key)
+            if not active or active.get("runId") != int(run_id):
+                return None
+            process = self.active_processes.get(key)
+            process_running = False
+            pid = active.get("pid")
+            if process is not None:
+                process_running = process.poll() is None
+                pid = process.pid
+            return {
+                "runId": int(run_id),
+                "pid": pid,
+                "processRunning": process_running,
+            }
+
+    def is_pid_running(self, pid: int | None) -> bool:
+        if not pid or int(pid) <= 0:
+            return False
+        clean_pid = int(pid)
+        if os.name == "nt":
+            kernel32 = ctypes.WinDLL("kernel32", use_last_error=True)
+            process_query_limited_information = 0x1000
+            still_active = 259
+            kernel32.OpenProcess.argtypes = [ctypes.wintypes.DWORD, ctypes.wintypes.BOOL, ctypes.wintypes.DWORD]
+            kernel32.OpenProcess.restype = ctypes.wintypes.HANDLE
+            kernel32.GetExitCodeProcess.argtypes = [ctypes.wintypes.HANDLE, ctypes.POINTER(ctypes.wintypes.DWORD)]
+            kernel32.GetExitCodeProcess.restype = ctypes.wintypes.BOOL
+            kernel32.CloseHandle.argtypes = [ctypes.wintypes.HANDLE]
+            kernel32.CloseHandle.restype = ctypes.wintypes.BOOL
+            handle = kernel32.OpenProcess(process_query_limited_information, False, clean_pid)
+            if not handle:
+                return False
+            try:
+                exit_code = ctypes.wintypes.DWORD()
+                if not kernel32.GetExitCodeProcess(handle, ctypes.byref(exit_code)):
+                    return False
+                return int(exit_code.value) == still_active
+            finally:
+                kernel32.CloseHandle(handle)
+        try:
+            os.kill(clean_pid, 0)
+        except OSError:
+            return False
+        return True
+
     def run(
         self,
         *,
@@ -139,12 +295,15 @@ class CodexPowanBridge:
         user_text: str,
         conversation: dict[str, Any],
         messages: list[dict[str, Any]],
+        incoming_message: dict[str, Any] | None = None,
         include_meaning_tree: bool = False,
         include_direct_child_code: bool = False,
         attachments: list[dict[str, Any]] | None = None,
         codex_sandbox: str = "danger-full-access",
         codex_model: str = "",
         codex_reasoning_effort: str = "",
+        agent_run_id: int | None = None,
+        on_process_started: Callable[[int], None] | None = None,
     ) -> CodexRunResult:
         prompt_payload = self.prompt_payload(
             project=project,
@@ -154,6 +313,7 @@ class CodexPowanBridge:
             user_text=user_text,
             conversation=conversation,
             messages=messages,
+            incoming_message=incoming_message,
             include_meaning_tree=include_meaning_tree,
             include_direct_child_code=include_direct_child_code,
             attachments=attachments,
@@ -167,42 +327,76 @@ class CodexPowanBridge:
         }
         thread_id = conversation.get("codexThreadId")
         cancel_key = self.cancel_key(project, document_name, node_id)
-        if thread_id:
-            result = self.run_codex(
+        if self.active_run_conflicts(
+            project=project,
+            document_name=document_name,
+            node_id=node_id,
+            run_id=agent_run_id,
+        ):
+            return CodexRunResult(
+                text="",
+                thread_id=str(thread_id) if thread_id else None,
+                returncode=409,
+                stdout="",
+                stderr="Codex exec already running for this powan",
+                duration_ms=0,
+                resumed=bool(thread_id),
+                command=[],
+            )
+        if not self.begin_active_run(project=project, document_name=document_name, node_id=node_id, run_id=agent_run_id):
+            return CodexRunResult(
+                text="",
+                thread_id=str(thread_id) if thread_id else None,
+                returncode=409,
+                stdout="",
+                stderr="Codex exec already running for this powan",
+                duration_ms=0,
+                resumed=bool(thread_id),
+                command=[],
+            )
+        try:
+            if thread_id:
+                result = self.run_codex(
+                    project_root,
+                    prompt,
+                    thread_id=str(thread_id),
+                    tool_env=tool_env,
+                    cancel_key=cancel_key,
+                    sandbox=codex_sandbox,
+                    model=codex_model,
+                    reasoning_effort=codex_reasoning_effort,
+                    agent_run_id=agent_run_id,
+                    on_process_started=on_process_started,
+                )
+                if result.returncode == 0 or result.cancelled:
+                    return result
+                self.log_event(
+                    "warn",
+                    "codex-exec-resume-failed-new-session",
+                    {
+                        "project": project,
+                        "file": document_name,
+                        "nodeId": node_id,
+                        "conversationId": conversation.get("id"),
+                        "threadId": thread_id,
+                        "returncode": result.returncode,
+                        "stderr": result.stderr[-1000:],
+                    },
+                )
+            return self.run_codex(
                 project_root,
                 prompt,
-                thread_id=str(thread_id),
+                thread_id=None,
                 tool_env=tool_env,
                 cancel_key=cancel_key,
                 sandbox=codex_sandbox,
                 model=codex_model,
                 reasoning_effort=codex_reasoning_effort,
+                agent_run_id=agent_run_id,
+                on_process_started=on_process_started,
             )
-            if result.returncode == 0 or result.cancelled:
-                return result
-            self.log_event(
-                "warn",
-                "codex-exec-resume-failed-new-session",
-                {
-                    "project": project,
-                    "file": document_name,
-                    "nodeId": node_id,
-                    "conversationId": conversation.get("id"),
-                    "threadId": thread_id,
-                    "returncode": result.returncode,
-                    "stderr": result.stderr[-1000:],
-                },
-            )
-        return self.run_codex(
-            project_root,
-            prompt,
-            thread_id=None,
-            tool_env=tool_env,
-            cancel_key=cancel_key,
-            sandbox=codex_sandbox,
-            model=codex_model,
-            reasoning_effort=codex_reasoning_effort,
-        )
+        finally:
+            self.end_active_run(project=project, document_name=document_name, node_id=node_id, run_id=agent_run_id)
 
     def summarize_conversation(
         self,
@@ -278,6 +472,8 @@ class CodexPowanBridge:
         sandbox: str = "danger-full-access",
         model: str = "",
         reasoning_effort: str = "",
+        agent_run_id: int | None = None,
+        on_process_started: Callable[[int], None] | None = None,
     ) -> CodexRunResult:
         codex_command = shutil.which("codex") or shutil.which("codex.cmd") or "codex"
         output_path = Path(tempfile.gettempdir()) / f"abc_canvas_codex_{uuid4().hex}.txt"
@@ -343,6 +539,8 @@ class CodexPowanBridge:
                         resumed=bool(thread_id),
                         command=command,
                     )
+                if active_process and active_process.poll() is not None:
+                    self.active_processes.pop(cancel_key, None)
         try:
             process = subprocess.Popen(
                 command,
@@ -372,6 +570,16 @@ class CodexPowanBridge:
             if cancel_key:
                 with self.process_lock:
                     self.active_processes[cancel_key] = process
+            context = self.codex_event_context(tool_env)
+            self.mark_active_run_process(
+                project=context.get("project", ""),
+                document_name=context.get("file", ""),
+                node_id=context.get("nodeId", ""),
+                run_id=agent_run_id,
+                pid=process.pid,
+            )
+            if on_process_started is not None:
+                on_process_started(process.pid)
             timeout = self.timeout_seconds if self.timeout_seconds and self.timeout_seconds > 0 else None
             stdout, stderr = process.communicate(input=prompt, timeout=timeout)
             stdout = stdout or ""
@@ -450,6 +658,7 @@ class CodexPowanBridge:
         user_text: str,
         conversation: dict[str, Any],
         messages: list[dict[str, Any]],
+        incoming_message: dict[str, Any] | None = None,
         include_meaning_tree: bool = False,
         include_direct_child_code: bool = False,
         attachments: list[dict[str, Any]] | None = None,
@@ -462,6 +671,7 @@ class CodexPowanBridge:
             conversation=conversation,
             messages=messages,
             user_text=user_text,
+            incoming_message=incoming_message,
             include_meaning_tree=include_meaning_tree,
             include_direct_child_code=include_direct_child_code,
             attachments=attachments,
@@ -476,12 +686,15 @@ class CodexPowanBridge:
 このポワンに込められた意味として話しましょう。
 返事はこのポワン本人として自然に返してください。
 attachments に path がある時は、そのファイルをこのプロジェクト内の添付として読めます。
+今回の入力は context.incomingMessage を正として扱ってください。
+context.userText は古い互換フィールドです。誰から来たか、入力種別、実行範囲は incomingMessage を見てください。
+incomingMessage.allowedAction が read_only の時は、返答内容の確認と要約だけを行ってください。
 {code_instruction}現在のポワン文脈:
 ```json
 {context_json}
 ```
 
-今回のユーザー発言:
+今回の入力本文（互換表示）:
 {payload["userText"]}
 """
 

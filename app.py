@@ -1703,6 +1703,165 @@ def ensure_powan_exists(project: str, file: str, node_id: str) -> None:
         raise HTTPException(status_code=404, detail="Powan not found")
 
 
+def mark_codex_disconnected_safe(
+    project: str,
+    file: str,
+    node_id: str,
+    conversation_id: int | None,
+    reason: str,
+) -> None:
+    try:
+        STORE.mark_powan_codex_disconnected(
+            project,
+            file,
+            node_id,
+            conversation_id=conversation_id,
+            reason=reason,
+        )
+    except Exception as exc:
+        log_server_event(
+            "error",
+            "codex-disconnected-mark-failed",
+            {
+                "project": STORE.safe_project_name(project),
+                "file": STORE.safe_powan_name(file),
+                "nodeId": node_id,
+                "conversationId": conversation_id,
+                "reason": reason,
+                "error": repr(exc),
+            },
+        )
+
+
+DEAD_CODEX_RUN_ERROR = "Codexプロセスが見つかりません。DBの作業中状態だけが残っていたため失敗にしました。"
+
+
+def find_codex_pid_for_thread(thread_id: str) -> int | None:
+    clean_thread_id = str(thread_id or "").strip()
+    if not clean_thread_id or os.name != "nt":
+        return None
+    escaped_thread_id = clean_thread_id.replace("'", "''")
+    command = (
+        "$thread = '" + escaped_thread_id + "'; "
+        "$matches = Get-CimInstance Win32_Process | "
+        "Where-Object { $_.CommandLine -like \"*$thread*\" -and "
+        "($_.Name -ieq 'codex.exe' -or $_.Name -ieq 'node.exe' -or $_.Name -ieq 'cmd.exe') }; "
+        "$preferred = $matches | Where-Object { $_.Name -ieq 'codex.exe' } | Select-Object -First 1; "
+        "if (-not $preferred) { $preferred = $matches | Select-Object -First 1 }; "
+        "if ($preferred) { $preferred.ProcessId }"
+    )
+    try:
+        result = subprocess.run(
+            ["powershell", "-NoProfile", "-Command", command],
+            stdout=subprocess.PIPE,
+            stderr=subprocess.PIPE,
+            text=True,
+            encoding="utf-8",
+            errors="replace",
+            timeout=4,
+            creationflags=getattr(subprocess, "CREATE_NO_WINDOW", 0),
+        )
+    except (OSError, subprocess.TimeoutExpired):
+        return None
+    if result.returncode != 0:
+        return None
+    for line in (result.stdout or "").splitlines():
+        line = line.strip()
+        if not line:
+            continue
+        try:
+            return int(line)
+        except ValueError:
+            continue
+    return None
+
+
+def reconcile_running_agent_runs(
+    project: str,
+    file: str,
+    *,
+    node_id: str | None = None,
+    conversation_id: int | None = None,
+) -> list[dict[str, Any]]:
+    safe_project = STORE.safe_project_name(project)
+    safe_file = STORE.safe_powan_name(file)
+    live_runs: list[dict[str, Any]] = []
+    for run in STORE.list_running_agent_runs(project, file):
+        run_node_id = str(run.get("powanId") or "")
+        run_conversation_id = run.get("conversationId")
+        if node_id and run_node_id != node_id:
+            continue
+        if conversation_id is not None and int(run_conversation_id or 0) != int(conversation_id):
+            continue
+        live_info = CODEX_BRIDGE.active_run_info(
+            project=safe_project,
+            document_name=safe_file,
+            node_id=run_node_id,
+            run_id=int(run["id"]),
+        )
+        if live_info is not None:
+            next_run = {**run, "live": True}
+            if live_info.get("pid") is not None:
+                next_run["pid"] = live_info["pid"]
+            next_run["processRunning"] = bool(live_info.get("processRunning"))
+            live_runs.append(next_run)
+            continue
+        pid = run.get("pid")
+        if pid is None:
+            pid = find_codex_pid_for_thread(str(run.get("threadId") or ""))
+            if pid is not None:
+                STORE.set_agent_run_pid(project, int(run["id"]), int(pid))
+        if pid is not None and CODEX_BRIDGE.is_pid_running(int(pid)):
+            live_runs.append({**run, "pid": int(pid), "live": True, "processRunning": True})
+            continue
+        failed = STORE.fail_agent_run_if_running(project, int(run["id"]), DEAD_CODEX_RUN_ERROR)
+        if failed is None:
+            continue
+        STORE.fail_child_command_dispatches_for_run(
+            project,
+            str(failed.get("documentName") or safe_file),
+            str(failed.get("powanId") or run_node_id),
+            int(failed["conversationId"]) if failed.get("conversationId") is not None else None,
+            DEAD_CODEX_RUN_ERROR,
+        )
+        mark_codex_disconnected_safe(
+            project,
+            str(failed.get("documentName") or safe_file),
+            str(failed.get("powanId") or run_node_id),
+            int(failed["conversationId"]) if failed.get("conversationId") is not None else None,
+            "codex-process-missing",
+        )
+        log_server_event(
+            "warn",
+            "codex-run-reconciled-dead",
+            {
+                "project": safe_project,
+                "file": safe_file,
+                "nodeId": failed.get("powanId") or run_node_id,
+                "conversationId": failed.get("conversationId"),
+                "runId": failed.get("id"),
+            },
+        )
+    return live_runs
+
+
+def live_conversation_payload(project: str, file: str, node_id: str, conversation_id: int | None = None) -> dict[str, Any]:
+    if conversation_id is None:
+        payload = STORE.list_conversation_messages(project, file, node_id)
+    else:
+        payload = STORE.conversation_messages_by_id(project, file, node_id, conversation_id)
+    resolved_conversation_id = int(payload["conversationId"])
+    live_runs = reconcile_running_agent_runs(
+        project,
+        file,
+        node_id=node_id,
+        conversation_id=resolved_conversation_id,
+    )
+    payload = STORE.conversation_messages_by_id(project, file, node_id, resolved_conversation_id)
+    payload["activeRun"] = live_runs[0] if live_runs else None
+    return payload
+
+
 def powan_label_from_document(document: dict[str, Any], node_id: str | None) -> str:
     if not node_id:
         return "ユーザー"
@@ -1721,6 +1880,144 @@ def powan_work_message(status: str, sender_label: str, receiver_label: str, sour
         "cancelled": "キャンセル",
     }
     return f"{sender_label} -> {receiver_label} / {status_labels.get(status, status)}"
+
+
+def limit_prompt_text(text: Any, limit: int = 12000) -> str:
+    value = str(text or "")
+    if limit <= 0:
+        return ""
+    if len(value) <= limit:
+        return value
+    return f"{value[:limit]}\n... truncated {len(value) - limit} chars ..."
+
+
+def incoming_kind_for_source(source: str) -> str:
+    if source == "command-children":
+        return "parent_command"
+    if source == "command-child-return":
+        return "child_replies"
+    return "operator_message"
+
+
+def incoming_allowed_action(source: str) -> str:
+    if source == "command-child-return":
+        return "read_only"
+    return "may_command_children"
+
+
+def incoming_from_payload(source: str, sender_node_id: str | None, sender_label: str) -> dict[str, Any]:
+    if source == "command-children":
+        return {
+            "kind": "parent_powan",
+            "id": sender_node_id,
+            "name": sender_label,
+        }
+    if source == "command-child-return":
+        return {
+            "kind": "child_powan_bundle",
+            "id": sender_node_id,
+            "name": sender_label,
+        }
+    return {
+        "kind": "operator",
+        "id": None,
+        "name": "ユーザー",
+    }
+
+
+def incoming_system_instruction(kind: str) -> str:
+    if kind == "parent_command":
+        return "これは親ポワンからこのポワンへの命令です。from.kind と parentCommand を見て処理してください。"
+    if kind == "child_replies":
+        return "これは子ポワンから親ポワンへ戻った返答通知です。allowedAction=read_only の範囲で、返答内容の確認と要約だけを行ってください。"
+    return "これはユーザーからこのポワンへの入力です。"
+
+
+def build_incoming_message_payload(
+    *,
+    source: str,
+    text: str,
+    sender_node_id: str | None,
+    sender_label: str,
+    receiver_node_id: str,
+    receiver_label: str,
+    conversation_id: int,
+    user_message_id: int | None,
+) -> dict[str, Any]:
+    kind = incoming_kind_for_source(source)
+    payload: dict[str, Any] = {
+        "kind": kind,
+        "source": source,
+        "from": incoming_from_payload(source, sender_node_id, sender_label),
+        "to": {
+            "kind": "powan",
+            "id": receiver_node_id,
+            "name": receiver_label,
+            "conversationId": conversation_id,
+            "messageId": user_message_id,
+        },
+        "operatorMessage": "",
+        "parentCommand": "",
+        "childReplies": [],
+        "body": text,
+        "allowedAction": incoming_allowed_action(source),
+        "systemInstruction": incoming_system_instruction(kind),
+    }
+    if kind == "parent_command":
+        payload["parentCommand"] = text
+    elif kind == "child_replies":
+        payload["childReplies"] = []
+    else:
+        payload["operatorMessage"] = text
+    return payload
+
+
+def child_reply_payloads(results: list[dict[str, Any]]) -> list[dict[str, Any]]:
+    replies: list[dict[str, Any]] = []
+    for result in results:
+        assistant_message = result.get("assistantMessage") if isinstance(result.get("assistantMessage"), dict) else None
+        agent_run = result.get("agentRun") if isinstance(result.get("agentRun"), dict) else None
+        replies.append(
+            {
+                "from": {
+                    "kind": "child_powan",
+                    "id": result.get("nodeId"),
+                    "name": str(result.get("meaning") or "名前のないポワン"),
+                },
+                "status": str(result.get("status") or "unknown"),
+                "conversationId": result.get("conversationId"),
+                "dispatchSessionId": result.get("dispatchSessionId"),
+                "dispatchId": result.get("dispatchId"),
+                "assistantMessageId": assistant_message.get("id") if assistant_message else None,
+                "agentRunId": agent_run.get("id") if agent_run else None,
+                "text": limit_prompt_text((assistant_message or {}).get("text") or "", 12000),
+                "error": limit_prompt_text(result.get("error") or "", 4000),
+            }
+        )
+    return replies
+
+
+def child_return_incoming_message(
+    *,
+    parent_id: str,
+    parent_label: str,
+    parent_conversation_id: int,
+    parent_message_id: int | None,
+    parent_text: str,
+    results: list[dict[str, Any]],
+) -> dict[str, Any]:
+    payload = build_incoming_message_payload(
+        source="command-child-return",
+        text=parent_text,
+        sender_node_id=str(results[0].get("nodeId") or "") if len(results) == 1 else None,
+        sender_label="子ポワン一括返答",
+        receiver_node_id=parent_id,
+        receiver_label=parent_label,
+        conversation_id=parent_conversation_id,
+        user_message_id=parent_message_id,
+    )
+    payload["childReplies"] = child_reply_payloads(results)
+    return payload
 
 
 def remember_powan_work_event(details: dict[str, Any]) -> dict[str, Any]:
@@ -1824,6 +2121,7 @@ def run_powan_codex_message(
     sender_node_id: str | None = None,
     sender_label_override: str | None = None,
     pre_appended_user_message: dict[str, Any] | None = None,
+    incoming_message: dict[str, Any] | None = None,
 ) -> dict[str, Any]:
     document = STORE.load_document(project, file)
     if not any(str(node.get("id")) == node_id for node in document.get("nodes") or []):
@@ -1884,6 +2182,16 @@ def run_powan_codex_message(
             },
         )
         messages = STORE.list_conversation_messages(project, file, node_id)["messages"]
+    incoming_message_payload = incoming_message or build_incoming_message_payload(
+        source=source,
+        text=text,
+        sender_node_id=sender_node_id,
+        sender_label=sender_label,
+        receiver_node_id=node_id,
+        receiver_label=receiver_label,
+        conversation_id=int(conversation["id"]),
+        user_message_id=int(user_message["id"]) if user_message.get("id") is not None else None,
+    )
     project_root_path = STORE.project_root(project)
     settings = load_app_settings()
     codex_sandbox = normalize_codex_sandbox(settings.get("codexSandbox"))
@@ -1942,6 +2250,9 @@ def run_powan_codex_message(
         "codexSandbox": codex_sandbox,
         "codexModel": codex_model,
         "codexReasoningEffort": codex_reasoning_effort,
+        "incomingKind": incoming_message_payload.get("kind"),
+        "incomingFrom": incoming_message_payload.get("from"),
+        "allowedAction": incoming_message_payload.get("allowedAction"),
     }
     agent_run = STORE.start_agent_run(project, conversation["id"], node_id, run_payload)
     try:
@@ -1954,12 +2265,15 @@ def run_powan_codex_message(
             user_text=text,
             conversation=conversation,
             messages=messages,
+            incoming_message=incoming_message_payload,
             include_meaning_tree=bool(include_meaning_tree),
             include_direct_child_code=bool(include_direct_child_code),
             attachments=materialized_attachments,
             codex_sandbox=codex_sandbox,
             codex_model=codex_model,
             codex_reasoning_effort=codex_reasoning_effort,
+            agent_run_id=int(agent_run["id"]),
+            on_process_started=lambda pid: STORE.set_agent_run_pid(project, int(agent_run["id"]), int(pid)),
         )
     except Exception as exc:
         detail = f"Codex exec crashed before returning: {exc}"
@@ -2000,6 +2314,7 @@ def run_powan_codex_message(
             },
             error_text=detail,
         )
+        mark_codex_disconnected_safe(project, file, node_id, int(conversation["id"]), "codex-exec-crashed")
         raise HTTPException(status_code=502, detail=detail) from exc
     if result.thread_id and result.thread_id != conversation.get("codexThreadId"):
         STORE.set_conversation_codex_thread_id(project, conversation["id"], result.thread_id)
@@ -2096,6 +2411,7 @@ def run_powan_codex_message(
                 "durationMs": result.duration_ms,
             },
         )
+        mark_codex_disconnected_safe(project, file, node_id, int(conversation["id"]), "codex-exec-failed")
         raise HTTPException(status_code=502, detail="Codex exec failed")
     assistant_message = STORE.append_conversation_message(project, file, node_id, "assistant", result.text)
     agent_run = STORE.finish_agent_run(
@@ -2229,17 +2545,7 @@ def render_child_return_message(parent_label: str, result: dict[str, Any]) -> st
 
 
 def render_child_return_bundle_message(parent_label: str, results: list[dict[str, Any]], dispatch_session_id: str) -> str:
-    completed = sum(1 for result in results if result.get("status") == "completed")
-    failed = sum(1 for result in results if result.get("status") not in {"completed", "skipped"})
-    lines = [
-        f"子ポワン {len(results)}件から、親ポワン「{parent_label}」へ返事が揃いました。",
-        "",
-        f"一括指示ID: {dispatch_session_id}",
-        f"完了: {completed}",
-        f"失敗/キャンセル: {failed}",
-        "",
-        "この返事を読んで、次に必要な判断や追加指示があれば進めてください。",
-    ]
+    lines: list[str] = []
     for index, result in enumerate(results, start=1):
         child_label = str(result.get("meaning") or "名前のないポワン").strip() or "名前のないポワン"
         status = str(result.get("status") or "").strip() or "unknown"
@@ -2369,7 +2675,7 @@ def upsert_bulk_conversation_history(request: BulkCommandHistoryRequest) -> dict
 @app.get("/api/conversations/{node_id}")
 def list_conversation_messages(node_id: str, project: str, file: str = DEFAULT_FILE) -> dict[str, Any]:
     ensure_powan_exists(project, file, node_id)
-    return STORE.list_conversation_messages(project, file, node_id)
+    return live_conversation_payload(project, file, node_id)
 
 
 @app.get("/api/conversations/{node_id}/sessions")
@@ -2386,13 +2692,13 @@ def get_conversation_session(
     file: str = DEFAULT_FILE,
 ) -> dict[str, Any]:
     ensure_powan_exists(project, file, node_id)
-    return STORE.conversation_messages_by_id(project, file, node_id, conversation_id)
+    return live_conversation_payload(project, file, node_id, conversation_id)
 
 
 @app.get("/api/agent-runs/running")
 def list_running_agent_runs(project: str, file: str = DEFAULT_FILE) -> dict[str, Any]:
     STORE.load_document(project, file)
-    runs = STORE.list_running_agent_runs(project, file)
+    runs = reconcile_running_agent_runs(project, file)
     return {"runs": runs, "count": len(runs)}
 
 
@@ -2849,6 +3155,14 @@ def command_child_powans(node_id: str, request: CommandChildrenRequest) -> dict[
                 parent_text,
             )
             sender_id = str(results[0].get("nodeId") or "") if len(results) == 1 else None
+            incoming_message = child_return_incoming_message(
+                parent_id=node_id,
+                parent_label=parent_label,
+                parent_conversation_id=int(parent_conversation_id),
+                parent_message_id=int(parent_message["id"]) if parent_message.get("id") is not None else None,
+                parent_text=parent_text,
+                results=results,
+            )
             log_server_event(
                 "info",
                 "command-child-powans-parent-followup-start",
@@ -2877,6 +3191,7 @@ def command_child_powans(node_id: str, request: CommandChildrenRequest) -> dict[
                 sender_node_id=sender_id,
                 sender_label_override="子ポワン一括返答",
                 pre_appended_user_message=parent_message,
+                incoming_message=incoming_message,
             )
             log_server_event(
                 "info",

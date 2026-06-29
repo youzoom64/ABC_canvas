@@ -26,6 +26,7 @@ def build_powan_context(
     conversation: dict[str, Any] | None = None,
     messages: list[dict[str, Any]] | None = None,
     user_text: str | None = None,
+    incoming_message: dict[str, Any] | None = None,
     code_limit: int = DEFAULT_CODE_LIMIT,
     include_meaning_tree: bool = False,
     include_direct_child_code: bool = False,
@@ -41,6 +42,7 @@ def build_powan_context(
         "parent": summarize_powan_for_prompt(parent, code_limit=code_limit),
         "children": [summarize_powan_for_prompt(child, code_limit=code_limit) for child in children],
         "userText": user_text or "",
+        "incomingMessage": incoming_message or default_incoming_message(user_text or ""),
     }
     if children:
         context["childCommandTemplate"] = build_child_command_template(children)
@@ -53,6 +55,24 @@ def build_powan_context(
     if clean_attachments:
         context["attachments"] = clean_attachments
     return context
+
+
+def default_incoming_message(text: str) -> dict[str, Any]:
+    return {
+        "kind": "operator_message",
+        "source": "conversation",
+        "from": {
+            "kind": "operator",
+            "id": None,
+            "name": "ユーザー",
+        },
+        "operatorMessage": text,
+        "parentCommand": "",
+        "childReplies": [],
+        "body": text,
+        "allowedAction": "may_command_children",
+        "systemInstruction": "これはユーザーからポワンへの入力です。userTextは互換用です。発話主体と実行範囲はincomingMessageを正として扱ってください。",
+    }
 
 
 def valid_nodes(document: dict[str, Any]) -> list[dict[str, Any]]:

@@ -1486,7 +1486,28 @@ function dbRunningConversationText(run, nodeId) {
   const node = nodeById(nodeId || run?.powanId);
   const name = node ? shortConversationTargetName(node) : "ポワン";
   const task = shortWorkText(run?.userText || "");
-  return task ? `${name} / DB上で作業中 / ${task}` : `${name} / DB上で作業中`;
+  return task ? `${name} / 作業中 / ${task}` : `${name} / 作業中`;
+}
+
+function setPendingConversationMessage(message, text) {
+  if (!message?.isConnected) {
+    return null;
+  }
+  setConversationMessageText(message, "system", text);
+  message.classList.add("pending");
+  setInputWaitingMessageAnimation(message, text);
+  return message;
+}
+
+function ensureConversationPendingMessage(text, key = "") {
+  if (conversationPendingMessage?.isConnected) {
+    conversationPendingMessage.dataset.pendingKey = key || conversationPendingMessage.dataset.pendingKey || "";
+    return setPendingConversationMessage(conversationPendingMessage, text);
+  }
+  const pending = appendConversationMessage("system", text, { forceFollow: true });
+  pending.dataset.pendingKey = key || "";
+  conversationPendingMessage = setPendingConversationMessage(pending, text);
+  return conversationPendingMessage;
 }
 
 function notifyConversationRunStarted(run, reason = "conversation-run-started") {
@@ -1544,9 +1565,9 @@ function restoreConversationTransientStatus(tabId, nodeId, activeRun = null) {
     request.soundOwner = request.soundOwner || `conversation-request-${request.id}`;
     const state = conversationTabState(tabId);
     const text = state.runningStatus?.text || request.waitingText || "処理中";
-    const pending = appendConversationMessage("system", text, { forceFollow: true });
-    pending.classList.add("pending");
-    setInputWaitingMessageAnimation(pending, text);
+    const pending = request.pendingMessage?.isConnected
+      ? setPendingConversationMessage(request.pendingMessage, text)
+      : ensureConversationPendingMessage(text, `request:${request.id}`);
     request.pendingMessage = pending;
     rememberConversationRequestWaitingText(text, request);
     syncVisibleConversationRequestState();
@@ -1558,10 +1579,7 @@ function restoreConversationTransientStatus(tabId, nodeId, activeRun = null) {
   if (dbRun?.status === "running") {
     rememberRunningPowanRun(dbRun);
     const text = dbRunningConversationText(dbRun, nodeId);
-    const pending = appendConversationMessage("system", text, { forceFollow: true });
-    pending.classList.add("pending");
-    setInputWaitingMessageAnimation(pending, text);
-    conversationPendingMessage = pending;
+    ensureConversationPendingMessage(text, `run:${dbRun.id || ""}`);
     setConversationTabRunningStatus(tabId, nodeId, text, dbRun.conversationId);
   }
   if (conversationCanEditSession()) {
@@ -1731,6 +1749,7 @@ function renderConversationTabs() {
       delete state.openFlash;
     }
     const tabRunning = Boolean(tab.nodeId && runningPowanRuns.has(tab.nodeId)) || Boolean(state.runningStatus);
+    const tabDisconnected = Boolean(tab.nodeId && powanCodexDisconnected(tab.nodeId));
     const tabAttention = Boolean(state.attention);
     const item = document.createElement("div");
     item.className = "conversation-tab";
@@ -1738,16 +1757,17 @@ function renderConversationTabs() {
     item.classList.toggle("blank", !tab.nodeId);
     item.classList.toggle("bulk", isBulkCommandTab(tab));
     item.classList.toggle("running", tabRunning);
+    item.classList.toggle("disconnected", tabDisconnected);
     item.classList.toggle("attention", tabAttention);
     item.classList.toggle("reply-ready", tabAttention && state.attention?.kind === "reply");
     item.classList.toggle("opening", openFlashActive);
     item.role = "tab";
     item.ariaSelected = tab.id === activeConversationTabId ? "true" : "false";
-    item.title = state.attention?.text || (tabRunning ? "作業中" : conversationTabLabel(tab));
+    item.title = state.attention?.text || (tabRunning ? "作業中" : tabDisconnected ? powanCodexDisconnectedMessage(tab.nodeId) : conversationTabLabel(tab));
     const label = document.createElement("button");
     label.type = "button";
     label.className = "conversation-tab-label";
-    const marker = tabRunning ? "🫨 " : tabAttention ? "● " : "";
+    const marker = tabRunning ? "🫨 " : tabDisconnected ? "😵 " : tabAttention ? "● " : "";
     label.textContent = `${marker}${conversationTabLabel(tab)}`;
     label.addEventListener("click", () => switchConversationTab(tab.id));
     const close = document.createElement("button");

@@ -1613,6 +1613,16 @@ function hasMeaningText(node) {
   return Boolean(meaningSurfaceText(node));
 }
 
+function powanCodexDisconnected(nodeOrId) {
+  const node = typeof nodeOrId === "string" ? nodeById(nodeOrId) : nodeOrId;
+  return Boolean(node?.codexState?.disconnected);
+}
+
+function powanCodexDisconnectedMessage(nodeOrId) {
+  const node = typeof nodeOrId === "string" ? nodeById(nodeOrId) : nodeOrId;
+  return String(node?.codexState?.disconnectedMessage || "Codexが切断されました。返事は戻りません。");
+}
+
 function worldPathNodes(node) {
   const path = [];
   let current = node;

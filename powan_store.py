@@ -19,6 +19,7 @@ WORKSPACE_ORIGIN_X = 5000
 WORKSPACE_ORIGIN_Y = 5000
 DEFAULT_NODE_WIDTH = 280
 DEFAULT_NODE_HEIGHT = 160
+CODEX_DISCONNECTED_SYSTEM_MESSAGE = "Codexが切断されました。返事は戻りません。"
 
 
 class PowanStore:
@@ -92,6 +93,202 @@ class PowanStore:
         finally:
             connection.close()
 
+    def _write_document_export(self, project: str, document_name: str, document: dict[str, Any]) -> None:
+        self.powan_path(project, document_name).write_text(
+            json.dumps(document, ensure_ascii=False, indent=2),
+            encoding="utf-8",
+        )
+
+    def _preserve_server_node_state(
+        self,
+        connection: sqlite3.Connection,
+        document_name: str,
+        document: dict[str, Any],
+    ) -> None:
+        row = connection.execute(
+            "SELECT document_json FROM documents WHERE name = ?",
+            (document_name,),
+        ).fetchone()
+        if row is None:
+            for node in document.get("nodes") or []:
+                node.pop("codexState", None)
+            return
+        try:
+            current_document = json.loads(str(row["document_json"]))
+        except json.JSONDecodeError:
+            return
+        current_nodes = {
+            str(node.get("id") or ""): node
+            for node in current_document.get("nodes") or []
+            if str(node.get("id") or "")
+        }
+        for node in document.get("nodes") or []:
+            current_state = current_nodes.get(str(node.get("id") or ""), {}).get("codexState")
+            if isinstance(current_state, dict) and current_state:
+                node["codexState"] = current_state
+            else:
+                node.pop("codexState", None)
+
+    def _set_powan_codex_state(
+        self,
+        connection: sqlite3.Connection,
+        document_name: str,
+        powan_id: str,
+        codex_state_patch: dict[str, Any] | None,
+        now: str,
+    ) -> dict[str, Any] | None:
+        row = connection.execute(
+            "SELECT document_json FROM documents WHERE name = ?",
+            (document_name,),
+        ).fetchone()
+        if row is None:
+            return None
+        try:
+            document = json.loads(str(row["document_json"]))
+        except json.JSONDecodeError:
+            return None
+        target_node: dict[str, Any] | None = None
+        for node in document.get("nodes") or []:
+            if str(node.get("id") or "") == str(powan_id):
+                target_node = node
+                break
+        if target_node is None:
+            return None
+
+        if codex_state_patch is None:
+            state = target_node.get("codexState")
+            if not isinstance(state, dict) or not state.get("disconnected"):
+                return None
+            state.pop("disconnected", None)
+            state.pop("disconnectedAt", None)
+            state.pop("disconnectedReason", None)
+            state.pop("disconnectedMessage", None)
+            if state:
+                target_node["codexState"] = state
+            else:
+                target_node.pop("codexState", None)
+        else:
+            state = target_node.get("codexState")
+            if not isinstance(state, dict):
+                state = {}
+            state.update(codex_state_patch)
+            target_node["codexState"] = state
+
+        connection.execute(
+            """
+            UPDATE documents
+            SET document_json = ?, updated_at = ?
+            WHERE name = ?
+            """,
+            (
+                json.dumps(document, ensure_ascii=False, separators=(",", ":")),
+                now,
+                document_name,
+            ),
+        )
+        connection.execute(
+            """
+            UPDATE powans
+            SET raw_json = ?, updated_at = ?
+            WHERE document_name = ? AND id = ?
+            """,
+            (
+                json.dumps(target_node, ensure_ascii=False, separators=(",", ":")),
+                now,
+                document_name,
+                str(powan_id),
+            ),
+        )
+        return document
+
+    def mark_powan_codex_disconnected(
+        self,
+        project: str,
+        document_name: str,
+        powan_id: str,
+        *,
+        conversation_id: int | None = None,
+        reason: str = "codex-disconnected",
+        message: str = CODEX_DISCONNECTED_SYSTEM_MESSAGE,
+    ) -> dict[str, Any]:
+        document_name = self.safe_powan_name(document_name)
+        now = datetime.now().isoformat(timespec="milliseconds")
+        document_to_export: dict[str, Any] | None = None
+        system_message_id: int | None = None
+        with self.session(project) as connection:
+            document_to_export = self._set_powan_codex_state(
+                connection,
+                document_name,
+                powan_id,
+                {
+                    "disconnected": True,
+                    "disconnectedAt": now,
+                    "disconnectedReason": reason,
+                    "disconnectedMessage": message,
+                },
+                now,
+            )
+            if conversation_id is not None:
+                row = connection.execute(
+                    """
+                    SELECT id FROM conversations
+                    WHERE id = ? AND document_name = ? AND powan_id = ?
+                    """,
+                    (int(conversation_id), document_name, powan_id),
+                ).fetchone()
+                if row is not None:
+                    cursor = connection.execute(
+                        """
+                        INSERT INTO conversation_messages(conversation_id, role, text, created_at)
+                        VALUES (?, 'system', ?, ?)
+                        """,
+                        (int(conversation_id), message, now),
+                    )
+                    system_message_id = int(cursor.lastrowid)
+                    connection.execute(
+                        "UPDATE conversations SET updated_at = ? WHERE id = ?",
+                        (now, int(conversation_id)),
+                    )
+        if document_to_export is not None:
+            self._write_document_export(project, document_name, document_to_export)
+        self.log_event(
+            "warn",
+            "powan-db-mark-codex-disconnected",
+            {
+                "project": self.safe_project_name(project),
+                "file": document_name,
+                "nodeId": powan_id,
+                "conversationId": conversation_id,
+                "messageId": system_message_id,
+                "reason": reason,
+            },
+        )
+        return {
+            "powanId": powan_id,
+            "conversationId": conversation_id,
+            "messageId": system_message_id,
+            "reason": reason,
+        }
+
+    def clear_powan_codex_disconnected(self, project: str, document_name: str, powan_id: str) -> bool:
+        document_name = self.safe_powan_name(document_name)
+        now = datetime.now().isoformat(timespec="milliseconds")
+        with self.session(project) as connection:
+            document_to_export = self._set_powan_codex_state(connection, document_name, powan_id, None, now)
+        if document_to_export is None:
+            return False
+        self._write_document_export(project, document_name, document_to_export)
+        self.log_event(
+            "info",
+            "powan-db-clear-codex-disconnected",
+            {
+                "project": self.safe_project_name(project),
+                "file": document_name,
+                "nodeId": powan_id,
+            },
+        )
+        return True
+
     def recover_interrupted_work(self, project: str | None = None, reason: str = "startup-recovery") -> dict[str, Any]:
         projects = [self.safe_project_name(project)] if project else [
             path.name
@@ -112,12 +309,15 @@ class PowanStore:
         }
 
         for project_name in projects:
+            disconnected_marks: dict[tuple[str, str, int | None], dict[str, Any]] = {}
             try:
                 with self.session(project_name) as connection:
                     running_runs = connection.execute(
                         """
-                        SELECT id FROM agent_runs
-                        WHERE status = 'running'
+                        SELECT ar.id, ar.conversation_id, ar.powan_id, c.document_name
+                        FROM agent_runs ar
+                        LEFT JOIN conversations c ON c.id = ar.conversation_id
+                        WHERE ar.status = 'running'
                         """
                     ).fetchall()
                     for row in running_runs:
@@ -134,10 +334,19 @@ class PowanStore:
                             """,
                             (error_text, error_text, now, int(row["id"])),
                         )
+                        document_name = str(row["document_name"] or self.default_file)
+                        powan_id = str(row["powan_id"] or "")
+                        if powan_id:
+                            conversation_id = int(row["conversation_id"]) if row["conversation_id"] is not None else None
+                            disconnected_marks[(document_name, powan_id, conversation_id)] = {
+                                "documentName": document_name,
+                                "powanId": powan_id,
+                                "conversationId": conversation_id,
+                            }
 
                     active_dispatches = connection.execute(
                         """
-                        SELECT id, session_id, document_name, parent_id, child_id, error_text
+                        SELECT id, session_id, document_name, parent_id, child_id, conversation_id, error_text
                         FROM child_command_dispatches
                         WHERE status NOT IN ('completed', 'failed', 'cancelled', 'skipped')
                         """
@@ -183,6 +392,14 @@ class PowanStore:
                                 now,
                             ),
                         )
+                        child_id = str(row["child_id"] or "")
+                        if child_id:
+                            conversation_id = int(row["conversation_id"]) if row["conversation_id"] is not None else None
+                            disconnected_marks[(str(row["document_name"]), child_id, conversation_id)] = {
+                                "documentName": str(row["document_name"]),
+                                "powanId": child_id,
+                                "conversationId": conversation_id,
+                            }
 
                     active_sessions = connection.execute(
                         """
@@ -239,6 +456,14 @@ class PowanStore:
                     summary["agentRunCount"] += len(running_runs)
                     summary["dispatchCount"] += len(active_dispatches)
                     summary["sessionCount"] += len(active_sessions)
+                for mark in disconnected_marks.values():
+                    self.mark_powan_codex_disconnected(
+                        project_name,
+                        mark["documentName"],
+                        mark["powanId"],
+                        conversation_id=mark["conversationId"],
+                        reason=reason,
+                    )
             except Exception as exc:
                 self.log_event(
                     "error",
@@ -419,6 +644,7 @@ class PowanStore:
             ("schema_version", "1"),
         )
         self.ensure_column(connection, "conversations", "codex_thread_id", "TEXT")
+        self.ensure_column(connection, "agent_runs", "pid", "INTEGER")
         connection.commit()
 
     def ensure_column(self, connection: sqlite3.Connection, table: str, column: str, definition: str) -> None:
@@ -510,8 +736,9 @@ class PowanStore:
         document.setdefault("canvas", {})
         document.setdefault("nodes", [])
         now = datetime.now().isoformat(timespec="milliseconds")
-        document_json = json.dumps(document, ensure_ascii=False, separators=(",", ":"))
         with self.session(project) as connection:
+            self._preserve_server_node_state(connection, document_name, document)
+            document_json = json.dumps(document, ensure_ascii=False, separators=(",", ":"))
             connection.execute(
                 """
                 INSERT INTO documents(name, document_json, updated_at)
@@ -1080,6 +1307,8 @@ class PowanStore:
             "conversationId": int(row["conversation_id"]) if row["conversation_id"] is not None else None,
             "powanId": row["powan_id"],
             "status": row["status"],
+            "pid": int(row["pid"]) if "pid" in row.keys() and row["pid"] is not None else None,
+            "threadId": prompt_payload.get("threadId") or "",
             "source": prompt_payload.get("source") or "",
             "userText": prompt_payload.get("userText") or "",
             "createdAt": row["created_at"],
@@ -1102,7 +1331,7 @@ class PowanStore:
         with self.session(project) as connection:
             row = connection.execute(
                 f"""
-                SELECT ar.id, ar.conversation_id, ar.powan_id, ar.status,
+                SELECT ar.id, ar.conversation_id, ar.powan_id, ar.status, ar.pid,
                        ar.prompt_json, ar.created_at, ar.updated_at
                 FROM agent_runs ar
                 JOIN conversations c ON c.id = ar.conversation_id
@@ -1122,7 +1351,7 @@ class PowanStore:
         with self.session(project) as connection:
             rows = connection.execute(
                 """
-                SELECT ar.id, ar.conversation_id, ar.powan_id, ar.status,
+                SELECT ar.id, ar.conversation_id, ar.powan_id, ar.status, ar.pid,
                        ar.prompt_json, ar.created_at, ar.updated_at
                 FROM agent_runs ar
                 JOIN conversations c ON c.id = ar.conversation_id
@@ -1169,6 +1398,7 @@ class PowanStore:
         if not clean_text:
             raise HTTPException(status_code=400, detail="Message text is required")
         now = datetime.now().isoformat(timespec="milliseconds")
+        document_to_export: dict[str, Any] | None = None
         with self.session(project) as connection:
             row = connection.execute(
                 """
@@ -1190,7 +1420,11 @@ class PowanStore:
                 "UPDATE conversations SET updated_at = ? WHERE id = ?",
                 (now, int(conversation_id)),
             )
+            if clean_role == "assistant":
+                document_to_export = self._set_powan_codex_state(connection, document_name, powan_id, None, now)
             message_id = int(cursor.lastrowid)
+        if document_to_export is not None:
+            self._write_document_export(project, document_name, document_to_export)
         self.log_event(
             "info",
             "powan-db-append-conversation-message",
@@ -1309,6 +1543,80 @@ class PowanStore:
             "status": "running",
             "createdAt": now,
         }
+
+    def set_agent_run_pid(self, project: str, run_id: int, pid: int) -> None:
+        now = datetime.now().isoformat(timespec="milliseconds")
+        with self.session(project) as connection:
+            connection.execute(
+                """
+                UPDATE agent_runs
+                SET pid = ?, updated_at = ?
+                WHERE id = ? AND status = 'running'
+                """,
+                (int(pid), now, int(run_id)),
+            )
+        self.log_event(
+            "info",
+            "powan-db-set-agent-run-pid",
+            {"project": self.safe_project_name(project), "runId": int(run_id), "pid": int(pid)},
+        )
+
+    def fail_agent_run_if_running(self, project: str, run_id: int, error_text: str) -> dict[str, Any] | None:
+        now = datetime.now().isoformat(timespec="milliseconds")
+        with self.session(project) as connection:
+            row = connection.execute(
+                """
+                SELECT ar.id, ar.conversation_id, ar.powan_id, ar.status, ar.prompt_json,
+                       ar.created_at, c.document_name
+                FROM agent_runs ar
+                LEFT JOIN conversations c ON c.id = ar.conversation_id
+                WHERE ar.id = ?
+                """,
+                (int(run_id),),
+            ).fetchone()
+            if row is None or row["status"] != "running":
+                return None
+            try:
+                prompt_payload = json.loads(row["prompt_json"] or "{}")
+            except (TypeError, json.JSONDecodeError):
+                prompt_payload = {}
+            prompt_payload["reconciledDead"] = True
+            connection.execute(
+                """
+                UPDATE agent_runs
+                SET status = 'failed',
+                    prompt_json = ?,
+                    error_text = ?,
+                    updated_at = ?
+                WHERE id = ? AND status = 'running'
+                """,
+                (
+                    json.dumps(prompt_payload, ensure_ascii=False, separators=(",", ":")),
+                    error_text,
+                    now,
+                    int(run_id),
+                ),
+            )
+        payload = {
+            "id": int(row["id"]),
+            "conversationId": int(row["conversation_id"]) if row["conversation_id"] is not None else None,
+            "powanId": row["powan_id"],
+            "documentName": row["document_name"] or self.default_file,
+            "status": "failed",
+            "updatedAt": now,
+            "errorText": error_text,
+        }
+        self.log_event(
+            "warn",
+            "powan-db-reconcile-dead-agent-run",
+            {
+                "project": self.safe_project_name(project),
+                "runId": payload["id"],
+                "nodeId": payload["powanId"],
+                "conversationId": payload["conversationId"],
+            },
+        )
+        return payload
 
     def finish_agent_run(
         self,
@@ -1723,6 +2031,136 @@ class PowanStore:
                 "error": error_text[:240] if error_text else "",
             },
         )
+
+    def fail_child_command_dispatches_for_run(
+        self,
+        project: str,
+        document_name: str,
+        powan_id: str,
+        conversation_id: int | None,
+        error_text: str,
+    ) -> list[dict[str, Any]]:
+        if conversation_id is None:
+            return []
+        document_name = self.safe_powan_name(document_name)
+        now = datetime.now().isoformat(timespec="milliseconds")
+        failed: list[dict[str, Any]] = []
+        touched_sessions: set[str] = set()
+        with self.session(project) as connection:
+            rows = connection.execute(
+                """
+                SELECT id, session_id, document_name, parent_id, child_id
+                FROM child_command_dispatches
+                WHERE document_name = ?
+                  AND child_id = ?
+                  AND conversation_id = ?
+                  AND status NOT IN ('completed', 'failed', 'cancelled', 'skipped')
+                """,
+                (document_name, powan_id, int(conversation_id)),
+            ).fetchall()
+            for row in rows:
+                dispatch_id = int(row["id"])
+                session_id = str(row["session_id"])
+                touched_sessions.add(session_id)
+                connection.execute(
+                    """
+                    UPDATE child_command_dispatches
+                    SET status = 'failed',
+                        error_text = ?,
+                        replied_at = COALESCE(replied_at, ?),
+                        updated_at = ?
+                    WHERE id = ?
+                    """,
+                    (error_text, now, now, dispatch_id),
+                )
+                connection.execute(
+                    """
+                    INSERT INTO child_command_events(
+                      session_id, dispatch_id, document_name, parent_id, child_id,
+                      event_type, payload_json, created_at
+                    )
+                    VALUES (?, ?, ?, ?, ?, 'reconciled-failed', ?, ?)
+                    """,
+                    (
+                        session_id,
+                        dispatch_id,
+                        row["document_name"],
+                        row["parent_id"],
+                        row["child_id"],
+                        json.dumps({"error": error_text}, ensure_ascii=False, separators=(",", ":")),
+                        now,
+                    ),
+                )
+                failed.append(
+                    {
+                        "id": dispatch_id,
+                        "sessionId": session_id,
+                        "childId": row["child_id"],
+                        "conversationId": int(conversation_id),
+                    }
+                )
+            for session_id in touched_sessions:
+                remaining = connection.execute(
+                    """
+                    SELECT COUNT(*) AS count
+                    FROM child_command_dispatches
+                    WHERE document_name = ?
+                      AND session_id = ?
+                      AND status NOT IN ('completed', 'failed', 'cancelled', 'skipped')
+                    """,
+                    (document_name, session_id),
+                ).fetchone()
+                if int(remaining["count"] if remaining is not None else 0) > 0:
+                    continue
+                session = connection.execute(
+                    """
+                    SELECT parent_id, status
+                    FROM child_command_sessions
+                    WHERE document_name = ? AND id = ?
+                    """,
+                    (document_name, session_id),
+                ).fetchone()
+                if session is None or session["status"] in {"completed", "failed", "cancelled"}:
+                    continue
+                connection.execute(
+                    """
+                    UPDATE child_command_sessions
+                    SET status = 'failed',
+                        updated_at = ?,
+                        completed_at = COALESCE(completed_at, ?)
+                    WHERE document_name = ? AND id = ?
+                    """,
+                    (now, now, document_name, session_id),
+                )
+                connection.execute(
+                    """
+                    INSERT INTO child_command_events(
+                      session_id, dispatch_id, document_name, parent_id, child_id,
+                      event_type, payload_json, created_at
+                    )
+                    VALUES (?, NULL, ?, ?, NULL, 'session-reconciled-failed', ?, ?)
+                    """,
+                    (
+                        session_id,
+                        document_name,
+                        session["parent_id"],
+                        json.dumps({"error": error_text}, ensure_ascii=False, separators=(",", ":")),
+                        now,
+                    ),
+                )
+        if failed:
+            self.log_event(
+                "warn",
+                "powan-db-reconcile-child-dispatches",
+                {
+                    "project": self.safe_project_name(project),
+                    "file": document_name,
+                    "nodeId": powan_id,
+                    "conversationId": int(conversation_id),
+                    "count": len(failed),
+                },
+            )
+        return failed
 
     def record_api_action(
         self,
