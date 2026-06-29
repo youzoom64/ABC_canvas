@@ -9,6 +9,7 @@ from typing import Any, Callable, Iterator
 
 from fastapi import HTTPException
 
+from powan_git import PowanGitHistory
 from project_scaffold import ensure_project_scaffold
 
 
@@ -132,6 +133,34 @@ class PowanStore:
             json.dumps(document, ensure_ascii=False, indent=2),
             encoding="utf-8",
         )
+
+    def _commit_semantic_history(self, project: str, document_name: str, document: dict[str, Any]) -> None:
+        try:
+            result = PowanGitHistory(self.project_root(project), self.log_event).commit_document(document_name, document)
+        except Exception as exc:
+            self.log_event(
+                "warn",
+                "powan-git-history-failed",
+                {
+                    "project": self.safe_project_name(project),
+                    "file": document_name,
+                    "error": repr(exc),
+                    "console": True,
+                },
+            )
+            return
+        if result.get("changed"):
+            self.log_event(
+                "info",
+                "powan-git-history-committed",
+                {
+                    "project": self.safe_project_name(project),
+                    "file": document_name,
+                    "message": str(result.get("subject") or ""),
+                    "snapshot": str(result.get("snapshot") or ""),
+                    "console": True,
+                },
+            )
 
     def _preserve_server_node_state(
         self,
@@ -847,10 +876,8 @@ class PowanStore:
                     (f"{document_name}:canvas:{key}", json.dumps(value, ensure_ascii=False, separators=(",", ":")), now),
                 )
         if write_export:
-            self.powan_path(project, document_name).write_text(
-                json.dumps(document, ensure_ascii=False, indent=2),
-                encoding="utf-8",
-            )
+            self._write_document_export(project, document_name, document)
+            self._commit_semantic_history(project, document_name, document)
         self.log_event(
             "info",
             "powan-db-save-document",
