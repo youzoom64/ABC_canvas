@@ -2439,14 +2439,48 @@ def codex_event_progress_text(event: dict[str, Any]) -> str:
     item_type = str(item.get("type") or "").strip()
     if event_type == "item.started" and item_type == "command_execution":
         command = short_codex_command(str(item.get("command") or ""))
+        if "command-children" in command or '"instructions"' in command:
+            return "子ポワンへの指示を送信中..."
         return f"コマンド開始: `{command}`" if command else "コマンド開始"
     if event_type == "item.completed" and item_type == "command_execution":
         command = short_codex_command(str(item.get("command") or ""))
         exit_code = item.get("exit_code")
         output = str(item.get("aggregated_output") or "").strip()
+        if output.startswith("{"):
+            try:
+                payload = json.loads(output)
+                result = payload.get("result") if isinstance(payload, dict) else None
+                if isinstance(result, dict) and ("sent" in result or "skipped" in result or "dispatchSessionId" in result):
+                    sent = result.get("sent")
+                    skipped = result.get("skipped")
+                    failed = result.get("failed")
+                    status = result.get("status")
+                    dispatch_session_id = result.get("dispatchSessionId")
+                    sent_children = result.get("sentChildren") if isinstance(result.get("sentChildren"), list) else []
+                    sent_names = [
+                        str(child.get("title") or child.get("childId") or "").strip()
+                        for child in sent_children
+                        if isinstance(child, dict)
+                    ]
+                    lines = [f"子ポワンへの指示送信: {status or 'accepted'}"]
+                    if sent is not None:
+                        lines.append(f"送信: {sent}件")
+                    if skipped is not None:
+                        lines.append(f"対象外: {skipped}件")
+                    if failed is not None:
+                        lines.append(f"失敗: {failed}件")
+                    if sent_names:
+                        lines.append(f"送信先: {', '.join(name for name in sent_names if name)}")
+                    if dispatch_session_id:
+                        lines.append(f"一括指示ID: {dispatch_session_id}")
+                    return "\n".join(lines)
+            except json.JSONDecodeError:
+                pass
         head = "コマンド完了"
         if exit_code is not None:
             head += f" exit={exit_code}"
+        if "command-children" in command or '"instructions"' in command:
+            return f"子ポワンへの指示送信完了 exit={exit_code}"
         if command:
             head += f": `{command}`"
         if output:
@@ -2465,14 +2499,69 @@ def codex_event_progress_text(event: dict[str, Any]) -> str:
         status = "開始" if event_type == "item.started" else "完了"
         return f"ファイル変更{status}: " + (", ".join(parts) if parts else "詳細なし")
     if event_type == "turn.completed":
-        usage = event.get("usage") if isinstance(event.get("usage"), dict) else {}
-        if usage:
-            input_tokens = usage.get("input_tokens")
-            output_tokens = usage.get("output_tokens")
-            reasoning_tokens = usage.get("reasoning_output_tokens")
-            return f"Codexターン完了 input={input_tokens} output={output_tokens} reasoning={reasoning_tokens}"
         return "Codexターン完了"
     return ""
+
+
+def conversation_event_should_discord(kind: str, source: str = "") -> bool:
+    if source == "discord" and kind == "assistant_reply":
+        return False
+    return kind in {
+        "assistant_reply",
+        "codex_progress",
+        "child_command_sent",
+        "child_report_returned",
+        "child_report_summary",
+    }
+
+
+def emit_conversation_event(
+    *,
+    project: str,
+    file: str,
+    node_id: str,
+    conversation_id: int,
+    kind: str,
+    role: str,
+    text: str,
+    receiver_label: str,
+    source: str = "",
+    metadata: dict[str, Any] | None = None,
+) -> dict[str, Any]:
+    clean = str(text or "").strip()
+    if not clean:
+        raise HTTPException(status_code=400, detail="Message text is required")
+    message = STORE.append_conversation_message_to_conversation(
+        project,
+        file,
+        node_id,
+        int(conversation_id),
+        role,
+        clean,
+    )
+    payload = {
+        "project": STORE.safe_project_name(project),
+        "file": STORE.safe_powan_name(file),
+        "nodeId": node_id,
+        "conversationId": int(conversation_id),
+        "messageId": message.get("id"),
+        "kind": kind,
+        "role": role,
+        "source": source,
+        "messageLength": len(clean),
+        **(metadata or {}),
+    }
+    log_server_event("info", "conversation-event-emitted", payload)
+    if conversation_event_should_discord(kind, source=source):
+        fanout_powan_conversation_text_to_discord(
+            project=project,
+            file=file,
+            node_id=node_id,
+            receiver_label=receiver_label,
+            text=clean,
+            reason=f"conversation-event:{kind}",
+        )
+    return message
 
 
 def create_codex_progress_callback(
@@ -2490,13 +2579,16 @@ def create_codex_progress_callback(
         clean = str(text or "").strip()
         if not clean:
             return
-        message = STORE.append_conversation_message_to_conversation(
-            project,
-            file,
-            node_id,
-            int(conversation_id),
-            "system",
-            clean,
+        message = emit_conversation_event(
+            project=project,
+            file=file,
+            node_id=node_id,
+            conversation_id=int(conversation_id),
+            kind="codex_progress",
+            role="system",
+            text=clean,
+            receiver_label=receiver_label,
+            source="codex-progress",
         )
         log_server_event(
             "info",
@@ -2509,14 +2601,6 @@ def create_codex_progress_callback(
                 "messageId": message.get("id"),
                 "messageLength": len(clean),
             },
-        )
-        fanout_powan_system_message_to_discord(
-            project=project,
-            file=file,
-            node_id=node_id,
-            receiver_label=receiver_label,
-            text=clean,
-            reason="codex-progress",
         )
 
     def flush_pending_agent() -> None:
@@ -2870,16 +2954,16 @@ def run_powan_codex_message(
             raise HTTPException(status_code=409, detail="Codex exec already running for this powan")
         mark_codex_disconnected_safe(project, file, node_id, int(conversation["id"]), "codex-exec-failed")
         raise HTTPException(status_code=502, detail="Codex exec failed")
-    assistant_message = STORE.append_conversation_message(project, file, node_id, "assistant", result.text)
-    fanout_powan_assistant_reply_to_discord(
+    assistant_message = emit_conversation_event(
         project=project,
         file=file,
         node_id=node_id,
-        receiver_label=receiver_label,
-        text=result.text,
-        source=source,
         conversation_id=int(conversation["id"]),
-        message_id=int(assistant_message["id"]) if assistant_message.get("id") is not None else None,
+        kind="assistant_reply",
+        role="assistant",
+        text=result.text,
+        receiver_label=receiver_label,
+        source=source,
     )
     agent_run = STORE.finish_agent_run(
         project,
@@ -2978,68 +3062,6 @@ def resolve_discord_target_powan(payload: dict[str, Any]) -> tuple[str, str, str
     return project, file, target_node_id, powan_label(target_node)
 
 
-def fanout_powan_assistant_reply_to_discord(
-    *,
-    project: str,
-    file: str,
-    node_id: str,
-    receiver_label: str,
-    text: str,
-    source: str,
-    conversation_id: int,
-    message_id: int | None,
-) -> None:
-    if source == "discord":
-        return
-    clean = str(text or "").strip()
-    if not clean:
-        return
-    if ABC_DISCORD_BRIDGE is None:
-        return
-    settings = load_app_settings()
-    discord_settings = dict(settings.get("discord") or {})
-    if not bool(discord_settings.get("enabled")):
-        return
-    try:
-        target_project, target_file, target_node_id, _target_label = resolve_discord_target_powan(discord_settings)
-    except Exception as exc:
-        log_server_event(
-            "warn",
-            "discord-fanout-target-unresolved",
-            {
-                "project": STORE.safe_project_name(project),
-                "file": STORE.safe_powan_name(file),
-                "nodeId": node_id,
-                "source": source,
-                "error": repr(exc),
-            },
-        )
-        return
-    if (
-        STORE.safe_project_name(project) != target_project
-        or STORE.safe_powan_name(file) != target_file
-        or str(node_id) != str(target_node_id)
-    ):
-        return
-    result = ABC_DISCORD_BRIDGE.send_configured_message(
-        f"**{receiver_label}**\n{clean}".strip(),
-        reason=f"powan-reply:{source}",
-    )
-    log_server_event(
-        "info" if result.get("sent") else "warn",
-        "discord-fanout-assistant-reply",
-        {
-            "project": STORE.safe_project_name(project),
-            "file": STORE.safe_powan_name(file),
-            "nodeId": node_id,
-            "conversationId": conversation_id,
-            "messageId": message_id,
-            "source": source,
-            **result,
-        },
-    )
-
-
 def discord_target_matches_powan(project: str, file: str, node_id: str) -> bool:
     settings = load_app_settings()
     discord_settings = dict(settings.get("discord") or {})
@@ -3056,7 +3078,7 @@ def discord_target_matches_powan(project: str, file: str, node_id: str) -> bool:
     )
 
 
-def fanout_powan_system_message_to_discord(
+def fanout_powan_conversation_text_to_discord(
     *,
     project: str,
     file: str,
@@ -3076,7 +3098,7 @@ def fanout_powan_system_message_to_discord(
     )
     log_server_event(
         "info" if result.get("sent") else "warn",
-        "discord-fanout-system-message",
+        "discord-fanout-conversation-event",
         {
             "project": STORE.safe_project_name(project),
             "file": STORE.safe_powan_name(file),
@@ -3902,13 +3924,14 @@ def command_child_powans(node_id: str, request: CommandChildrenRequest) -> dict[
                 int(user_message["id"]),
             )
             job["dispatchId"] = dispatch["id"]
-            parent_log_message = STORE.append_conversation_message_to_conversation(
-                request.project,
-                request.file,
-                node_id,
-                parent_conversation_id,
-                "system",
-                render_parent_child_command_log(
+            parent_log_message = emit_conversation_event(
+                project=request.project,
+                file=request.file,
+                node_id=node_id,
+                conversation_id=parent_conversation_id,
+                kind="child_command_sent",
+                role="system",
+                text=render_parent_child_command_log(
                     parent_label=parent_label,
                     child_label=job["meaning"],
                     instruction=job["instruction"],
@@ -3916,6 +3939,13 @@ def command_child_powans(node_id: str, request: CommandChildrenRequest) -> dict[
                     dispatch_session_id=dispatch_session_id,
                     dispatch_id=dispatch.get("id"),
                 ),
+                receiver_label=parent_label,
+                source="command-children",
+                metadata={
+                    "childId": job["nodeId"],
+                    "dispatchSessionId": dispatch_session_id,
+                    "dispatchId": dispatch.get("id"),
+                },
             )
             log_server_event(
                 "info",
@@ -3939,13 +3969,17 @@ def command_child_powans(node_id: str, request: CommandChildrenRequest) -> dict[
             parent_text = render_child_return_bundle_message(parent_label, results, dispatch_session_id)
             if not parent_text:
                 return None
-            parent_message = STORE.append_conversation_message_to_conversation(
-                request.project,
-                request.file,
-                node_id,
-                parent_conversation_id,
-                "user",
-                parent_text,
+            parent_message = emit_conversation_event(
+                project=request.project,
+                file=request.file,
+                node_id=node_id,
+                conversation_id=parent_conversation_id,
+                kind="child_report_returned",
+                role="user",
+                text=parent_text,
+                receiver_label=parent_label,
+                source="command-child-return",
+                metadata={"dispatchSessionId": dispatch_session_id},
             )
             for result in results:
                 child_node_id = str(result.get("nodeId") or "").strip()
@@ -3953,13 +3987,21 @@ def command_child_powans(node_id: str, request: CommandChildrenRequest) -> dict[
                 if not child_node_id or child_conversation_id is None:
                     continue
                 try:
-                    child_log_message = STORE.append_conversation_message_to_conversation(
-                        request.project,
-                        request.file,
-                        child_node_id,
-                        int(child_conversation_id),
-                        "system",
-                        render_child_parent_return_log(parent_label, result),
+                    child_log_message = emit_conversation_event(
+                        project=request.project,
+                        file=request.file,
+                        node_id=child_node_id,
+                        conversation_id=int(child_conversation_id),
+                        kind="child_report_returned",
+                        role="system",
+                        text=render_child_parent_return_log(parent_label, result),
+                        receiver_label=str(result.get("meaning") or "名前のないポワン"),
+                        source="command-child-return",
+                        metadata={
+                            "parentId": node_id,
+                            "dispatchSessionId": dispatch_session_id,
+                            "dispatchId": result.get("dispatchId"),
+                        },
                     )
                     log_server_event(
                         "info",
