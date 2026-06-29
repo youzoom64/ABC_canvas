@@ -244,12 +244,32 @@ class AbcDiscordBridge:
 
         @client.event
         async def on_ready() -> None:
+            try:
+                channel = await client.fetch_channel(int(channel_id))
+            except Exception as exc:
+                error = f"Discord channel access failed: {type(exc).__name__}"
+                if getattr(exc, "code", None):
+                    error = f"{error} code={getattr(exc, 'code')}"
+                if type(exc).__name__ == "Forbidden":
+                    error = "Discord channel access missing: Botに対象チャンネルの閲覧権限がありません"
+                with self.lock:
+                    self.status_payload = self._base_status(config, status="error", running=True, error=error)
+                self.log_event(
+                    "error",
+                    "discord-bridge-channel-access-failed",
+                    {"channelId": channel_id, "user": str(client.user), "error": error},
+                )
+                return
             with self.lock:
                 self.status_payload = self._base_status(config, status="running", running=True)
             self.log_event(
                 "info",
                 "discord-bridge-ready",
-                {"channelId": channel_id, "user": str(client.user)},
+                {
+                    "channelId": channel_id,
+                    "channelName": str(getattr(channel, "name", "") or ""),
+                    "user": str(client.user),
+                },
             )
 
         @client.event
@@ -262,7 +282,18 @@ class AbcDiscordBridge:
                 return
             content = str(getattr(message, "content", "") or "").strip()
             if not content:
+                self.log_event(
+                    "warn",
+                    "discord-bridge-message-empty-content",
+                    {
+                        "channelId": message_channel_id,
+                        "messageId": str(getattr(message, "id", "") or ""),
+                        "hint": "Discord Developer PortalのMessage Content Intentが無効か、本文が空です",
+                    },
+                )
                 return
+            with self.lock:
+                self.status_payload = self._base_status(config, status="running", running=True)
             await self._handle_message(config, message, content)
 
         try:
