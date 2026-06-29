@@ -66,6 +66,7 @@ def build_powan_context(
     context["targetCommandTemplate"] = build_target_command_template(origin_chain=origin_chain)
     context["inspectPowanTemplate"] = build_inspect_powan_template()
     context["writeTargetCodeTemplate"] = build_write_target_code_template()
+    context["writeDesignTemplate"] = build_write_design_template(children)
     if include_meaning_tree:
         context["meaningTree"] = build_meaning_tree_text(document, node_id)
     if include_direct_child_code:
@@ -189,6 +190,7 @@ def summarize_powan(
     if not node:
         return {}
     code = str(node.get("code") or "")
+    design = str(node.get("designMarkdown") or "")
     summary: dict[str, Any] = {
         "id": node.get("id"),
         "meaning": meaning_text(node),
@@ -197,6 +199,7 @@ def summarize_powan(
         "powanKind": powan_kind(node),
         "codeLanguage": node.get("codeLanguage") or "auto",
         "hasCode": bool(code.strip()),
+        "hasDesign": bool(design.strip()),
         "code": limit_text(code, code_limit),
         "parent": node.get("parent"),
         "children": list(node.get("children") or []),
@@ -219,6 +222,7 @@ def summarize_powan_for_prompt(
     if not node:
         return blank_prompt_powan()
     code = str(node.get("code") or "")
+    design = str(node.get("designMarkdown") or "")
     return {
         "id": node.get("id"),
         "meaning": meaning_text(node),
@@ -227,6 +231,7 @@ def summarize_powan_for_prompt(
         "powanKind": powan_kind(node),
         "codeLanguage": node.get("codeLanguage") or "",
         "hasCode": bool(code.strip()),
+        "hasDesign": bool(design.strip()),
     }
 
 
@@ -311,7 +316,7 @@ def build_target_command_template(*, origin_chain: list[dict[str, Any]] | None =
 
 def build_inspect_powan_template() -> dict[str, Any]:
     return {
-        "purpose": "任意のポワンの意味・状態・最近の会話・コード概要・コード全文をDBから直接覗かずAPI経由で調べるためのJSON。コードを読む時もこのinspect-powanを使います。",
+        "purpose": "任意のポワンの意味・状態・最近の会話・コード概要/全文・設計Markdown概要/全文をDBから直接覗かずAPI経由で調べるためのJSON。コードや設計を読む時もこのinspect-powanを使います。",
         "command": "python .agents/skills/abc-powan/scripts/abc_powan_tool.py inspect-powan --stdin-json",
         "json": {
             "includeSelf": False,
@@ -324,6 +329,7 @@ def build_inspect_powan_template() -> dict[str, Any]:
             ],
             "include": ["meaning", "status", "code_summary"],
             "codePreviewChars": 2000,
+            "designPreviewChars": 2000,
             "recentMessageLimit": 5,
         },
     }
@@ -361,6 +367,35 @@ def build_write_target_code_template() -> dict[str, Any]:
                     "path": [],
                     "codeLanguage": "",
                     "code": "",
+                }
+            ],
+        },
+    }
+
+
+def build_write_design_template(children: list[dict[str, Any]]) -> dict[str, Any]:
+    return {
+        "purpose": "自分、直下の子、孫や別枝など任意の複数ポワンへ設計Markdownを保存するためのJSON。設計を読む時はinspect-powanのdesign_summary/design_fullを使います。",
+        "command": "python .agents/skills/abc-powan/scripts/abc_powan_tool.py write-design --stdin-json",
+        "json": {
+            "includeSelf": False,
+            "designMarkdown": "",
+            "targets": [
+                {
+                    "childId": str(child.get("id") or ""),
+                    "title": str(child.get("title") or ""),
+                    "designMarkdown": "",
+                    "skip": False,
+                    "skipReason": "",
+                }
+                for child in children
+            ]
+            + [
+                {
+                    "targetId": "",
+                    "title": "",
+                    "path": [],
+                    "designMarkdown": "",
                 }
             ],
         },
@@ -443,6 +478,7 @@ def blank_prompt_powan() -> dict[str, Any]:
         "powanKind": "",
         "codeLanguage": "",
         "hasCode": False,
+        "hasDesign": False,
     }
 
 

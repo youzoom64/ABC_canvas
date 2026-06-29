@@ -78,6 +78,7 @@ def semantic_snapshot(document_name: str, document: dict[str, Any]) -> dict[str,
                 "children": sorted(set(children_by_parent.get(node_id, []))),
                 "codeLanguage": str(node.get("codeLanguage") or ""),
                 "code": _clean_text(node.get("code")),
+                "designMarkdown": _clean_text(node.get("designMarkdown")),
             }
         )
     normalized_nodes.sort(key=lambda item: item["id"])
@@ -125,6 +126,11 @@ def semantic_diff(previous: dict[str, Any] | None, current: dict[str, Any]) -> d
             or previous_nodes[node_id].get("codeLanguage") != current_nodes[node_id].get("codeLanguage")
         )
     ]
+    design_changed = [
+        current_nodes[node_id]
+        for node_id in shared_ids
+        if previous_nodes[node_id].get("designMarkdown") != current_nodes[node_id].get("designMarkdown")
+    ]
     edited = [
         {
             "node": current_nodes[node_id],
@@ -138,12 +144,13 @@ def semantic_diff(previous: dict[str, Any] | None, current: dict[str, Any]) -> d
         "deleted": deleted,
         "moved": moved,
         "codeChanged": code_changed,
+        "designChanged": design_changed,
         "edited": edited,
     }
 
 
 def diff_has_changes(diff: dict[str, Any]) -> bool:
-    return any(diff.get(key) for key in ("added", "deleted", "moved", "codeChanged", "edited"))
+    return any(diff.get(key) for key in ("added", "deleted", "moved", "codeChanged", "designChanged", "edited"))
 
 
 def _count(diff: dict[str, Any], key: str) -> int:
@@ -158,6 +165,7 @@ def commit_subject(diff: dict[str, Any]) -> str:
         f" delete {_count(diff, 'deleted')}"
         f" move {_count(diff, 'moved')}"
         f" code {_count(diff, 'codeChanged')}"
+        f" design {_count(diff, 'designChanged')}"
         f" edit {_count(diff, 'edited')}"
     )
 
@@ -186,6 +194,8 @@ def commit_message(document_name: str, previous: dict[str, Any] | None, current:
     )
     lines.append("")
     lines.extend(_list_lines("code_changed", [_node_name(node, node.get("id")) for node in diff["codeChanged"]]))
+    lines.append("")
+    lines.extend(_list_lines("design_changed", [_node_name(node, node.get("id")) for node in diff["designChanged"]]))
     lines.append("")
     lines.extend(
         _list_lines(

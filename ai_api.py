@@ -74,6 +74,7 @@ class PowanPatch(BaseModel):
     powanKind: str | None = None
     code: str | None = None
     codeLanguage: str | None = None
+    designMarkdown: str | None = None
     layout: dict[str, Any] | None = None
     style: dict[str, Any] | None = None
 
@@ -86,6 +87,7 @@ class CreatePowanRequest(BaseModel):
     powanKind: str | None = POWAN_KIND_DEFAULT
     code: str = ""
     codeLanguage: str | None = None
+    designMarkdown: str = ""
     randomStyle: bool = False
     layout: dict[str, Any] | None = None
     style: dict[str, Any] | None = None
@@ -104,6 +106,7 @@ class SplitChildRequest(BaseModel):
     powanKind: str | None = POWAN_KIND_DEFAULT
     code: str = ""
     codeLanguage: str | None = None
+    designMarkdown: str = ""
     layout: dict[str, Any] | None = None
     style: dict[str, Any] | None = None
 
@@ -114,6 +117,7 @@ class PowanTreeNode(BaseModel):
     powanKind: str | None = POWAN_KIND_DEFAULT
     code: str = ""
     codeLanguage: str | None = None
+    designMarkdown: str = ""
     layout: dict[str, Any] | None = None
     style: dict[str, Any] | None = None
     children: list["PowanTreeNode"] = Field(default_factory=list)
@@ -532,6 +536,8 @@ class AiPowanExplorer:
         requested_language = str(request.codeLanguage or "").strip()
         if requested_language and str(node.get("codeLanguage") or "").strip() != requested_language:
             return False
+        if str(node.get("designMarkdown") or "") != str(request.designMarkdown or ""):
+            return False
         return True
 
     def matching_existing_child(self, parent_id: str, request: CreatePowanRequest) -> dict[str, Any] | None:
@@ -573,6 +579,7 @@ class AiPowanExplorer:
             powanKind=branch.powanKind,
             code=branch.code,
             codeLanguage=branch.codeLanguage,
+            designMarkdown=branch.designMarkdown,
             randomStyle=request.randomStyle,
             layout=branch.layout,
             style=branch.style,
@@ -594,6 +601,7 @@ class AiPowanExplorer:
             "body": request.body,
             "powanKind": normalize_powan_kind(request.powanKind),
             "code": request.code,
+            "designMarkdown": request.designMarkdown,
             "parent": parent_id,
             "children": [],
             "style": {**self.default_style(request.randomStyle), **(request.style or {})},
@@ -843,6 +851,7 @@ class AiPowanExplorer:
             "powanKind": normalize_powan_kind(node.get("powanKind")),
             "codeLanguage": node.get("codeLanguage") or "",
             "hasCode": bool(code.strip()),
+            "hasDesign": bool(str(node.get("designMarkdown") or "").strip()),
             "code": code,
         }
 
@@ -944,7 +953,7 @@ class AiPowanExplorer:
 
     def update_node(self, node_id: str, patch: PowanPatch) -> dict[str, Any]:
         node = self.node(node_id)
-        for key in ("title", "body", "code", "codeLanguage"):
+        for key in ("title", "body", "code", "codeLanguage", "designMarkdown"):
             value = getattr(patch, key)
             if value is not None:
                 node[key] = value

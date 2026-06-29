@@ -10,7 +10,7 @@ PROJECT_AGENTS_MD = """## 最初に
 ## スキルの場所
 スキルの場所は以下を読んでください😊
  `.agents\skills\abc-powan\SKILL.md`
- `set-my-meaning` 、 `create-child-powan` 、 `command-targets` 、 `inspect-powan` 、 `write-my-code` 、 `write-child-code` 、 `write-target-code` の使い方が書いてあるよ！
+ `set-my-meaning` 、 `create-child-powan` 、 `command-targets` 、 `inspect-powan` 、 `write-my-code` 、 `write-child-code` 、 `write-target-code` 、 `write-design` の使い方が書いてあるよ！
 分からない用語が出てきたら `.agents\WORDS.md` を見てね😊
 
 ## ポワンの名付け
@@ -41,6 +41,7 @@ PROJECT_AGENTS_MD = """## 最初に
 ## コード化
 
 そして、あなたと言うポワンが具体的なコードを持つ時は、 `write-my-code` を使ってあなたのポワンをコードにしましょう🤩
+あなたや子ポワン、孫ポワンの設計方針をMarkdownで残す時は `write-design` を使いましょう😊
 直下の子ポワンのコードをあなたがまとめて保存する時は `write-child-code`、孫や別枝など任意の対象へ直接コードを保存する時は `write-target-code` を使ってください😊
 ポワンには大きく分けてニ種類あり、回路のように参照先を複数持つ神経ポワンと、実際の関数などの処理を持つ臓器ポワンがあります
 抽象的な概念のポワンなら神経ポワンになり、具体的な概念を持つポワンは臓器ポワンになってください。
@@ -155,6 +156,15 @@ command_targets(instruction, targets)
 write_my_code(codeLanguage, code)
 `python .agents/skills/abc-powan/scripts/abc_powan_tool.py write-my-code --stdin-json`
 
+## 設計Markdownを保存する
+
+自分、直下の子ポワン、孫や別枝など任意の複数ポワンへ設計Markdownを保存する時は `write-design` を使う😊
+現在の文脈に `writeDesignTemplate` がある時は、そのJSONを使ってください。
+自分だけに保存するなら `includeSelf:true` と `designMarkdown` を入れます。
+子や任意対象へ保存するなら `targets` に childId、targetId、title、path のどれかと designMarkdown を入れます😊
+write_design(includeSelf, designMarkdown, targets)
+`python .agents/skills/abc-powan/scripts/abc_powan_tool.py write-design --stdin-json`
+
 ## 直下の子ポワンのコードを保存する
 
 直下の子ポワンのコードを保存する時は `write-child-code` を使う😊
@@ -172,8 +182,8 @@ write_target_code(targets)
 
 ## ポワンを調べる
 
-意味、状態、最近の会話、コード概要、コード全文をまとめて調べる時は `inspect-powan` を使う😊
-include には `meaning`、`status`、`code_summary`、`code_full` を選べます。
+意味、状態、最近の会話、コード概要/全文、設計Markdown概要/全文をまとめて調べる時は `inspect-powan` を使う😊
+include には `meaning`、`status`、`code_summary`、`code_full`、`design_summary`、`design_full` を選べます。
 inspect_powan(includeSelf, targets, include)
 `python .agents/skills/abc-powan/scripts/abc_powan_tool.py inspect-powan --stdin-json`
 
@@ -233,6 +243,11 @@ write_my_code(codeLanguage, code)
 `python .agents/skills/abc-powan/scripts/abc_powan_tool.py write-my-code --stdin-json`
 `{"codeLanguage":"python","code":"def run():\\n    return True\\n"}`
 
+write_design(includeSelf, designMarkdown, targets)
+`python .agents/skills/abc-powan/scripts/abc_powan_tool.py write-design --stdin-json`
+自分、直下の子、孫や別枝など任意の複数ポワンへ設計Markdownを保存する時に使う😊
+`{"includeSelf":true,"designMarkdown":"# 設計\\n\\n- 役割: ...\\n- 入力: ...\\n- 出力: ...\\n","targets":[{"childId":"子ID","title":"子名","designMarkdown":"# 子の設計\\n\\n- 役割: ...\\n"},{"targetId":"任意対象ID","path":[],"designMarkdown":"# 任意対象の設計\\n\\n- 接続: ...\\n"}]}`
+
 write_child_code(targets)
 `python .agents/skills/abc-powan/scripts/abc_powan_tool.py write-child-code --stdin-json`
 直下の子ポワンのコードを保存する時に使う😊
@@ -246,8 +261,8 @@ write_target_code(targets)
 
 inspect_powan(includeSelf, targets, include)
 `python .agents/skills/abc-powan/scripts/abc_powan_tool.py inspect-powan --stdin-json`
-意味、状態、コード概要、コード全文を選んで調べる😊
-`{"includeSelf":true,"targets":[{"title":"調べるポワン"}],"include":["meaning","status","code_summary","code_full"]}`
+意味、状態、コード概要/全文、設計Markdown概要/全文を選んで調べる😊
+`{"includeSelf":true,"targets":[{"title":"調べるポワン"}],"include":["meaning","status","code_summary","code_full","design_summary","design_full"]}`
 """
 
 
@@ -318,8 +333,8 @@ def ensure_project_scaffold(project_root: Path) -> list[Path]:
     created.extend(write_once(project_root / "AGENTS.md", PROJECT_AGENTS_MD))
     created.extend(write_once(project_root / ".agents" / "WORDS.md", WORDS_MD))
     skill_root = project_root / ".agents" / "skills" / "abc-powan"
-    created.extend(write_once(skill_root / "SKILL.md", SKILL_MD))
-    created.extend(write_once(skill_root / "TOOL.md", TOOL_MD))
+    created.extend(write_if_changed(skill_root / "SKILL.md", SKILL_MD))
+    created.extend(write_if_changed(skill_root / "TOOL.md", TOOL_MD))
     created.extend(copy_if_changed(skill_root / "scripts" / "abc_powan_tool.py", Path(__file__).with_name("abc_powan_tool.py")))
     return created
 
@@ -329,6 +344,15 @@ def write_once(path: Path, text: str) -> list[Path]:
         return []
     path.parent.mkdir(parents=True, exist_ok=True)
     path.write_text(text.rstrip() + "\n", encoding="utf-8")
+    return [path]
+
+
+def write_if_changed(path: Path, text: str) -> list[Path]:
+    clean_text = text.rstrip() + "\n"
+    if path.exists() and path.read_text(encoding="utf-8") == clean_text:
+        return []
+    path.parent.mkdir(parents=True, exist_ok=True)
+    path.write_text(clean_text, encoding="utf-8")
     return [path]
 
 

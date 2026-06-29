@@ -121,7 +121,15 @@ LOG_LEVEL_NAMES = ("trace", "debug", "info", "warn", "error", "fatal")
 ORIGIN_CHAIN_SCHEMA = "powan_origin_chain.v1"
 ORIGIN_JUDGEMENT_SCHEMA = "powan_origin_judgement.v1"
 ORIGIN_JUDGEMENT_MAX_ATTEMPTS = 3
-INSPECT_POWAN_INCLUDE_OPTIONS = {"meaning", "status", "code_summary", "code_full", "all"}
+INSPECT_POWAN_INCLUDE_OPTIONS = {
+    "meaning",
+    "status",
+    "code_summary",
+    "code_full",
+    "design_summary",
+    "design_full",
+    "all",
+}
 DEFAULT_CONSOLE_LOG_LEVELS = ("info", "warn", "error")
 POWAN_WORK_EVENT_LIMIT = 500
 POWAN_COLOR_PALETTE = [
@@ -477,6 +485,7 @@ class InspectPowanRequest(BaseModel):
     targets: list[InspectPowanTarget] = Field(default_factory=list)
     include: list[str] = Field(default_factory=list)
     codePreviewChars: int = 2000
+    designPreviewChars: int = 2000
     recentMessageLimit: int = 5
 
 
@@ -506,6 +515,34 @@ class WriteCodeRequest(BaseModel):
     code: str | None = None
     codeLanguage: str | None = None
     targets: list[WriteCodeTargetRequest] = Field(default_factory=list)
+
+
+class WriteDesignTargetRequest(BaseModel):
+    title: str = ""
+    body: str = ""
+    targetId: str | None = None
+    childId: str | None = None
+    nodeId: str | None = None
+    path: list[str] = Field(default_factory=list)
+    self: bool = False
+    designMarkdown: str | None = None
+    skip: bool = False
+    skipReason: str = ""
+    status: str = ""
+
+
+class WriteDesignRequest(BaseModel):
+    project: str
+    file: str = DEFAULT_FILE
+    title: str = ""
+    body: str = ""
+    targetId: str | None = None
+    childId: str | None = None
+    nodeId: str | None = None
+    path: list[str] = Field(default_factory=list)
+    includeSelf: bool = False
+    designMarkdown: str | None = None
+    targets: list[WriteDesignTargetRequest] = Field(default_factory=list)
 
 
 class BulkCommandHistoryMessage(BaseModel):
@@ -4489,13 +4526,100 @@ def write_code_jobs(
     return list(jobs_by_id.values()), list(skipped_by_id.values())
 
 
+def write_design_skip_reason(item: WriteDesignTargetRequest) -> str:
+    if item.skip:
+        return item.skipReason.strip() or "skip=true"
+    status = str(getattr(item, "status", "") or "").strip().lower()
+    if status in {"skip", "skipped", "noop", "no-op", "none"}:
+        return item.skipReason.strip() or f"status={status}"
+    return ""
+
+
+def write_design_request_items(request: WriteDesignRequest) -> list[WriteDesignTargetRequest]:
+    items = list(request.targets)
+    if request.includeSelf:
+        items.insert(0, WriteDesignTargetRequest(self=True, designMarkdown=request.designMarkdown))
+    has_direct_selector = any(
+        [
+            bool(request.title.strip()),
+            bool(request.body.strip()),
+            bool(request.path),
+            bool(request.targetId),
+            bool(request.childId),
+            bool(request.nodeId),
+        ]
+    )
+    if has_direct_selector or (not items and request.designMarkdown is not None):
+        items.append(
+            WriteDesignTargetRequest(
+                title=request.title,
+                body=request.body,
+                targetId=request.targetId,
+                childId=request.childId,
+                nodeId=request.nodeId,
+                path=request.path,
+                designMarkdown=request.designMarkdown,
+            )
+        )
+    return items
+
+
+def resolve_design_target(document: dict[str, Any], node_id: str, item: WriteDesignTargetRequest) -> dict[str, Any]:
+    if item.self:
+        return document_node(document, node_id)
+    return resolve_powan_target(document, node_id, item)
+
+
+def write_design_jobs(
+    document: dict[str, Any],
+    node_id: str,
+    request: WriteDesignRequest,
+) -> tuple[list[dict[str, Any]], list[dict[str, Any]]]:
+    document_node(document, node_id)
+    items = write_design_request_items(request)
+    if not items:
+        raise HTTPException(status_code=400, detail="targets or includeSelf is required")
+    jobs_by_id: dict[str, dict[str, Any]] = {}
+    skipped_by_id: dict[str, dict[str, Any]] = {}
+    for item in items:
+        target = resolve_design_target(document, node_id, item)
+        target_id = str(target.get("id") or "")
+        if not target_id:
+            continue
+        skip_reason = write_design_skip_reason(item)
+        if skip_reason:
+            jobs_by_id.pop(target_id, None)
+            skipped_by_id[target_id] = {
+                "nodeId": target_id,
+                "meaning": powan_label(target),
+                "skipReason": skip_reason,
+            }
+            continue
+        design_markdown = item.designMarkdown if item.designMarkdown is not None else request.designMarkdown
+        if design_markdown is None:
+            raise HTTPException(status_code=400, detail=f"designMarkdown is required: {powan_label(target)}")
+        if target_id in jobs_by_id:
+            raise HTTPException(status_code=409, detail=f"Duplicate design target: {powan_label(target)}")
+        jobs_by_id[target_id] = {
+            "node": target,
+            "nodeId": target_id,
+            "meaning": powan_label(target),
+            "designMarkdown": str(design_markdown),
+        }
+    if not jobs_by_id:
+        if skipped_by_id:
+            return [], list(skipped_by_id.values())
+        raise HTTPException(status_code=400, detail="design target is required")
+    return list(jobs_by_id.values()), list(skipped_by_id.values())
+
+
 def normalize_inspect_include(value: Any, *, default: list[str] | None = None) -> set[str]:
     raw_items = value if isinstance(value, list) else []
     include = {str(item).strip() for item in raw_items if str(item).strip()}
     if not include:
         include = set(default or ["meaning", "status", "code_summary"])
     if "all" in include:
-        include = {"meaning", "status", "code_summary", "code_full"}
+        include = {"meaning", "status", "code_summary", "code_full", "design_summary", "design_full"}
     unknown = include - INSPECT_POWAN_INCLUDE_OPTIONS
     if unknown:
         raise HTTPException(status_code=400, detail=f"Unknown inspect include: {', '.join(sorted(unknown))}")
@@ -4519,6 +4643,22 @@ def powan_code_payload(node: dict[str, Any], *, include: set[str], preview_chars
     return payload
 
 
+def powan_design_payload(node: dict[str, Any], *, include: set[str], preview_chars: int) -> dict[str, Any]:
+    design = str(node.get("designMarkdown") or "")
+    preview_limit = max(0, min(int(preview_chars), 50000))
+    lines = design.splitlines()
+    payload = {
+        "hasDesign": bool(design.strip()),
+        "charCount": len(design),
+        "lineCount": len(lines),
+    }
+    if "design_summary" in include:
+        payload["preview"] = limit_prompt_text(design, preview_limit)
+    if "design_full" in include:
+        payload["markdown"] = design
+    return payload
+
+
 def inspect_powan_payload(
     *,
     project: str,
@@ -4527,6 +4667,7 @@ def inspect_powan_payload(
     node: dict[str, Any],
     include: set[str],
     code_preview_chars: int,
+    design_preview_chars: int,
     recent_message_limit: int,
 ) -> dict[str, Any]:
     node_id = str(node.get("id") or "")
@@ -4550,6 +4691,7 @@ def inspect_powan_payload(
                     "label": powan_label(child),
                     "powanKind": str(child.get("powanKind") or "nerve"),
                     "hasCode": bool(str(child.get("code") or "").strip()),
+                    "hasDesign": bool(str(child.get("designMarkdown") or "").strip()),
                 }
                 for child in children
             ],
@@ -4572,6 +4714,8 @@ def inspect_powan_payload(
         }
     if "code_summary" in include or "code_full" in include:
         payload["code"] = powan_code_payload(node, include=include, preview_chars=code_preview_chars)
+    if "design_summary" in include or "design_full" in include:
+        payload["design"] = powan_design_payload(node, include=include, preview_chars=design_preview_chars)
     return payload
 
 
@@ -5393,6 +5537,7 @@ def inspect_powan_response(
                 node=target,
                 include=include,
                 code_preview_chars=request.codePreviewChars,
+                design_preview_chars=request.designPreviewChars,
                 recent_message_limit=request.recentMessageLimit,
             )
         )
@@ -5490,9 +5635,76 @@ def write_code_response(
         raise
 
 
+def write_design_response(node_id: str, request: WriteDesignRequest) -> dict[str, Any]:
+    request_payload = base_model_payload(request)
+    try:
+        document = STORE.load_document(request.project, request.file)
+        document_node(document, node_id)
+        jobs, skipped_jobs = write_design_jobs(document, node_id, request)
+        updated_targets: list[dict[str, Any]] = []
+        for job in jobs:
+            target = job["node"]
+            target["designMarkdown"] = job["designMarkdown"]
+            design = str(target.get("designMarkdown") or "")
+            updated_targets.append(
+                {
+                    "nodeId": job["nodeId"],
+                    "meaning": job["meaning"],
+                    "status": "updated",
+                    "charCount": len(design),
+                    "lineCount": len(design.splitlines()),
+                }
+            )
+        if updated_targets:
+            STORE.save_document(request.project, request.file, document, write_export=True)
+        response = {
+            "project": STORE.safe_project_name(request.project),
+            "file": STORE.safe_powan_name(request.file),
+            "requester": {"id": node_id, "meaning": powan_label_from_document(document, node_id)},
+            "updated": len(updated_targets),
+            "skipped": len(skipped_jobs),
+            "targets": updated_targets,
+            "skippedTargets": skipped_jobs,
+        }
+        record_api_action_safely(
+            project=request.project,
+            file=request.file,
+            node_id=node_id,
+            action="write-design",
+            status="completed",
+            request_payload=request_payload,
+            response_payload={
+                "updated": len(updated_targets),
+                "skipped": len(skipped_jobs),
+                "targets": [
+                    {"nodeId": target["nodeId"], "meaning": target["meaning"]}
+                    for target in updated_targets
+                ],
+            },
+        )
+        return response
+    except HTTPException as exc:
+        record_api_action_safely(
+            project=request.project,
+            file=request.file,
+            node_id=node_id,
+            action="write-design",
+            status="failed",
+            request_payload=request_payload,
+            response_payload={},
+            error_text=str(exc.detail),
+        )
+        raise
+
+
 @app.post("/api/ai/powans/{node_id}/actions/inspect-powan")
 def inspect_powan(node_id: str, request: InspectPowanRequest) -> dict[str, Any]:
     return inspect_powan_response(node_id, request)
+
+
+@app.post("/api/ai/powans/{node_id}/actions/write-design")
+def write_design(node_id: str, request: WriteDesignRequest) -> dict[str, Any]:
+    return write_design_response(node_id, request)
 
 
 @app.post("/api/ai/powans/{node_id}/actions/write-child-code")

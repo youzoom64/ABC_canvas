@@ -35,6 +35,7 @@ def main() -> int:
             "write-my-code",
             "write-child-code",
             "write-target-code",
+            "write-design",
         ),
     )
     parser.add_argument("--api-base", default=os.environ.get("ABC_CANVAS_API_BASE", DEFAULT_API_BASE))
@@ -51,6 +52,8 @@ def main() -> int:
     parser.add_argument("--code-language", default="")
     parser.add_argument("--code", default="")
     parser.add_argument("--code-file", default="")
+    parser.add_argument("--design", default="")
+    parser.add_argument("--design-file", default="")
     parser.add_argument("--child-id", default="")
     parser.add_argument("--target-parent-id", default="")
     parser.add_argument("--target-id", default="")
@@ -88,6 +91,10 @@ def request_payload(args: argparse.Namespace) -> dict[str, Any]:
         payload["code"] = args.code
     if args.code_file:
         payload["code"] = read_text_file(args.code_file)
+    if args.design:
+        payload["designMarkdown"] = args.design
+    if args.design_file:
+        payload["designMarkdown"] = read_text_file(args.design_file)
     if args.child_id:
         payload["childId"] = args.child_id
     if args.target_parent_id:
@@ -230,6 +237,7 @@ def dispatch(args: argparse.Namespace, payload: dict[str, Any]) -> dict[str, Any
             "targets": targets,
             "include": payload.get("include") if isinstance(payload.get("include"), list) else [],
             "codePreviewChars": int(payload.get("codePreviewChars") or payload.get("code_preview_chars") or 2000),
+            "designPreviewChars": int(payload.get("designPreviewChars") or payload.get("design_preview_chars") or 2000),
             "recentMessageLimit": int(payload.get("recentMessageLimit") or payload.get("recent_message_limit") or 5),
         }
         return request_json(args.api_base, "POST", f"/api/ai/powans/{node_id}/actions/inspect-powan", body)
@@ -267,6 +275,39 @@ def dispatch(args: argparse.Namespace, payload: dict[str, Any]) -> dict[str, Any
         endpoint = "write-child-code" if args.operation == "write-child-code" else "write-target-code"
         return summarize_write_code_response(
             request_json(args.api_base, "POST", f"/api/ai/powans/{node_id}/actions/{endpoint}", body)
+        )
+    if args.operation == "write-design":
+        targets = payload.get("targets", [])
+        if not isinstance(targets, list):
+            raise ToolError("targets must be a list")
+        normalized_targets = []
+        for target in targets:
+            if isinstance(target, dict):
+                clean_target = dict(target)
+                if "design" in clean_target and "designMarkdown" not in clean_target:
+                    clean_target["designMarkdown"] = clean_target.pop("design")
+                if "design_markdown" in clean_target and "designMarkdown" not in clean_target:
+                    clean_target["designMarkdown"] = clean_target.pop("design_markdown")
+                normalized_targets.append(clean_target)
+            else:
+                normalized_targets.append(target)
+        design_markdown = (
+            payload.get("designMarkdown")
+            if "designMarkdown" in payload
+            else payload.get("design_markdown", payload.get("design"))
+        )
+        body = {
+            **base_payload,
+            "includeSelf": bool(payload.get("includeSelf") or payload.get("include_self") or False),
+            "targets": normalized_targets,
+        }
+        if design_markdown is not None:
+            body["designMarkdown"] = design_markdown
+        for key in ("title", "body", "path", "targetId", "childId", "nodeId"):
+            if key in payload:
+                body[key] = payload[key]
+        return summarize_write_design_response(
+            request_json(args.api_base, "POST", f"/api/ai/powans/{node_id}/actions/write-design", body)
         )
     raise ToolError(f"Unknown operation: {args.operation}")
 
@@ -321,6 +362,35 @@ def summarize_write_code_response(response: dict[str, Any]) -> dict[str, Any]:
                 "meaning": target.get("meaning", ""),
                 "codeLanguage": target.get("codeLanguage", ""),
                 "charCount": target.get("charCount", 0),
+            }
+            for target in targets
+            if isinstance(target, dict)
+        ],
+        "skippedTargets": [
+            {
+                "nodeId": target.get("nodeId", ""),
+                "meaning": target.get("meaning", ""),
+                "skipReason": target.get("skipReason", ""),
+            }
+            for target in skipped_targets
+            if isinstance(target, dict)
+        ],
+    }
+
+
+def summarize_write_design_response(response: dict[str, Any]) -> dict[str, Any]:
+    targets = response.get("targets") if isinstance(response.get("targets"), list) else []
+    skipped_targets = response.get("skippedTargets") if isinstance(response.get("skippedTargets"), list) else []
+    return {
+        "status": "completed",
+        "updated": response.get("updated", len(targets)),
+        "skipped": response.get("skipped", len(skipped_targets)),
+        "updatedTargets": [
+            {
+                "nodeId": target.get("nodeId", ""),
+                "meaning": target.get("meaning", ""),
+                "charCount": target.get("charCount", 0),
+                "lineCount": target.get("lineCount", 0),
             }
             for target in targets
             if isinstance(target, dict)
