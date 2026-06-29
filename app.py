@@ -2796,6 +2796,37 @@ def handle_discord_powan_message(payload: dict[str, Any]) -> dict[str, Any]:
     content = str(payload.get("content") or "").strip()
     if not content:
         return {"ok": True, "reply": "", "displayName": target_label}
+    if content.casefold() == "/cancel":
+        result = CODEX_BRIDGE.cancel(
+            project=project,
+            document_name=file,
+            node_id=target_node_id,
+        )
+        log_server_event(
+            "info",
+            "discord-codex-cancel",
+            {
+                "project": project,
+                "file": file,
+                "nodeId": target_node_id,
+                "channelId": str(payload.get("channelId") or ""),
+                "messageId": str(payload.get("messageId") or ""),
+                **result,
+            },
+        )
+        if result.get("cancelled"):
+            reply = f"{target_label} の作業をキャンセルしました。"
+        elif result.get("running"):
+            reply = f"{target_label} のキャンセルを試しましたが止められませんでした。"
+        else:
+            reply = f"{target_label} は今作業していません。"
+        return {
+            "ok": True,
+            "reply": reply,
+            "displayName": target_label,
+            "cancelled": bool(result.get("cancelled")),
+            "running": bool(result.get("running")),
+        }
     author_name = str(payload.get("authorName") or "Discord user")
     author_id = str(payload.get("authorId") or "")
     channel_id = str(payload.get("channelId") or "")
