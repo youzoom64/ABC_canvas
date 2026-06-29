@@ -2022,6 +2022,7 @@ def powan_work_message(status: str, sender_label: str, receiver_label: str, sour
         "received": "受信",
         "working": "作業中",
         "completed": "完了",
+        "delegated": "委譲",
         "failed": "失敗",
         "cancelled": "キャンセル",
     }
@@ -2170,6 +2171,14 @@ def child_reply_payloads(results: list[dict[str, Any]]) -> list[dict[str, Any]]:
             }
         )
     return replies
+
+
+def child_result_should_return_to_parent(result: dict[str, Any]) -> bool:
+    if str(result.get("status") or "") == "delegated":
+        return False
+    if result.get("earlyCompleted") and str(result.get("earlyCompleteReason") or "") == "command_children_accepted":
+        return False
+    return True
 
 
 def child_return_incoming_message(
@@ -2454,6 +2463,104 @@ def parse_origin_judgement_response(text: str) -> tuple[dict[str, Any] | None, s
         "returnInstruction": return_instruction,
         "raw": payload,
     }, ""
+
+
+def compact_origin_report_text(text: Any, limit: int = 220) -> str:
+    clean = " ".join(line.strip() for line in str(text or "").splitlines() if line.strip())
+    if len(clean) <= limit:
+        return clean
+    return f"{clean[:limit]}..."
+
+
+def origin_result_status_label(status: Any) -> str:
+    value = str(status or "").strip().lower()
+    labels = {
+        "achieved": "達成",
+        "completed": "完了",
+        "complete": "完了",
+        "done": "完了",
+        "delegated": "委譲",
+        "accepted": "受付",
+        "unmet": "未達",
+        "failed": "失敗",
+        "cancelled": "キャンセル",
+    }
+    return labels.get(value, str(status or "不明"))
+
+
+def render_origin_judgement_decision_message(
+    *,
+    decision: dict[str, Any],
+    required_judgement: dict[str, Any],
+    receiver_label: str,
+) -> str:
+    achieved = decision.get("status") == "achieved"
+    title = "達成" if achieved else "未達"
+    judge = required_judgement.get("judge") if isinstance(required_judgement.get("judge"), dict) else {}
+    judge_label = str(judge.get("name") or receiver_label or "名前のないポワン").strip()
+    upstream = required_judgement.get("upstream") if isinstance(required_judgement.get("upstream"), dict) else None
+    downstream_reports = required_judgement.get("downstreamReports")
+    reports = downstream_reports if isinstance(downstream_reports, list) else []
+    lines = [
+        f"由来つき作業: {title}",
+        "",
+        f"判定者: {judge_label}",
+    ]
+    if achieved:
+        upstream_label = str((upstream or {}).get("name") or "").strip()
+        lines.append(f"上げ先: {upstream_label or 'ここで完了'}")
+        lines.extend(["", "完了内容:"])
+    else:
+        return_targets = [
+            str(report.get("childName") or report.get("childId") or "").strip()
+            for report in reports
+            if isinstance(report, dict)
+        ]
+        return_targets = [target for target in return_targets if target]
+        lines.append(f"差し戻し先: {', '.join(return_targets) if return_targets else '下流ポワン'}")
+        lines.extend(["", "未達内容:"])
+
+    if reports:
+        for report in reports[:10]:
+            if not isinstance(report, dict):
+                continue
+            child_label = str(report.get("childName") or report.get("childId") or "名前のないポワン").strip()
+            status_label = origin_result_status_label(report.get("status"))
+            lines.append(f"- {child_label}: {status_label}")
+            summary = compact_origin_report_text(report.get("reportText"), 260)
+            if summary:
+                lines.append(f"  {summary}")
+        if len(reports) > 10:
+            lines.append(f"- 他 {len(reports) - 10} 件")
+    else:
+        report_text = compact_origin_report_text(required_judgement.get("reportText"), 320)
+        lines.append(f"- {report_text or '報告本文なし'}")
+
+    reason_label = "判定理由" if achieved else "未達理由"
+    lines.extend(["", f"{reason_label}:", str(decision.get("reason") or "").strip()])
+    return_instruction = str(decision.get("returnInstruction") or "").strip()
+    if not achieved and return_instruction:
+        lines.extend(["", "差し戻し指示:", return_instruction])
+    return "\n".join(lines).strip()
+
+
+def origin_judgement_assistant_display_text(
+    *,
+    raw_text: str,
+    incoming_message: dict[str, Any],
+    receiver_label: str,
+) -> str:
+    required = incoming_message.get("requiredJudgement") if isinstance(incoming_message.get("requiredJudgement"), dict) else {}
+    if not required.get("required"):
+        return raw_text
+    decision, _ = parse_origin_judgement_response(raw_text)
+    if not decision:
+        return raw_text
+    return render_origin_judgement_decision_message(
+        decision=decision,
+        required_judgement=required,
+        receiver_label=receiver_label,
+    )
 
 
 def remember_powan_work_event(details: dict[str, Any]) -> dict[str, Any]:
@@ -3106,7 +3213,7 @@ def handle_origin_judgement_result(
     if not required.get("required"):
         return
     assistant = result.get("assistantMessage") if isinstance(result.get("assistantMessage"), dict) else {}
-    assistant_text = str((assistant or {}).get("text") or "").strip()
+    assistant_text = str(result.get("assistantRawText") or (assistant or {}).get("text") or "").strip()
     decision, validation_error = parse_origin_judgement_response(assistant_text)
     sender_id = str(group[0].get("senderId") or "") or None
     sender_label = str(group[0].get("senderLabel") or "由来報告")
@@ -3804,6 +3911,8 @@ def run_powan_codex_message(
             "conversationId": conversation["id"],
             "codexThreadId": result.thread_id,
             "cancelled": True,
+            "earlyCompleted": bool(result.early_completed),
+            "earlyCompleteReason": result.early_complete_reason,
             "userMessage": user_message,
             "assistantMessage": None,
             "agentRun": agent_run,
@@ -3860,6 +3969,11 @@ def run_powan_codex_message(
         output_text=result.text,
         error_text=result.stderr[-4000:],
     )
+    assistant_display_text = origin_judgement_assistant_display_text(
+        raw_text=result.text,
+        incoming_message=incoming_message_payload,
+        receiver_label=receiver_label,
+    )
     assistant_message = emit_conversation_event(
         project=project,
         file=file,
@@ -3867,7 +3981,7 @@ def run_powan_codex_message(
         conversation_id=int(conversation["id"]),
         kind="assistant_reply",
         role="assistant",
-        text=result.text,
+        text=assistant_display_text,
         receiver_label=receiver_label,
         source=source,
     )
@@ -3884,6 +3998,7 @@ def run_powan_codex_message(
             "source": source,
             "durationMs": result.duration_ms,
             "outputLength": len(result.text),
+            "displayLength": len(assistant_display_text),
         },
     )
     log_powan_work_status(
@@ -3901,6 +4016,7 @@ def run_powan_codex_message(
             "threadId": result.thread_id,
             "durationMs": result.duration_ms,
             "outputLength": len(result.text),
+            "displayLength": len(assistant_display_text),
         },
     )
     origin_route = incoming_message_payload.get("originRoute") if isinstance(incoming_message_payload.get("originRoute"), dict) else {}
@@ -3918,6 +4034,9 @@ def run_powan_codex_message(
     return {
         "conversationId": conversation["id"],
         "codexThreadId": result.thread_id,
+        "earlyCompleted": bool(result.early_completed),
+        "earlyCompleteReason": result.early_complete_reason,
+        "assistantRawText": result.text,
         "userMessage": user_message,
         "assistantMessage": assistant_message,
         "agentRun": agent_run,
@@ -4923,9 +5042,23 @@ def command_child_powans(node_id: str, request: CommandChildrenRequest) -> dict[
         STORE.update_child_command_session_status(request.project, request.file, dispatch_session_id, "sent")
 
         def append_parent_child_return_message(results: list[dict[str, Any]]) -> dict[str, Any] | None:
-            if not results:
+            reportable_results = [result for result in results if child_result_should_return_to_parent(result)]
+            if not reportable_results:
+                log_server_event(
+                    "info",
+                    "command-child-return-skipped-delegated-only",
+                    {
+                        "console": True,
+                        "project": STORE.safe_project_name(request.project),
+                        "file": STORE.safe_powan_name(request.file),
+                        "parentId": node_id,
+                        "parentLabel": parent_label,
+                        "dispatchSessionId": dispatch_session_id,
+                        "resultCount": len(results),
+                    },
+                )
                 return None
-            parent_text = render_child_return_bundle_message(parent_label, results, dispatch_session_id)
+            parent_text = render_child_return_bundle_message(parent_label, reportable_results, dispatch_session_id)
             if not parent_text:
                 return None
             parent_message = emit_conversation_event(
@@ -4940,7 +5073,7 @@ def command_child_powans(node_id: str, request: CommandChildrenRequest) -> dict[
                 source="command-child-return",
                 metadata={"dispatchSessionId": dispatch_session_id},
             )
-            for result in results:
+            for result in reportable_results:
                 child_node_id = str(result.get("nodeId") or "").strip()
                 child_conversation_id = result.get("conversationId")
                 if not child_node_id or child_conversation_id is None:
@@ -4990,14 +5123,14 @@ def command_child_powans(node_id: str, request: CommandChildrenRequest) -> dict[
                             "error": repr(exc),
                         },
                     )
-            sender_id = str(results[0].get("nodeId") or "") if len(results) == 1 else None
+            sender_id = str(reportable_results[0].get("nodeId") or "") if len(reportable_results) == 1 else None
             incoming_message = child_return_incoming_message(
                 parent_id=node_id,
                 parent_label=parent_label,
                 parent_conversation_id=int(parent_conversation_id),
                 parent_message_id=int(parent_message["id"]) if parent_message.get("id") is not None else None,
                 parent_text=parent_text,
-                results=results,
+                results=reportable_results,
                 continue_after_child_replies=bool(request.continueAfterChildReplies),
                 dispatch_session_id=dispatch_session_id,
             )
@@ -5005,7 +5138,7 @@ def command_child_powans(node_id: str, request: CommandChildrenRequest) -> dict[
                 base_chain=request_origin_chain,
                 parent_id=node_id,
                 parent_label=parent_label,
-                results=results,
+                results=reportable_results,
                 dispatch_session_id=dispatch_session_id,
             )
             queue_source = "command-child-return"
@@ -5132,7 +5265,11 @@ def command_child_powans(node_id: str, request: CommandChildrenRequest) -> dict[
                     pre_appended_user_message=job.get("userMessage") if isinstance(job.get("userMessage"), dict) else None,
                     incoming_message=child_incoming_message,
                 )
-                run_status = "cancelled" if result.get("cancelled") else "completed"
+                delegated = bool(result.get("earlyCompleted")) and str(result.get("earlyCompleteReason") or "") == "command_children_accepted"
+                if delegated:
+                    run_status = "delegated"
+                else:
+                    run_status = "cancelled" if result.get("cancelled") else "completed"
                 item = {
                     "nodeId": job["nodeId"],
                     "meaning": job["meaning"],
@@ -5145,6 +5282,8 @@ def command_child_powans(node_id: str, request: CommandChildrenRequest) -> dict[
                     "userMessage": result.get("userMessage"),
                     "assistantMessage": result.get("assistantMessage"),
                     "agentRun": result.get("agentRun"),
+                    "earlyCompleted": bool(result.get("earlyCompleted")),
+                    "earlyCompleteReason": str(result.get("earlyCompleteReason") or ""),
                 }
                 if job.get("dispatchId") is not None:
                     assistant_message = result.get("assistantMessage") if isinstance(result.get("assistantMessage"), dict) else None
@@ -5252,6 +5391,14 @@ def command_child_powans(node_id: str, request: CommandChildrenRequest) -> dict[
                 for result in results:
                     result.pop("httpStatus", None)
 
+                failed_count = sum(1 for result in results if result.get("status") in {"failed", "cancelled"})
+                delegated_count = sum(1 for result in results if result.get("status") == "delegated")
+                if failed_count:
+                    session_status = "failed"
+                elif delegated_count:
+                    session_status = "delegated"
+                else:
+                    session_status = "completed"
                 response = {
                     "project": STORE.safe_project_name(request.project),
                     "file": STORE.safe_powan_name(request.file),
@@ -5262,7 +5409,8 @@ def command_child_powans(node_id: str, request: CommandChildrenRequest) -> dict[
                     "continueAfterChildReplies": bool(request.continueAfterChildReplies),
                     "results": results,
                 }
-                complete_message = f"{parent_label} -> 子ポワン {len(results)}件 / 一括命令完了"
+                complete_label = "一括命令委譲" if session_status == "delegated" else "一括命令完了"
+                complete_message = f"{parent_label} -> 子ポワン {len(results)}件 / {complete_label}"
                 log_server_event(
                     "info",
                     "command-child-powans-complete",
@@ -5274,16 +5422,17 @@ def command_child_powans(node_id: str, request: CommandChildrenRequest) -> dict[
                         "nodeId": node_id,
                         "meaning": parent_label,
                         "count": len(results),
-                        "failed": sum(1 for result in results if result.get("status") != "completed"),
+                        "failed": failed_count,
+                        "delegated": delegated_count,
+                        "sessionStatus": session_status,
                         "instructionPreview": compact_console_text(request.instruction),
                         "request": request_payload,
                         "response": response,
                     },
                 )
-                session_status = "completed" if all(result.get("status") == "completed" for result in results) else "failed"
                 STORE.update_child_command_session_status(request.project, request.file, dispatch_session_id, session_status)
                 remember_powan_batch_work_event(
-                    status="completed",
+                    status=session_status,
                     message=complete_message,
                     project=request.project,
                     file=request.file,
@@ -5295,7 +5444,8 @@ def command_child_powans(node_id: str, request: CommandChildrenRequest) -> dict[
                     instruction=request.instruction,
                     extra={
                         "detached": True,
-                        "failed": sum(1 for result in results if result.get("status") != "completed"),
+                        "failed": failed_count,
+                        "delegated": delegated_count,
                         "dispatchSessionId": dispatch_session_id,
                         "dispatchIntervalMs": dispatch_interval_ms,
                         "continueAfterChildReplies": bool(request.continueAfterChildReplies),
@@ -5304,20 +5454,36 @@ def command_child_powans(node_id: str, request: CommandChildrenRequest) -> dict[
                 with COMMAND_CHILDREN_ACTIVE_LOCK:
                     COMMAND_CHILDREN_ACTIVE_KEYS.discard(active_key)
                 parent_return = append_parent_child_return_message(results)
-                log_server_event(
-                    "info",
-                    "command-child-powans-parent-followup-queued",
-                    {
-                        "console": True,
-                        "project": STORE.safe_project_name(request.project),
-                        "file": STORE.safe_powan_name(request.file),
-                        "parentId": node_id,
-                        "parentMeaning": parent_label,
-                        "parentConversationId": parent_conversation_id,
-                        "dispatchSessionId": dispatch_session_id,
-                        "parentMessageId": (parent_return.get("message") or {}).get("id") if isinstance(parent_return, dict) else None,
-                    },
-                )
+                if parent_return:
+                    log_server_event(
+                        "info",
+                        "command-child-powans-parent-followup-queued",
+                        {
+                            "console": True,
+                            "project": STORE.safe_project_name(request.project),
+                            "file": STORE.safe_powan_name(request.file),
+                            "parentId": node_id,
+                            "parentMeaning": parent_label,
+                            "parentConversationId": parent_conversation_id,
+                            "dispatchSessionId": dispatch_session_id,
+                            "parentMessageId": (parent_return.get("message") or {}).get("id") if isinstance(parent_return, dict) else None,
+                        },
+                    )
+                else:
+                    log_server_event(
+                        "info",
+                        "command-child-powans-parent-followup-skipped",
+                        {
+                            "console": True,
+                            "project": STORE.safe_project_name(request.project),
+                            "file": STORE.safe_powan_name(request.file),
+                            "parentId": node_id,
+                            "parentMeaning": parent_label,
+                            "parentConversationId": parent_conversation_id,
+                            "dispatchSessionId": dispatch_session_id,
+                            "reason": "delegated-only",
+                        },
+                    )
             except Exception as exc:
                 STORE.update_child_command_session_status(request.project, request.file, dispatch_session_id, "failed")
                 failed_message = f"{parent_label} -> 子ポワン {job_count or ''}件 / 一括命令失敗" if job_count else f"{parent_label} -> 子ポワン / 一括命令失敗"

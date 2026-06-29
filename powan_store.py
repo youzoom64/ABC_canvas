@@ -395,7 +395,7 @@ class PowanStore:
                         """
                         SELECT id, session_id, document_name, parent_id, child_id, conversation_id, error_text
                         FROM child_command_dispatches
-                        WHERE status NOT IN ('completed', 'failed', 'cancelled', 'skipped')
+                        WHERE status NOT IN ('completed', 'delegated', 'failed', 'cancelled', 'skipped')
                         """
                     ).fetchall()
                     for row in active_dispatches:
@@ -452,7 +452,7 @@ class PowanStore:
                         """
                         SELECT id, document_name, parent_id
                         FROM child_command_sessions
-                        WHERE status NOT IN ('completed', 'failed', 'cancelled')
+                        WHERE status NOT IN ('completed', 'delegated', 'failed', 'cancelled')
                         """
                     ).fetchall()
                     for row in active_sessions:
@@ -2103,7 +2103,7 @@ class PowanStore:
     ) -> None:
         document_name = self.safe_powan_name(document_name)
         now = datetime.now().isoformat(timespec="milliseconds")
-        completed_at = now if status in {"completed", "failed", "cancelled"} else None
+        completed_at = now if status in {"completed", "delegated", "failed", "cancelled"} else None
         with self.session(project) as connection:
             row = connection.execute(
                 """
@@ -2149,7 +2149,7 @@ class PowanStore:
                 ),
             )
         self.log_event(
-            "info" if status == "completed" else "error" if status == "failed" else "info",
+            "error" if status == "failed" else "info",
             "powan-db-child-command-session-status",
             {
                 "project": self.safe_project_name(project),
@@ -2305,7 +2305,7 @@ class PowanStore:
         error_text: str = "",
     ) -> None:
         now = datetime.now().isoformat(timespec="milliseconds")
-        clean_status = status if status in {"completed", "failed", "cancelled"} else "completed"
+        clean_status = status if status in {"completed", "delegated", "failed", "cancelled"} else "completed"
         with self.session(project) as connection:
             connection.execute(
                 """
@@ -2365,7 +2365,7 @@ class PowanStore:
                     ),
                 )
         self.log_event(
-            "info" if clean_status == "completed" else "error",
+            "error" if clean_status == "failed" else "info",
             "powan-db-child-command-dispatch-replied",
             {
                 "project": self.safe_project_name(project),
@@ -2399,7 +2399,7 @@ class PowanStore:
                 WHERE document_name = ?
                   AND child_id = ?
                   AND conversation_id = ?
-                  AND status NOT IN ('completed', 'failed', 'cancelled', 'skipped')
+                  AND status NOT IN ('completed', 'delegated', 'failed', 'cancelled', 'skipped')
                 """,
                 (document_name, powan_id, int(conversation_id)),
             ).fetchall()
@@ -2451,7 +2451,7 @@ class PowanStore:
                     FROM child_command_dispatches
                     WHERE document_name = ?
                       AND session_id = ?
-                      AND status NOT IN ('completed', 'failed', 'cancelled', 'skipped')
+                      AND status NOT IN ('completed', 'delegated', 'failed', 'cancelled', 'skipped')
                     """,
                     (document_name, session_id),
                 ).fetchone()
