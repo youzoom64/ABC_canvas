@@ -414,6 +414,7 @@ class PowanCodexRequest(BaseModel):
     includeMeaningTree: bool = False
     includeDirectChildCode: bool = False
     attachments: list[dict[str, Any]] = Field(default_factory=list)
+    conversationId: int | None = None
 
 
 class ChildCommandRequest(BaseModel):
@@ -3683,6 +3684,7 @@ def run_powan_codex_message(
     sender_label_override: str | None = None,
     pre_appended_user_message: dict[str, Any] | None = None,
     incoming_message: dict[str, Any] | None = None,
+    conversation_id: int | None = None,
 ) -> dict[str, Any]:
     document = STORE.load_document(project, file)
     if not any(str(node.get("id")) == node_id for node in document.get("nodes") or []):
@@ -3695,14 +3697,19 @@ def run_powan_codex_message(
     materialized_attachments = materialize_conversation_attachments(project, attachments or [])
     if pre_appended_user_message is not None:
         user_message = pre_appended_user_message
-        conversation_id = int(user_message.get("conversationId") or 0)
-        if conversation_id <= 0:
+        pre_appended_conversation_id = int(user_message.get("conversationId") or 0)
+        if pre_appended_conversation_id <= 0:
             raise HTTPException(status_code=500, detail="Pre-appended user message is missing conversationId")
-        conversation_payload = STORE.conversation_messages_by_id(project, file, node_id, conversation_id)
+        conversation_payload = STORE.conversation_messages_by_id(project, file, node_id, pre_appended_conversation_id)
         conversation = conversation_payload["conversation"]
         messages = conversation_payload["messages"]
     else:
-        conversation = STORE.active_conversation(project, file, node_id)
+        if conversation_id is not None:
+            conversation_payload = STORE.conversation_messages_by_id(project, file, node_id, int(conversation_id))
+            conversation = conversation_payload["conversation"]
+        else:
+            conversation = STORE.active_conversation(project, file, node_id)
+        resolved_conversation_id = int(conversation["id"])
         log_powan_work_status(
             "received",
             project=project,
@@ -3712,7 +3719,7 @@ def run_powan_codex_message(
             sender_label=sender_label,
             receiver_id=node_id,
             receiver_label=receiver_label,
-            conversation_id=conversation["id"],
+            conversation_id=resolved_conversation_id,
             extra={
                 "textPreview": compact_console_text(text),
                 "messageLength": len(text.strip()),
@@ -3721,10 +3728,11 @@ def run_powan_codex_message(
                 "attachmentCount": len(materialized_attachments),
             },
         )
-        user_message = STORE.append_conversation_message(
+        user_message = STORE.append_conversation_message_to_conversation(
             project,
             file,
             node_id,
+            resolved_conversation_id,
             "user",
             conversation_record_text(text, materialized_attachments),
         )
@@ -3735,14 +3743,14 @@ def run_powan_codex_message(
                 "project": STORE.safe_project_name(project),
                 "file": STORE.safe_powan_name(file),
                 "nodeId": node_id,
-                "conversationId": conversation["id"],
+                "conversationId": resolved_conversation_id,
                 "messageId": user_message.get("id"),
                 "source": source,
                 "senderNodeId": sender_node_id,
                 "messageLength": len(text.strip()),
             },
         )
-        messages = STORE.list_conversation_messages(project, file, node_id)["messages"]
+        messages = STORE.conversation_messages_by_id(project, file, node_id, resolved_conversation_id)["messages"]
     incoming_message_payload = incoming_message or build_incoming_message_payload(
         source=source,
         text=text,
@@ -4772,6 +4780,7 @@ def talk_to_powan_with_codex(
         include_direct_child_code=bool(request.includeDirectChildCode),
         attachments=request.attachments,
         source="conversation",
+        conversation_id=request.conversationId,
     )
 
 

@@ -2183,14 +2183,14 @@ async function loadAllConversationSessions(nodeId) {
 async function requestPowanCodexReply(
   nodeId,
   text,
-  { signal = null, includeMeaningTree = false, includeDirectChildCode = false, attachments = [] } = {},
+  { signal = null, includeMeaningTree = false, includeDirectChildCode = false, attachments = [], conversationId = null } = {},
 ) {
   const response = await fetch(
     `/api/conversations/${encodeURIComponent(nodeId)}/codex?project=${encodeURIComponent(projectName)}&file=${encodeURIComponent(documentName)}`,
     {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ text, includeMeaningTree, includeDirectChildCode, attachments }),
+      body: JSON.stringify({ text, includeMeaningTree, includeDirectChildCode, attachments, conversationId }),
       signal,
     },
   );
@@ -2214,6 +2214,49 @@ async function requestPowanCodexReply(
     length: (data.assistantMessage?.text || "").length,
   });
   return data;
+}
+
+async function requestActiveConversationPayload(nodeId) {
+  const response = await fetch(
+    `/api/conversations/${encodeURIComponent(nodeId)}?project=${encodeURIComponent(projectName)}&file=${encodeURIComponent(documentName)}`,
+  );
+  if (!response.ok) {
+    throw new Error(`conversation prepare failed: ${response.status}`);
+  }
+  return response.json();
+}
+
+async function ensureConversationIdForSend(nodeId, tabId, preferredConversationId = null) {
+  const preferredId = normalizeConversationId(preferredConversationId);
+  if (preferredId !== null) {
+    return preferredId;
+  }
+  const data = await requestActiveConversationPayload(nodeId);
+  const conversationId = normalizeConversationId(data.conversationId);
+  if (conversationId === null) {
+    throw new Error("conversation prepare failed: missing conversationId");
+  }
+  const state = conversationTabState(tabId);
+  state.activeSessionId = conversationId;
+  state.viewingSessionId = conversationId;
+  state.viewingAllSessions = false;
+  if (activeConversationTabId === tabId && conversationNodeId === nodeId) {
+    conversationActiveSessionId = conversationId;
+    conversationViewingSessionId = conversationId;
+    conversationViewingAllSessions = false;
+    if (conversationSessionSelect) {
+      conversationSessionSelect.value = String(conversationId);
+    }
+    rememberConversationTabState(tabId);
+    renderConversationTabs();
+    refreshConversationSessions(nodeId, conversationId);
+  }
+  logEvent("debug", "conversation-send-session-ready", {
+    nodeId,
+    conversationId,
+    tabId,
+  });
+  return conversationId;
 }
 
 async function requestCancelPowanCodex(nodeId) {
@@ -4073,6 +4116,18 @@ async function sendConversation({ forceDirectChildCode = false, queuedSend = nul
     return;
   }
   const requestViewIsActiveAtSend = activeConversationTabId === requestTabId && conversationNodeId === node.id;
+  let requestConversationId = isQueuedSend
+    ? normalizeConversationId(queuedSend.conversationId)
+    : normalizeConversationId(conversationViewingSessionId || conversationActiveSessionId);
+  try {
+    requestConversationId = await ensureConversationIdForSend(node.id, requestTabId, requestConversationId);
+  } catch (error) {
+    if (requestViewIsActiveAtSend) {
+      appendConversationMessage("system", `会話IDを準備できなかった: ${error.message}`, { forceFollow: true });
+    }
+    logEvent("error", "conversation-send-session-prepare-error", { nodeId: node.id, message: error.message });
+    return;
+  }
   if (isQueuedSend && queuedSend.statusMessage?.isConnected) {
     queuedSend.statusMessage.remove();
   }
@@ -4094,9 +4149,6 @@ async function sendConversation({ forceDirectChildCode = false, queuedSend = nul
     attachmentPathCount: attachmentPayloads.filter((attachment) => attachment.pathAvailable).length,
   });
   const controller = new AbortController();
-  const requestConversationId = isQueuedSend
-    ? normalizeConversationId(queuedSend.conversationId)
-    : normalizeConversationId(conversationViewingSessionId || conversationActiveSessionId);
   const request = {
     id: ++conversationRequestSerial,
     controller,
@@ -4155,6 +4207,7 @@ async function sendConversation({ forceDirectChildCode = false, queuedSend = nul
       includeMeaningTree,
       includeDirectChildCode,
       attachments: attachmentPayloads,
+      conversationId: requestConversationId,
     });
     const replyConversationId = normalizeConversationId(data.conversationId);
     const requestViewIsActive = activeConversationTabId === requestTabId && conversationNodeId === node.id;
