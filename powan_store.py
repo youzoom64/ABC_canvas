@@ -1642,18 +1642,29 @@ class PowanStore:
             document_filter = "AND document_name = ?"
             parameters.append(self.safe_powan_name(document_name))
         for project_name in projects:
-            with self.session(project_name) as connection:
-                rows = connection.execute(
-                    f"""
-                    SELECT document_name, powan_id, COUNT(*) AS count
-                    FROM pending_codex_messages
-                    WHERE status IN ('pending', 'claimed')
-                      {document_filter}
-                    GROUP BY document_name, powan_id
-                    ORDER BY document_name, powan_id
-                    """,
-                    parameters,
-                ).fetchall()
+            try:
+                with self.session(project_name) as connection:
+                    rows = connection.execute(
+                        f"""
+                        SELECT document_name, powan_id, COUNT(*) AS count
+                        FROM pending_codex_messages
+                        WHERE status IN ('pending', 'claimed')
+                          {document_filter}
+                        GROUP BY document_name, powan_id
+                        ORDER BY document_name, powan_id
+                        """,
+                        parameters,
+                    ).fetchall()
+            except sqlite3.DatabaseError as exc:
+                self.log_event(
+                    "error",
+                    "powan-db-list-pending-codex-targets-project-failed",
+                    {
+                        "project": project_name,
+                        "error": repr(exc),
+                    },
+                )
+                continue
             for row in rows:
                 targets.append(
                     {
