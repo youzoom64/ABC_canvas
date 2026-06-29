@@ -3047,6 +3047,57 @@ def render_child_command(parent: dict[str, Any], child: dict[str, Any], instruct
 """
 
 
+def render_parent_child_command_log(
+    *,
+    parent_label: str,
+    child_label: str,
+    instruction: str,
+    rendered_text: str,
+    dispatch_session_id: str,
+    dispatch_id: Any,
+) -> str:
+    lines = [
+        f"親ポワン「{parent_label}」から、子ポワン「{child_label}」へ指示を送りました。",
+        "",
+        f"一括指示ID: {dispatch_session_id}",
+    ]
+    if dispatch_id is not None:
+        lines.append(f"送信ID: {dispatch_id}")
+    clean_instruction = str(instruction or "").strip()
+    clean_rendered = str(rendered_text or "").strip()
+    if clean_instruction:
+        lines.extend(["", "--- 指示 ---", clean_instruction])
+    elif clean_rendered:
+        lines.extend(["", "--- 指示 ---", clean_rendered])
+    return "\n".join(lines).strip()
+
+
+def render_child_parent_return_log(parent_label: str, result: dict[str, Any]) -> str:
+    child_label = str(result.get("meaning") or "名前のないポワン").strip() or "名前のないポワン"
+    status = str(result.get("status") or "").strip() or "unknown"
+    dispatch_session_id = str(result.get("dispatchSessionId") or "").strip()
+    dispatch_id = result.get("dispatchId")
+    assistant_message = result.get("assistantMessage") if isinstance(result.get("assistantMessage"), dict) else None
+    reply_text = str((assistant_message or {}).get("text") or "").strip()
+    error_text = str(result.get("error") or "").strip()
+    lines = [
+        f"子ポワン「{child_label}」から、親ポワン「{parent_label}」へ報告しました。",
+        "",
+        f"状態: {status}",
+    ]
+    if dispatch_session_id:
+        lines.append(f"一括指示ID: {dispatch_session_id}")
+    if dispatch_id is not None:
+        lines.append(f"送信ID: {dispatch_id}")
+    if reply_text:
+        lines.extend(["", "--- 親へ返した報告 ---", reply_text])
+    elif error_text:
+        lines.extend(["", "--- エラー ---", error_text])
+    else:
+        lines.extend(["", "報告本文はありません。"])
+    return "\n".join(lines).strip()
+
+
 def render_child_return_message(parent_label: str, result: dict[str, Any]) -> str:
     child_label = str(result.get("meaning") or "名前のないポワン").strip() or "名前のないポワン"
     status = str(result.get("status") or "").strip() or "unknown"
@@ -3673,6 +3724,35 @@ def command_child_powans(node_id: str, request: CommandChildrenRequest) -> dict[
                 int(user_message["id"]),
             )
             job["dispatchId"] = dispatch["id"]
+            parent_log_message = STORE.append_conversation_message_to_conversation(
+                request.project,
+                request.file,
+                node_id,
+                parent_conversation_id,
+                "system",
+                render_parent_child_command_log(
+                    parent_label=parent_label,
+                    child_label=job["meaning"],
+                    instruction=job["instruction"],
+                    rendered_text=job["text"],
+                    dispatch_session_id=dispatch_session_id,
+                    dispatch_id=dispatch.get("id"),
+                ),
+            )
+            log_server_event(
+                "info",
+                "command-child-parent-tab-log-appended",
+                {
+                    "project": STORE.safe_project_name(request.project),
+                    "file": STORE.safe_powan_name(request.file),
+                    "parentId": node_id,
+                    "childId": job["nodeId"],
+                    "conversationId": parent_conversation_id,
+                    "messageId": parent_log_message.get("id"),
+                    "dispatchSessionId": dispatch_session_id,
+                    "dispatchId": dispatch.get("id"),
+                },
+            )
         STORE.update_child_command_session_status(request.project, request.file, dispatch_session_id, "sent")
 
         def append_parent_child_return_message(results: list[dict[str, Any]]) -> dict[str, Any] | None:
@@ -3689,6 +3769,48 @@ def command_child_powans(node_id: str, request: CommandChildrenRequest) -> dict[
                 "user",
                 parent_text,
             )
+            for result in results:
+                child_node_id = str(result.get("nodeId") or "").strip()
+                child_conversation_id = result.get("conversationId")
+                if not child_node_id or child_conversation_id is None:
+                    continue
+                try:
+                    child_log_message = STORE.append_conversation_message_to_conversation(
+                        request.project,
+                        request.file,
+                        child_node_id,
+                        int(child_conversation_id),
+                        "system",
+                        render_child_parent_return_log(parent_label, result),
+                    )
+                    log_server_event(
+                        "info",
+                        "command-child-return-child-tab-log-appended",
+                        {
+                            "project": STORE.safe_project_name(request.project),
+                            "file": STORE.safe_powan_name(request.file),
+                            "parentId": node_id,
+                            "childId": child_node_id,
+                            "conversationId": int(child_conversation_id),
+                            "messageId": child_log_message.get("id"),
+                            "dispatchSessionId": dispatch_session_id,
+                            "dispatchId": result.get("dispatchId"),
+                        },
+                    )
+                except Exception as exc:
+                    log_server_event(
+                        "warn",
+                        "command-child-return-child-tab-log-failed",
+                        {
+                            "project": STORE.safe_project_name(request.project),
+                            "file": STORE.safe_powan_name(request.file),
+                            "parentId": node_id,
+                            "childId": child_node_id,
+                            "conversationId": child_conversation_id,
+                            "dispatchSessionId": dispatch_session_id,
+                            "error": repr(exc),
+                        },
+                    )
             sender_id = str(results[0].get("nodeId") or "") if len(results) == 1 else None
             incoming_message = child_return_incoming_message(
                 parent_id=node_id,
