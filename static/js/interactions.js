@@ -1101,6 +1101,7 @@ async function sendBulkCommandToSelected() {
           instruction,
         })),
         includeMeaningTree: Boolean(conversationTreeContextInput?.checked),
+        continueAfterChildReplies: false,
       };
       if (bulkState) {
         appendBulkCommandMessage("system", `送信開始: ${meaningName(group.parent)} -> ${group.nodes.map(meaningName).join(" / ")}`);

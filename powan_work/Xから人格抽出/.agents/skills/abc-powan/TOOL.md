@@ -31,7 +31,8 @@ command_children(instruction, instructions)
 複数の子ポワンへ個別指示する時は、現在の文脈にある `childCommandTemplate.json` の `instructions[*].instruction` だけを埋めて、必ずこのコマンドを1回だけ実行する😊
 子が8個なら8個ぶんを埋めたJSONを1回送る。子ごとに `command-child-powan` を繰り返さない😊
 受け取ったアプリ側が全員分をDBへ先に保存して、0.1秒ごとに全員を開始する😊
-`{"instruction":"","instructions":[{"childId":"子ID","title":"子名","instruction":"この子への指示"}]}`
+ユーザーが「子ポワンの返答後も続けてよい」と明示した時だけ、`continueAfterChildReplies` を `true` にする😊
+`{"instruction":"","instructions":[{"childId":"子ID","title":"子名","instruction":"この子への指示"}],"continueAfterChildReplies":false}`
 
 command_child_powan(title, body, instruction)
 `python .agents/skills/abc-powan/scripts/abc_powan_tool.py command-child-powan --stdin-json`

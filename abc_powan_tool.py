@@ -164,7 +164,8 @@ def dispatch(args: argparse.Namespace, payload: dict[str, Any]) -> dict[str, Any
             **base_payload,
             "instruction": payload.get("instruction", ""),
             "instructions": payload.get("instructions", []),
-            "includeMeaningTree": bool(payload.get("includeMeaningTree") or payload.get("include_meaning_tree") or False),
+            "includeMeaningTree": payload_flag(payload, "includeMeaningTree", "include_meaning_tree"),
+            "continueAfterChildReplies": payload_flag(payload, "continueAfterChildReplies", "continue_after_child_replies"),
         }
         return request_json(args.api_base, "POST", f"/api/ai/powans/{node_id}/actions/command-children", body)
     if args.operation == "command-child-powan":
@@ -178,7 +179,8 @@ def dispatch(args: argparse.Namespace, payload: dict[str, Any]) -> dict[str, Any
                     "instruction": payload.get("instruction", ""),
                 }
             ],
-            "includeMeaningTree": bool(payload.get("includeMeaningTree") or payload.get("include_meaning_tree") or False),
+            "includeMeaningTree": payload_flag(payload, "includeMeaningTree", "include_meaning_tree"),
+            "continueAfterChildReplies": payload_flag(payload, "continueAfterChildReplies", "continue_after_child_replies"),
         }
         return request_json(args.api_base, "POST", f"/api/ai/powans/{node_id}/actions/command-children", body)
     if args.operation == "read-powan-codes":
@@ -227,6 +229,17 @@ def request_json(api_base: str, method: str, path: str, payload: dict[str, Any])
         raise ToolError(f"{method} {url} failed: {exc.code} {detail}") from exc
     except urllib.error.URLError as exc:
         raise ToolError(f"{method} {url} failed: {exc}") from exc
+
+
+def payload_flag(payload: dict[str, Any], *names: str) -> bool:
+    for name in names:
+        if name not in payload:
+            continue
+        value = payload.get(name)
+        if isinstance(value, str):
+            return value.strip().lower() in {"1", "true", "yes", "y", "on"}
+        return bool(value)
+    return False
 
 
 def require_value(value: str, name: str) -> str:

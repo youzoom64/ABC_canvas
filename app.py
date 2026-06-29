@@ -401,6 +401,7 @@ class CommandChildrenRequest(BaseModel):
     instructions: list[ChildCommandRequest] = Field(default_factory=list)
     bulkHistoryId: str = ""
     includeMeaningTree: bool = False
+    continueAfterChildReplies: bool = False
 
 
 class BulkCommandHistoryMessage(BaseModel):
@@ -1967,8 +1968,8 @@ def incoming_kind_for_source(source: str) -> str:
     return "operator_message"
 
 
-def incoming_allowed_action(source: str) -> str:
-    if source == "command-child-return":
+def incoming_allowed_action(source: str, *, continue_after_child_replies: bool = False) -> str:
+    if source == "command-child-return" and not continue_after_child_replies:
         return "read_only"
     return "may_command_children"
 
@@ -1993,10 +1994,12 @@ def incoming_from_payload(source: str, sender_node_id: str | None, sender_label:
     }
 
 
-def incoming_system_instruction(kind: str) -> str:
+def incoming_system_instruction(kind: str, allowed_action: str) -> str:
     if kind == "parent_command":
         return "これは親ポワンからこのポワンへの命令です。from.kind と parentCommand を見て処理してください。"
     if kind == "child_replies":
+        if allowed_action == "may_command_children":
+            return "これは子ポワンから親ポワンへ戻った返答通知です。commandChildren.continueAfterChildReplies=true により、必要なら子返答後も command-children を続けて実行できます。"
         return "これは子ポワンから親ポワンへ戻った返答通知です。allowedAction=read_only の範囲で、返答内容の確認と要約だけを行ってください。"
     return "これはユーザーからこのポワンへの入力です。"
 
@@ -2011,8 +2014,14 @@ def build_incoming_message_payload(
     receiver_label: str,
     conversation_id: int,
     user_message_id: int | None,
+    continue_after_child_replies: bool = False,
+    command_children_context: dict[str, Any] | None = None,
 ) -> dict[str, Any]:
     kind = incoming_kind_for_source(source)
+    allowed_action = incoming_allowed_action(
+        source,
+        continue_after_child_replies=continue_after_child_replies,
+    )
     payload: dict[str, Any] = {
         "kind": kind,
         "source": source,
@@ -2028,9 +2037,14 @@ def build_incoming_message_payload(
         "parentCommand": "",
         "childReplies": [],
         "body": text,
-        "allowedAction": incoming_allowed_action(source),
-        "systemInstruction": incoming_system_instruction(kind),
+        "allowedAction": allowed_action,
+        "systemInstruction": incoming_system_instruction(kind, allowed_action),
     }
+    if command_children_context is not None:
+        payload["commandChildren"] = {
+            **command_children_context,
+            "continueAfterChildReplies": bool(continue_after_child_replies),
+        }
     if kind == "parent_command":
         payload["parentCommand"] = text
     elif kind == "child_replies":
@@ -2073,6 +2087,8 @@ def child_return_incoming_message(
     parent_message_id: int | None,
     parent_text: str,
     results: list[dict[str, Any]],
+    continue_after_child_replies: bool = False,
+    dispatch_session_id: str = "",
 ) -> dict[str, Any]:
     payload = build_incoming_message_payload(
         source="command-child-return",
@@ -2083,6 +2099,10 @@ def child_return_incoming_message(
         receiver_label=parent_label,
         conversation_id=parent_conversation_id,
         user_message_id=parent_message_id,
+        continue_after_child_replies=continue_after_child_replies,
+        command_children_context={
+            "dispatchSessionId": dispatch_session_id,
+        },
     )
     payload["childReplies"] = child_reply_payloads(results)
     return payload
@@ -2321,6 +2341,7 @@ def run_powan_codex_message(
         "incomingKind": incoming_message_payload.get("kind"),
         "incomingFrom": incoming_message_payload.get("from"),
         "allowedAction": incoming_message_payload.get("allowedAction"),
+        "commandChildren": incoming_message_payload.get("commandChildren"),
     }
     agent_run = STORE.start_agent_run(project, conversation["id"], node_id, run_payload)
     try:
@@ -3226,6 +3247,7 @@ def command_child_powans(node_id: str, request: CommandChildrenRequest) -> dict[
                 "count": len(jobs),
                 "instructionPreview": compact_console_text(request.instruction),
                 "includeMeaningTree": bool(request.includeMeaningTree),
+                "continueAfterChildReplies": bool(request.continueAfterChildReplies),
                 "dispatchSessionId": dispatch_session_id,
                 "dispatchIntervalMs": dispatch_interval_ms,
                 "request": request_payload,
@@ -3244,6 +3266,7 @@ def command_child_powans(node_id: str, request: CommandChildrenRequest) -> dict[
             instruction=request.instruction,
             extra={
                 "includeMeaningTree": bool(request.includeMeaningTree),
+                "continueAfterChildReplies": bool(request.continueAfterChildReplies),
                 "dispatchSessionId": dispatch_session_id,
                 "dispatchIntervalMs": dispatch_interval_ms,
             },
@@ -3331,6 +3354,8 @@ def command_child_powans(node_id: str, request: CommandChildrenRequest) -> dict[
                 parent_message_id=int(parent_message["id"]) if parent_message.get("id") is not None else None,
                 parent_text=parent_text,
                 results=results,
+                continue_after_child_replies=bool(request.continueAfterChildReplies),
+                dispatch_session_id=dispatch_session_id,
             )
             log_server_event(
                 "info",
@@ -3345,6 +3370,8 @@ def command_child_powans(node_id: str, request: CommandChildrenRequest) -> dict[
                     "parentMessageId": parent_message.get("id"),
                     "senderNodeId": sender_id,
                     "dispatchSessionId": dispatch_session_id,
+                    "continueAfterChildReplies": bool(request.continueAfterChildReplies),
+                    "allowedAction": incoming_message.get("allowedAction"),
                     "childResultCount": len(results),
                 },
             )
@@ -3557,6 +3584,7 @@ def command_child_powans(node_id: str, request: CommandChildrenRequest) -> dict[
                     "detached": True,
                     "dispatchSessionId": dispatch_session_id,
                     "dispatchIntervalMs": dispatch_interval_ms,
+                    "continueAfterChildReplies": bool(request.continueAfterChildReplies),
                     "results": results,
                 }
                 complete_message = f"{parent_label} -> 子ポワン {len(results)}件 / 一括命令完了"
@@ -3595,6 +3623,7 @@ def command_child_powans(node_id: str, request: CommandChildrenRequest) -> dict[
                         "failed": sum(1 for result in results if result.get("status") != "completed"),
                         "dispatchSessionId": dispatch_session_id,
                         "dispatchIntervalMs": dispatch_interval_ms,
+                        "continueAfterChildReplies": bool(request.continueAfterChildReplies),
                     },
                 )
                 with COMMAND_CHILDREN_ACTIVE_LOCK:
@@ -3673,6 +3702,7 @@ def command_child_powans(node_id: str, request: CommandChildrenRequest) -> dict[
             "detached": True,
             "dispatchSessionId": dispatch_session_id,
             "dispatchIntervalMs": dispatch_interval_ms,
+            "continueAfterChildReplies": bool(request.continueAfterChildReplies),
             "results": accepted_results,
             "skippedCount": len(skipped_results),
         }
@@ -3691,6 +3721,7 @@ def command_child_powans(node_id: str, request: CommandChildrenRequest) -> dict[
                 "detached": True,
                 "dispatchSessionId": dispatch_session_id,
                 "dispatchIntervalMs": dispatch_interval_ms,
+                "continueAfterChildReplies": bool(request.continueAfterChildReplies),
                 "request": request_payload,
                 "response": accepted_response,
             },

@@ -196,7 +196,7 @@ def build_child_command_template(children: list[dict[str, Any]]) -> dict[str, An
     return {
         "purpose": "直下の子ポワンへ個別指示をまとめて渡すためのJSON。対象の子はinstructionsのinstructionを埋め、対象外の子はskip:trueとskipReasonを入れて、command-childrenを一回だけ実行してください。",
         "command": "python .agents/skills/abc-powan/scripts/abc_powan_tool.py command-children --stdin-json",
-        "important": "子ごとにcommand-child-powanを繰り返さないでください。対象外の子へ「対象外です」という会話は送らずskip:trueにしてください。受信後はアプリが対象分だけDBへ保存し、0.1秒ごとに開始します。",
+        "important": "子ごとにcommand-child-powanを繰り返さないでください。対象外の子へ「対象外です」という会話は送らずskip:trueにしてください。受信後はアプリが対象分だけDBへ保存し、0.1秒ごとに開始します。ユーザーが子返答後も続けてよいと明示した時だけcontinueAfterChildRepliesをtrueにしてください。",
         "json": {
             "instruction": "",
             "instructions": [
@@ -210,6 +210,7 @@ def build_child_command_template(children: list[dict[str, Any]]) -> dict[str, An
                 for child in children
             ],
             "includeMeaningTree": False,
+            "continueAfterChildReplies": False,
         },
     }
 

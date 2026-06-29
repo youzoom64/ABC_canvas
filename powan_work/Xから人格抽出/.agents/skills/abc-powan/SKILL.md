@@ -48,6 +48,7 @@ restore_child_powan(title, body, childId, targetParentId)
 現在の文脈に `childCommandTemplate` がある時は、その `json.instructions` の各 `instruction` だけを埋めて、そのJSONをそのまま使う😊
 子ポワンが8個なら、8個ぶんの `instructions` を埋めたJSONを1回だけ送る。子ごとに `command-child-powan` を繰り返さない😊
 受け取ったアプリ側が全員分をDBへ先に保存して、0.1秒ごとに全員を開始する😊
+ユーザーが「子ポワンの返答後も続けてよい」と明示した時だけ、JSONの `continueAfterChildReplies` を `true` にする😊
 command_children(instruction, instructions)
 `python .agents/skills/abc-powan/scripts/abc_powan_tool.py command-children --stdin-json`
 
