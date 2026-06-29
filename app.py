@@ -13,7 +13,7 @@ import time
 from concurrent.futures import ThreadPoolExecutor, as_completed
 from datetime import datetime
 from pathlib import Path
-from typing import Any
+from typing import Any, Callable
 from urllib.parse import unquote
 from uuid import uuid4
 
@@ -2426,6 +2426,130 @@ def drain_pending_codex_messages(project: str, file: str, node_id: str, drain_ke
             PENDING_CODEX_DRAIN_KEYS.discard(drain_key)
 
 
+def short_codex_command(command: str) -> str:
+    clean = " ".join(str(command or "").split())
+    if len(clean) <= 220:
+        return clean
+    return f"{clean[:220]}..."
+
+
+def codex_event_progress_text(event: dict[str, Any]) -> str:
+    event_type = str(event.get("type") or "").strip()
+    item = event.get("item") if isinstance(event.get("item"), dict) else {}
+    item_type = str(item.get("type") or "").strip()
+    if event_type == "item.started" and item_type == "command_execution":
+        command = short_codex_command(str(item.get("command") or ""))
+        return f"コマンド開始: `{command}`" if command else "コマンド開始"
+    if event_type == "item.completed" and item_type == "command_execution":
+        command = short_codex_command(str(item.get("command") or ""))
+        exit_code = item.get("exit_code")
+        output = str(item.get("aggregated_output") or "").strip()
+        head = "コマンド完了"
+        if exit_code is not None:
+            head += f" exit={exit_code}"
+        if command:
+            head += f": `{command}`"
+        if output:
+            return f"{head}\n出力: {compact_console_text(output, 600)}"
+        return head
+    if event_type in {"item.started", "item.completed"} and item_type == "file_change":
+        changes = item.get("changes") if isinstance(item.get("changes"), list) else []
+        parts: list[str] = []
+        for change in changes[:5]:
+            if not isinstance(change, dict):
+                continue
+            path = str(change.get("path") or "").strip()
+            kind = str(change.get("kind") or "").strip()
+            if path:
+                parts.append(f"{kind or 'change'} {path}")
+        status = "開始" if event_type == "item.started" else "完了"
+        return f"ファイル変更{status}: " + (", ".join(parts) if parts else "詳細なし")
+    if event_type == "turn.completed":
+        usage = event.get("usage") if isinstance(event.get("usage"), dict) else {}
+        if usage:
+            input_tokens = usage.get("input_tokens")
+            output_tokens = usage.get("output_tokens")
+            reasoning_tokens = usage.get("reasoning_output_tokens")
+            return f"Codexターン完了 input={input_tokens} output={output_tokens} reasoning={reasoning_tokens}"
+        return "Codexターン完了"
+    return ""
+
+
+def create_codex_progress_callback(
+    *,
+    project: str,
+    file: str,
+    node_id: str,
+    receiver_label: str,
+    conversation_id: int,
+) -> Callable[[dict[str, Any]], None]:
+    lock = threading.RLock()
+    pending_agent_text = ""
+
+    def append_progress(text: str) -> None:
+        clean = str(text or "").strip()
+        if not clean:
+            return
+        message = STORE.append_conversation_message_to_conversation(
+            project,
+            file,
+            node_id,
+            int(conversation_id),
+            "system",
+            clean,
+        )
+        log_server_event(
+            "info",
+            "codex-progress-message-appended",
+            {
+                "project": STORE.safe_project_name(project),
+                "file": STORE.safe_powan_name(file),
+                "nodeId": node_id,
+                "conversationId": int(conversation_id),
+                "messageId": message.get("id"),
+                "messageLength": len(clean),
+            },
+        )
+        fanout_powan_system_message_to_discord(
+            project=project,
+            file=file,
+            node_id=node_id,
+            receiver_label=receiver_label,
+            text=clean,
+            reason="codex-progress",
+        )
+
+    def flush_pending_agent() -> None:
+        nonlocal pending_agent_text
+        if pending_agent_text:
+            append_progress(pending_agent_text)
+            pending_agent_text = ""
+
+    def callback(event: dict[str, Any]) -> None:
+        nonlocal pending_agent_text
+        if not isinstance(event, dict):
+            return
+        event_type = str(event.get("type") or "").strip()
+        item = event.get("item") if isinstance(event.get("item"), dict) else {}
+        item_type = str(item.get("type") or "").strip()
+        with lock:
+            if event_type == "item.completed" and item_type == "agent_message":
+                pending_agent_text = str(item.get("text") or "").strip()
+                return
+            if event_type == "turn.completed":
+                pending_agent_text = ""
+                progress = codex_event_progress_text(event)
+                if progress:
+                    append_progress(progress)
+                return
+            flush_pending_agent()
+            progress = codex_event_progress_text(event)
+            if progress:
+                append_progress(progress)
+
+    return callback
+
+
 def run_powan_codex_message(
     node_id: str,
     *,
@@ -2597,6 +2721,13 @@ def run_powan_codex_message(
             codex_reasoning_effort=codex_reasoning_effort,
             agent_run_id=int(agent_run["id"]),
             on_process_started=lambda pid: STORE.set_agent_run_pid(project, int(agent_run["id"]), int(pid)),
+            on_event=create_codex_progress_callback(
+                project=project,
+                file=file,
+                node_id=node_id,
+                receiver_label=receiver_label,
+                conversation_id=int(conversation["id"]),
+            ),
         )
     except Exception as exc:
         detail = f"Codex exec crashed before returning: {exc}"
@@ -2904,6 +3035,53 @@ def fanout_powan_assistant_reply_to_discord(
             "conversationId": conversation_id,
             "messageId": message_id,
             "source": source,
+            **result,
+        },
+    )
+
+
+def discord_target_matches_powan(project: str, file: str, node_id: str) -> bool:
+    settings = load_app_settings()
+    discord_settings = dict(settings.get("discord") or {})
+    if not bool(discord_settings.get("enabled")):
+        return False
+    try:
+        target_project, target_file, target_node_id, _target_label = resolve_discord_target_powan(discord_settings)
+    except Exception:
+        return False
+    return (
+        STORE.safe_project_name(project) == target_project
+        and STORE.safe_powan_name(file) == target_file
+        and str(node_id) == str(target_node_id)
+    )
+
+
+def fanout_powan_system_message_to_discord(
+    *,
+    project: str,
+    file: str,
+    node_id: str,
+    receiver_label: str,
+    text: str,
+    reason: str,
+) -> None:
+    clean = str(text or "").strip()
+    if not clean or ABC_DISCORD_BRIDGE is None:
+        return
+    if not discord_target_matches_powan(project, file, node_id):
+        return
+    result = ABC_DISCORD_BRIDGE.send_configured_message(
+        f"**{receiver_label}**\n{clean}".strip(),
+        reason=reason,
+    )
+    log_server_event(
+        "info" if result.get("sent") else "warn",
+        "discord-fanout-system-message",
+        {
+            "project": STORE.safe_project_name(project),
+            "file": STORE.safe_powan_name(file),
+            "nodeId": node_id,
+            "reason": reason,
             **result,
         },
     )

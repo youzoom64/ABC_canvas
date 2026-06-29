@@ -304,6 +304,7 @@ class CodexPowanBridge:
         codex_reasoning_effort: str = "",
         agent_run_id: int | None = None,
         on_process_started: Callable[[int], None] | None = None,
+        on_event: Callable[[dict[str, Any]], None] | None = None,
     ) -> CodexRunResult:
         prompt_payload = self.prompt_payload(
             project=project,
@@ -367,6 +368,7 @@ class CodexPowanBridge:
                     reasoning_effort=codex_reasoning_effort,
                     agent_run_id=agent_run_id,
                     on_process_started=on_process_started,
+                    on_event=on_event,
                 )
                 if result.returncode == 0 or result.cancelled:
                     return result
@@ -394,6 +396,7 @@ class CodexPowanBridge:
                 reasoning_effort=codex_reasoning_effort,
                 agent_run_id=agent_run_id,
                 on_process_started=on_process_started,
+                on_event=on_event,
             )
         finally:
             self.end_active_run(project=project, document_name=document_name, node_id=node_id, run_id=agent_run_id)
@@ -474,8 +477,9 @@ class CodexPowanBridge:
         reasoning_effort: str = "",
         agent_run_id: int | None = None,
         on_process_started: Callable[[int], None] | None = None,
+        on_event: Callable[[dict[str, Any]], None] | None = None,
     ) -> CodexRunResult:
-        codex_command = shutil.which("codex") or shutil.which("codex.cmd") or "codex"
+        codex_command = shutil.which("codex.cmd") or shutil.which("codex.exe") or shutil.which("codex") or "codex"
         output_path = Path(tempfile.gettempdir()) / f"abc_canvas_codex_{uuid4().hex}.txt"
         option_args = self.codex_option_args(model=model, reasoning_effort=reasoning_effort)
         project_root_uri = project_root.resolve().as_uri()
@@ -521,6 +525,9 @@ class CodexPowanBridge:
         start = time.monotonic()
         stdout = ""
         stderr = ""
+        stdout_lines: list[str] = []
+        stderr_lines: list[str] = []
+        output_lock = threading.RLock()
         returncode = 127
         cancelled = False
         process: subprocess.Popen[str] | None = None
@@ -581,16 +588,43 @@ class CodexPowanBridge:
             if on_process_started is not None:
                 on_process_started(process.pid)
             timeout = self.timeout_seconds if self.timeout_seconds and self.timeout_seconds > 0 else None
-            stdout, stderr = process.communicate(input=prompt, timeout=timeout)
-            stdout = stdout or ""
-            stderr = stderr or ""
+            if process.stdin is not None:
+                process.stdin.write(prompt)
+                process.stdin.close()
+
+            def read_stdout() -> None:
+                if process is None or process.stdout is None:
+                    return
+                for line in process.stdout:
+                    with output_lock:
+                        stdout_lines.append(line)
+                    self.handle_codex_stdout_line(line, tool_env=tool_env, on_event=on_event)
+
+            def read_stderr() -> None:
+                if process is None or process.stderr is None:
+                    return
+                for line in process.stderr:
+                    with output_lock:
+                        stderr_lines.append(line)
+
+            stdout_thread = threading.Thread(target=read_stdout, name="abc-codex-stdout", daemon=True)
+            stderr_thread = threading.Thread(target=read_stderr, name="abc-codex-stderr", daemon=True)
+            stdout_thread.start()
+            stderr_thread.start()
+            process.wait(timeout=timeout)
+            stdout_thread.join(timeout=5)
+            stderr_thread.join(timeout=5)
+            with output_lock:
+                stdout = "".join(stdout_lines)
+                stderr = "".join(stderr_lines)
             returncode = process.returncode
         except OSError as exc:
             stderr = f"Failed to start codex exec: {exc}"
             returncode = 127
         except subprocess.TimeoutExpired as exc:
-            stdout = exc.stdout if isinstance(exc.stdout, str) else ""
-            stderr = exc.stderr if isinstance(exc.stderr, str) else ""
+            with output_lock:
+                stdout = "".join(stdout_lines)
+                stderr = "".join(stderr_lines)
             stderr = f"{stderr}\nCodex exec timed out after {self.timeout_seconds}s".strip()
             returncode = 124
             if process:
@@ -605,11 +639,12 @@ class CodexPowanBridge:
                     },
                 )
                 try:
-                    extra_stdout, extra_stderr = process.communicate(timeout=3)
-                    stdout = f"{stdout}{extra_stdout or ''}"
-                    stderr = f"{stderr}\n{extra_stderr or ''}".strip()
+                    process.wait(timeout=3)
                 except subprocess.TimeoutExpired:
                     pass
+                with output_lock:
+                    stdout = "".join(stdout_lines)
+                    stderr = f"{stderr}\n{''.join(stderr_lines)}".strip()
         finally:
             if cancel_key:
                 with self.process_lock:
@@ -637,6 +672,53 @@ class CodexPowanBridge:
             command=command,
             cancelled=cancelled,
         )
+
+    def handle_codex_stdout_line(
+        self,
+        line: str,
+        *,
+        tool_env: dict[str, str] | None,
+        on_event: Callable[[dict[str, Any]], None] | None,
+    ) -> None:
+        clean_line = str(line or "").rstrip("\r\n")
+        if not clean_line:
+            return
+        try:
+            event = json.loads(clean_line)
+        except json.JSONDecodeError:
+            self.log_event(
+                "debug",
+                "codex-exec-non-json-stdout",
+                {
+                    **self.codex_event_context(tool_env),
+                    "linePreview": clean_line[:500],
+                },
+            )
+            return
+        if not isinstance(event, dict):
+            return
+        self.log_event(
+            "trace",
+            "codex-exec-json-event",
+            {
+                **self.codex_event_context(tool_env),
+                "type": str(event.get("type") or ""),
+                "itemType": str((event.get("item") or {}).get("type") or "") if isinstance(event.get("item"), dict) else "",
+            },
+        )
+        if on_event is not None:
+            try:
+                on_event(event)
+            except Exception as exc:
+                self.log_event(
+                    "warn",
+                    "codex-exec-event-callback-failed",
+                    {
+                        **self.codex_event_context(tool_env),
+                        "type": str(event.get("type") or ""),
+                        "error": repr(exc),
+                    },
+                )
 
     def codex_option_args(self, *, model: str = "", reasoning_effort: str = "") -> list[str]:
         args: list[str] = []
