@@ -6,7 +6,6 @@ import hashlib
 import json
 import os
 import random
-import shutil
 import subprocess
 import sys
 import threading
@@ -28,6 +27,7 @@ from abc_discord_bridge import AbcDiscordBridge, normalize_discord_channel_id
 from ai_api import create_ai_router
 from codex_bridge import CodexPowanBridge
 from powan_store import PowanStore
+from project_scaffold import ensure_project_scaffold
 
 
 APP_ROOT = Path(__file__).resolve().parent
@@ -1790,25 +1790,12 @@ def sync_codex_workspace(project: str) -> Path:
     if workspace_parent not in workspace_root.parents and workspace_root != workspace_parent:
         raise HTTPException(status_code=400, detail="Invalid Codex workspace path")
     workspace_root.mkdir(parents=True, exist_ok=True)
+    ensure_project_scaffold(workspace_root)
 
     for forbidden_name in (DEFAULT_FILE, "powan.db"):
         forbidden_path = workspace_root / forbidden_name
         if forbidden_path.exists():
-            if forbidden_path.is_dir():
-                shutil.rmtree(forbidden_path)
-            else:
-                forbidden_path.unlink()
-
-    agents_source = source_root / ".agents"
-    agents_target = workspace_root / ".agents"
-    if agents_source.exists():
-        if agents_target.exists():
-            shutil.rmtree(agents_target)
-        shutil.copytree(agents_source, agents_target)
-
-    agents_md_source = source_root / "AGENTS.md"
-    if agents_md_source.exists():
-        shutil.copy2(agents_md_source, workspace_root / "AGENTS.md")
+            forbidden_path.unlink()
 
     (workspace_root / ".abc_canvas_workspace.json").write_text(
         json.dumps(

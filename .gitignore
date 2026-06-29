@@ -17,6 +17,7 @@ __pycache__/
 tmp_*/
 static/experiments/
 powan_lab/
+.codex_powan_workspaces/
 
 # Local app data
 data/
