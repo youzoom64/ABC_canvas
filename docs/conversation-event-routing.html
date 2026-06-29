@@ -1,0 +1,247 @@
+<!doctype html>
+<html lang="ja">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>ABC Canvas 会話イベントの流れ</title>
+  <style>
+    :root {
+      color-scheme: light;
+      --ink: #17212b;
+      --muted: #5f6f7f;
+      --line: #cfe0ea;
+      --panel: #f7fbfd;
+      --accent: #0b7fab;
+      --good: #207a47;
+      --warn: #a95f00;
+      --quiet: #eef5f8;
+    }
+    body {
+      margin: 0;
+      font-family: "Yu Gothic UI", "Meiryo", system-ui, sans-serif;
+      color: var(--ink);
+      background: #ffffff;
+      line-height: 1.7;
+    }
+    main {
+      max-width: 1120px;
+      margin: 0 auto;
+      padding: 32px 24px 56px;
+    }
+    h1 {
+      margin: 0 0 8px;
+      font-size: 30px;
+      letter-spacing: 0;
+    }
+    h2 {
+      margin: 36px 0 12px;
+      padding-bottom: 6px;
+      border-bottom: 2px solid var(--line);
+      font-size: 22px;
+    }
+    h3 {
+      margin: 24px 0 8px;
+      font-size: 17px;
+    }
+    p {
+      margin: 8px 0;
+    }
+    .lead {
+      color: var(--muted);
+      font-size: 16px;
+    }
+    .rule {
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      background: var(--panel);
+      padding: 16px;
+      margin: 16px 0;
+    }
+    .rule strong {
+      color: var(--accent);
+    }
+    .flow {
+      display: grid;
+      grid-template-columns: repeat(4, minmax(0, 1fr));
+      gap: 12px;
+      margin: 16px 0;
+    }
+    .box {
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      background: #fff;
+      padding: 12px;
+      min-height: 92px;
+    }
+    .box b {
+      display: block;
+      margin-bottom: 4px;
+      color: var(--accent);
+    }
+    .arrow {
+      text-align: center;
+      color: var(--muted);
+      font-weight: 700;
+      margin: -4px 0 8px;
+    }
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      margin: 16px 0;
+      font-size: 14px;
+    }
+    th, td {
+      border: 1px solid var(--line);
+      padding: 10px;
+      vertical-align: top;
+    }
+    th {
+      background: var(--quiet);
+      text-align: left;
+      white-space: nowrap;
+    }
+    code {
+      font-family: Consolas, "Cascadia Mono", monospace;
+      background: #edf4f7;
+      border-radius: 4px;
+      padding: 1px 4px;
+    }
+    .good {
+      color: var(--good);
+      font-weight: 700;
+    }
+    .warn {
+      color: var(--warn);
+      font-weight: 700;
+    }
+    .example {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 14px;
+    }
+    .sample {
+      border-left: 4px solid var(--accent);
+      background: #f6fbfd;
+      padding: 12px;
+      white-space: pre-wrap;
+      font-family: Consolas, "Yu Gothic UI", monospace;
+      font-size: 13px;
+    }
+    @media (max-width: 800px) {
+      .flow,
+      .example {
+        grid-template-columns: 1fr;
+      }
+    }
+  </style>
+</head>
+<body>
+<main>
+  <h1>ABC Canvas 会話イベントの流れ</h1>
+  <p class="lead">目的は、GUIの会話タブとDiscordに「同じ意味の状態」が見えるようにすることです。実装の内部ログをそのまま出すのではなく、人間が読める会話イベントに変換して流します。</p>
+
+  <section class="rule">
+    <p><strong>基本ルール:</strong> 会話に出すものは、必ずひとつの出口 <code>emit_conversation_event</code> を通します。</p>
+    <p>この出口が、DB保存、GUI表示、Discord送信、サーバーログをまとめて扱います。保存した場所ごとにDiscord送信を後付けしません。</p>
+  </section>
+
+  <h2>なぜ変えるのか</h2>
+  <p>今は、会話DBへの保存場所が複数あり、それぞれが個別にDiscordへ送ったり送らなかったりしています。そのため、親タブにはあるのにDiscordには出ない、途中経過は出るが巨大なJSONになる、というズレが起きています。</p>
+  <p>直すべきなのは、漏れた場所へ送信処理を足すことではありません。すべての「人間に見せる会話イベント」を同じ出口へ集めることです。</p>
+
+  <h2>一本化した流れ</h2>
+  <div class="flow">
+    <div class="box"><b>1. 発生</b>ユーザー発言、ポワン返答、子ポワン報告、Codex途中経過などが発生する。</div>
+    <div class="box"><b>2. 整形</b>内部コマンドやJSONを、人間向けの短い文章へ変換する。</div>
+    <div class="box"><b>3. 保存</b>DBの会話メッセージとして保存する。</div>
+    <div class="box"><b>4. 配信</b>GUIで見え、必要なものだけDiscordにも流れる。</div>
+  </div>
+
+  <h2>会話イベントの種類</h2>
+  <table>
+    <thead>
+      <tr>
+        <th>kind</th>
+        <th>意味</th>
+        <th>GUI</th>
+        <th>Discord</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td><code>operator_message</code></td>
+        <td>ユーザー本人の発言。</td>
+        <td class="good">出す</td>
+        <td>原則出さない。Discord発言はDiscord側に既にあるため。</td>
+      </tr>
+      <tr>
+        <td><code>assistant_reply</code></td>
+        <td>ポワンの最終返答。</td>
+        <td class="good">出す</td>
+        <td class="good">出す</td>
+      </tr>
+      <tr>
+        <td><code>codex_progress</code></td>
+        <td>作業途中。コマンド開始、完了、ファイル変更など。</td>
+        <td class="good">短く出す</td>
+        <td class="good">短く出す</td>
+      </tr>
+      <tr>
+        <td><code>child_command_sent</code></td>
+        <td>親ポワンが子ポワンへ指示を送った事実。</td>
+        <td class="good">親タブと子タブに出す</td>
+        <td class="good">対象ポワンなら出す</td>
+      </tr>
+      <tr>
+        <td><code>child_report_returned</code></td>
+        <td>子ポワンが親ポワンへ報告した内容。</td>
+        <td class="good">親タブと子タブに出す</td>
+        <td class="good">対象ポワンなら出す</td>
+      </tr>
+      <tr>
+        <td><code>internal_log</code></td>
+        <td>内部診断用ログ。巨大JSON、PID終了行、低レベルstdoutなど。</td>
+        <td class="warn">出さない</td>
+        <td class="warn">出さない</td>
+      </tr>
+    </tbody>
+  </table>
+
+  <h2>人間に見せる文章の基準</h2>
+  <p>見せる文章は「今なにが起こったか」を一目で分かる形にします。内部コマンド、長いJSON、token数だけの行は、そのまま会話へ出しません。</p>
+
+  <div class="example">
+    <div>
+      <h3>悪い表示</h3>
+      <div class="sample">コマンド完了 exit=0:
+"C:\Windows\System32\WindowsPowerShell\v1.0\powershell.exe" -Command "@' { "instruction": "...", "instructions": [...巨大JSON...] }"
+出力: { "ok": true, "result": { "status": "accepted", "sentChildren": [...], "skippedChildren": [...] }}</div>
+    </div>
+    <div>
+      <h3>良い表示</h3>
+      <div class="sample">子ポワン1件へ指示を送信しました。
+送信先: 今だけの返事をする
+対象外: 6件
+状態: accepted</div>
+    </div>
+  </div>
+
+  <h2>親子ポワンの例</h2>
+  <h3>親から子への指示</h3>
+  <p>親タブにも子タブにも、同じ出来事が分かる形で残します。ただし、子Codexへ実際に渡す本文と、人間向けに親タブへ見せる本文は分けます。</p>
+  <div class="sample">X投稿収集ポワン から 今だけの返事をする へ指示を送りました。
+指示: 短く、返事が返せることだけを返してください。
+状態: accepted</div>
+
+  <h3>子から親への報告</h3>
+  <p>子報告は親タブにもDiscordにも見えるべきです。親ポワンが後で要約した返事だけでは足りません。</p>
+  <div class="sample">今だけの返事をする から報告:
+返事、返せるよ。
+状態: completed</div>
+
+  <h2>実装方針</h2>
+  <p><code>STORE.append_conversation_message...</code> を直接呼ぶ場所を、順番に <code>emit_conversation_event</code> へ置き換えます。まずは新しく問題になっている経路から移行し、最終的に個別のDiscord送信関数を減らします。</p>
+  <p>この設計なら、「親タブにはあるがDiscordにない」「Discordだけ出る」「巨大JSONが流れる」というズレを減らせます。</p>
+</main>
+</body>
+</html>
