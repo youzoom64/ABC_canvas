@@ -871,12 +871,13 @@ body.resizing-tree {
 
 .conversation-resize-handle {
   position: absolute;
-  top: -4px;
+  top: 0;
   left: 0;
   right: 0;
-  height: 8px;
+  height: 14px;
   cursor: ns-resize;
-  z-index: 2;
+  z-index: 6;
+  touch-action: none;
 }
 
 .conversation-resize-handle:hover,

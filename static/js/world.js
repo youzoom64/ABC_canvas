@@ -688,6 +688,7 @@ window.addEventListener("pointermove", (event) => {
     return;
   }
   if (conversationResize) {
+    event.preventDefault();
     setConversationPanelHeight(
       conversationResize.startHeight + conversationResize.startY - event.clientY,
       "resize-conversation-panel",

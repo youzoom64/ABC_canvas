@@ -4663,7 +4663,8 @@ panelResizeHandle.addEventListener("pointerdown", (event) => {
 if (conversationResizeHandle) {
   conversationResizeHandle.addEventListener("pointerdown", (event) => {
     event.preventDefault();
-    const height = Number.parseFloat(getComputedStyle(document.documentElement).getPropertyValue("--conversation-panel-height")) || 280;
+    event.stopPropagation();
+    const height = currentConversationPanelHeight();
     conversationResize = {
       startY: event.clientY,
       startHeight: height,
