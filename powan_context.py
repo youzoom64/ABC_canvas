@@ -6,6 +6,10 @@ from typing import Any
 
 DEFAULT_CODE_LIMIT = 12000
 POWAN_KIND_DEFAULT = "nerve"
+SUMMARY_MESSAGE_PREFIX = "これまでの会話の要約:"
+DEFAULT_RECENT_MESSAGE_LIMIT = 12
+MESSAGE_TEXT_LIMIT = 4000
+SUMMARY_TEXT_LIMIT = 12000
 
 
 def powan_kind(node: dict[str, Any] | None) -> str:
@@ -44,6 +48,15 @@ def build_powan_context(
         "userText": user_text or "",
         "incomingMessage": incoming_message or default_incoming_message(user_text or ""),
     }
+    conversation_summary = summarize_conversation_for_prompt(conversation)
+    if conversation_summary:
+        context["conversation"] = conversation_summary
+    include_bootstrap_summary = not bool((conversation or {}).get("codexThreadId"))
+    message_context = summarize_messages_for_prompt(messages or [], include_summary=include_bootstrap_summary)
+    if message_context.get("conversationSummary"):
+        context["conversationSummary"] = message_context["conversationSummary"]
+    if message_context.get("recentMessages"):
+        context["recentMessages"] = message_context["recentMessages"]
     origin_chain = incoming_origin_chain(incoming_message or {})
     if origin_chain:
         context["originChain"] = origin_chain
@@ -60,6 +73,46 @@ def build_powan_context(
     if clean_attachments:
         context["attachments"] = clean_attachments
     return context
+
+
+def summarize_conversation_for_prompt(conversation: dict[str, Any] | None) -> dict[str, Any]:
+    if not isinstance(conversation, dict):
+        return {}
+    summary: dict[str, Any] = {}
+    for key in ("id", "title", "codexThreadId", "active", "createdAt", "updatedAt"):
+        value = conversation.get(key)
+        if value not in (None, ""):
+            summary[key] = value
+    return summary
+
+
+def summarize_messages_for_prompt(messages: list[dict[str, Any]], *, include_summary: bool = False) -> dict[str, Any]:
+    clean_messages: list[dict[str, Any]] = []
+    conversation_summary = ""
+    for message in messages:
+        if not isinstance(message, dict):
+            continue
+        role = str(message.get("role") or "").strip() or "unknown"
+        text = str(message.get("text") or "").strip()
+        if not text:
+            continue
+        if role == "system" and text.startswith(SUMMARY_MESSAGE_PREFIX):
+            conversation_summary = text.replace(SUMMARY_MESSAGE_PREFIX, "", 1).strip()
+            continue
+        clean_messages.append(
+            {
+                "id": message.get("id"),
+                "role": role,
+                "text": limit_text(text, MESSAGE_TEXT_LIMIT),
+                "createdAt": message.get("createdAt") or "",
+            }
+        )
+    result: dict[str, Any] = {
+        "recentMessages": clean_messages[-DEFAULT_RECENT_MESSAGE_LIMIT:],
+    }
+    if include_summary:
+        result["conversationSummary"] = limit_text(conversation_summary, SUMMARY_TEXT_LIMIT)
+    return result
 
 
 def default_incoming_message(text: str) -> dict[str, Any]:
@@ -256,7 +309,7 @@ def build_target_command_template(*, origin_chain: list[dict[str, Any]] | None =
 
 def build_inspect_powan_template() -> dict[str, Any]:
     return {
-        "purpose": "任意のポワンの意味・状態・コードをDBから直接覗かずAPI経由で調べるためのJSON。",
+        "purpose": "任意のポワンの意味・状態・最近の会話・コード概要・コード全文をDBから直接覗かずAPI経由で調べるためのJSON。コードを読む時もこのinspect-powanを使います。",
         "command": "python .agents/skills/abc-powan/scripts/abc_powan_tool.py inspect-powan --stdin-json",
         "json": {
             "includeSelf": False,

@@ -10,7 +10,7 @@ PROJECT_AGENTS_MD = """## 最初に
 ## スキルの場所
 スキルの場所は以下を読んでください😊
  `.agents\skills\abc-powan\SKILL.md`
- `set-my-meaning` 、 `create-child-powan` 、 `command-targets` 、 `inspect-powan` 、 `write-my-code` 、 `read-powan-codes` の使い方が書いてあるよ！
+ `set-my-meaning` 、 `create-child-powan` 、 `command-targets` 、 `inspect-powan` 、 `write-my-code` の使い方が書いてあるよ！
 分からない用語が出てきたら `.agents\WORDS.md` を見てね😊
 
 ## ポワンの名付け
@@ -60,19 +60,12 @@ PROJECT_AGENTS_MD = """## 最初に
 あのポワンはまだ複雑な処理が多くて500行は余裕で超えそうだから、神経ポワンにするとか
 あなたから見て300行～500行に収まるかどうかで、子ポワンを臓器ポワンにするか神経ポワンにするかを判断しましょう😊
 
-## ポワンのコードを見たい時は
+## ポワンの意味・状態・コードを調べたい時は
 
-`read-powan-codes` を使って、プロジェクト内のどこにあるポワンのコードでもまとめて読みましょう😊
-子ポワン、兄弟ポワン、親ポワン、別の枝のポワンでも、title、path、targetId で指定できます😊
-`python .agents/skills/abc-powan/scripts/abc_powan_tool.py read-powan-codes --stdin-json`
-`{"includeSelf":true,"targets":[{"title":"調査司書"},{"path":["親ポワン","兄弟ポワン"]}]}`
-
-## ポワンの意味や状態を調べたい時は
-
-`inspect-powan` を使って、意味、作業状態、最近の会話、コード概要を調べましょう😊
+`inspect-powan` を使って、意味、作業状態、最近の会話、コード概要、コード全文を調べましょう😊
 DBを直接のぞかず、targetId、title、path で対象を指定できます😊
 `python .agents/skills/abc-powan/scripts/abc_powan_tool.py inspect-powan --stdin-json`
-`{"targets":[{"title":"調査司書"}],"include":["meaning","status","code_summary"]}`
+`{"includeSelf":true,"targets":[{"title":"調査司書"},{"path":["親ポワン","兄弟ポワン"]}],"include":["meaning","status","code_summary","code_full"]}`
 
 ## 最後に大事な事
 
@@ -163,17 +156,10 @@ write_my_code(codeLanguage, code)
 
 ## ポワンを調べる
 
-意味、状態、最近の会話、コード概要をまとめて調べる時は `inspect-powan` を使う😊
+意味、状態、最近の会話、コード概要、コード全文をまとめて調べる時は `inspect-powan` を使う😊
 include には `meaning`、`status`、`code_summary`、`code_full` を選べます。
 inspect_powan(includeSelf, targets, include)
 `python .agents/skills/abc-powan/scripts/abc_powan_tool.py inspect-powan --stdin-json`
-
-## ポワンのコードを読む
-
-プロジェクト内のどこにあるポワンのコードでも、 `read-powan-codes` でまとめて読む😊
-子ポワン、兄弟ポワン、親ポワン、別の枝のポワンでも、title、path、targetId で指定できる😊
-read_powan_codes(includeSelf, targets)
-`python .agents/skills/abc-powan/scripts/abc_powan_tool.py read-powan-codes --stdin-json`
 
 ## おわり
 
@@ -233,11 +219,7 @@ write_my_code(codeLanguage, code)
 inspect_powan(includeSelf, targets, include)
 `python .agents/skills/abc-powan/scripts/abc_powan_tool.py inspect-powan --stdin-json`
 意味、状態、コード概要、コード全文を選んで調べる😊
-`{"targets":[{"title":"調べるポワン"}],"include":["meaning","status","code_summary"]}`
-
-read_powan_codes(includeSelf, targets)
-`python .agents/skills/abc-powan/scripts/abc_powan_tool.py read-powan-codes --stdin-json`
-`{"includeSelf":true,"targets":[{"title":"調査司書"},{"path":["親ポワン","兄弟ポワン"]}]}`
+`{"includeSelf":true,"targets":[{"title":"調べるポワン"}],"include":["meaning","status","code_summary","code_full"]}`
 """
 
 

@@ -5263,16 +5263,6 @@ def inspect_powan(node_id: str, request: InspectPowanRequest) -> dict[str, Any]:
     return inspect_powan_response(node_id, request)
 
 
-@app.post("/api/ai/powans/{node_id}/actions/read-powan-codes")
-def read_powan_codes(node_id: str, request: InspectPowanRequest) -> dict[str, Any]:
-    return inspect_powan_response(
-        node_id,
-        request,
-        default_include=["meaning", "code_summary", "code_full"],
-        action_name="read-powan-codes",
-    )
-
-
 @app.post("/api/ai/powans/{node_id}/actions/command-targets")
 def command_target_powans(node_id: str, request: CommandTargetsRequest) -> dict[str, Any]:
     request_payload = base_model_payload(request)

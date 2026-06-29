@@ -32,7 +32,6 @@ def main() -> int:
             "command-child-powan",
             "command-targets",
             "inspect-powan",
-            "read-powan-codes",
             "write-my-code",
         ),
     )
@@ -232,26 +231,6 @@ def dispatch(args: argparse.Namespace, payload: dict[str, Any]) -> dict[str, Any
             "recentMessageLimit": int(payload.get("recentMessageLimit") or payload.get("recent_message_limit") or 5),
         }
         return request_json(args.api_base, "POST", f"/api/ai/powans/{node_id}/actions/inspect-powan", body)
-    if args.operation == "read-powan-codes":
-        targets = payload.get("targets", [])
-        if not isinstance(targets, list):
-            raise ToolError("targets must be a list")
-        direct_target = {
-            key: payload.get(key)
-            for key in ("title", "body", "path", "targetId", "childId", "nodeId")
-            if payload.get(key)
-        }
-        if direct_target:
-            targets = [*targets, direct_target]
-        body = {
-            **base_payload,
-            "includeSelf": bool(payload.get("includeSelf") or payload.get("include_self") or False),
-            "targets": targets,
-            "include": payload.get("include") if isinstance(payload.get("include"), list) else [],
-            "codePreviewChars": int(payload.get("codePreviewChars") or payload.get("code_preview_chars") or 2000),
-            "recentMessageLimit": int(payload.get("recentMessageLimit") or payload.get("recent_message_limit") or 5),
-        }
-        return request_json(args.api_base, "POST", f"/api/ai/powans/{node_id}/actions/read-powan-codes", body)
     if args.operation == "write-my-code":
         body = {
             **base_payload,
