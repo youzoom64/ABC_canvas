@@ -14,6 +14,7 @@ from project_scaffold import ensure_project_scaffold
 
 BlankDocumentFn = Callable[[], dict[str, Any]]
 LogFn = Callable[[str, str, dict[str, Any] | None], None]
+ConversationMessageFn = Callable[[dict[str, Any]], None]
 WORKSPACE_SIZE = 10000
 WORKSPACE_ORIGIN_X = 5000
 WORKSPACE_ORIGIN_Y = 5000
@@ -34,6 +35,39 @@ class PowanStore:
         self.default_file = default_file
         self.blank_document = blank_document
         self.log_event = log_event
+        self.on_conversation_message: ConversationMessageFn | None = None
+
+    def _notify_conversation_message(
+        self,
+        project: str,
+        document_name: str,
+        powan_id: str,
+        message: dict[str, Any],
+    ) -> None:
+        if self.on_conversation_message is None:
+            return
+        try:
+            self.on_conversation_message(
+                {
+                    "project": self.safe_project_name(project),
+                    "file": self.safe_powan_name(document_name),
+                    "nodeId": powan_id,
+                    "conversationId": int(message["conversationId"]),
+                    "message": message,
+                }
+            )
+        except Exception as exc:
+            self.log_event(
+                "warn",
+                "powan-db-conversation-message-notify-failed",
+                {
+                    "project": self.safe_project_name(project),
+                    "file": self.safe_powan_name(document_name),
+                    "nodeId": powan_id,
+                    "messageId": message.get("id"),
+                    "error": repr(exc),
+                },
+            )
 
     def safe_project_name(self, name: str) -> str:
         candidate = name.strip()
@@ -251,6 +285,19 @@ class PowanStore:
                     )
         if document_to_export is not None:
             self._write_document_export(project, document_name, document_to_export)
+        if system_message_id is not None and conversation_id is not None:
+            self._notify_conversation_message(
+                project,
+                document_name,
+                powan_id,
+                {
+                    "id": system_message_id,
+                    "conversationId": int(conversation_id),
+                    "role": "system",
+                    "text": message,
+                    "createdAt": now,
+                },
+            )
         self.log_event(
             "warn",
             "powan-db-mark-codex-disconnected",
@@ -1221,6 +1268,8 @@ class PowanStore:
         now = datetime.now().isoformat(timespec="milliseconds")
         clean_title = title.strip()
         clean_summary = summary_text.strip()
+        summary_message_id: int | None = None
+        summary_message_text = f"これまでの会話の要約:\n{clean_summary}" if clean_summary else ""
         with self.session(project) as connection:
             connection.execute(
                 """
@@ -1239,13 +1288,27 @@ class PowanStore:
             )
             conversation_id = int(cursor.lastrowid)
             if clean_summary:
-                connection.execute(
+                cursor = connection.execute(
                     """
                     INSERT INTO conversation_messages(conversation_id, role, text, created_at)
                     VALUES (?, 'system', ?, ?)
                     """,
-                    (conversation_id, f"これまでの会話の要約:\n{clean_summary}", now),
+                    (conversation_id, summary_message_text, now),
                 )
+                summary_message_id = int(cursor.lastrowid)
+        if summary_message_id is not None:
+            self._notify_conversation_message(
+                project,
+                document_name,
+                powan_id,
+                {
+                    "id": summary_message_id,
+                    "conversationId": int(conversation_id),
+                    "role": "system",
+                    "text": summary_message_text,
+                    "createdAt": now,
+                },
+            )
         self.log_event(
             "info",
             "powan-db-start-new-conversation",
@@ -1451,6 +1514,14 @@ class PowanStore:
             message_id = int(cursor.lastrowid)
         if document_to_export is not None:
             self._write_document_export(project, document_name, document_to_export)
+        message = {
+            "id": message_id,
+            "conversationId": int(conversation_id),
+            "role": clean_role,
+            "text": clean_text,
+            "createdAt": now,
+        }
+        self._notify_conversation_message(project, document_name, powan_id, message)
         self.log_event(
             "info",
             "powan-db-append-conversation-message",
@@ -1464,13 +1535,7 @@ class PowanStore:
                 "length": len(clean_text),
             },
         )
-        return {
-            "id": message_id,
-            "conversationId": int(conversation_id),
-            "role": clean_role,
-            "text": clean_text,
-            "createdAt": now,
-        }
+        return message
 
     def queue_pending_codex_message(
         self,

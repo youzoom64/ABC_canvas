@@ -1232,6 +1232,34 @@ function normalizeConversationId(value) {
   return Number.isFinite(number) ? number : null;
 }
 
+function normalizeConversationMessageId(value) {
+  const number = Number(value);
+  return Number.isFinite(number) && number > 0 ? number : null;
+}
+
+function rememberConversationMessageId(messageId) {
+  const normalized = normalizeConversationMessageId(messageId);
+  if (normalized !== null) {
+    conversationLiveMessageIds.add(normalized);
+  }
+  return normalized;
+}
+
+function conversationHasMessageId(messageId) {
+  const normalized = normalizeConversationMessageId(messageId);
+  return normalized !== null && conversationLiveMessageIds.has(normalized);
+}
+
+function resetConversationMessageIds() {
+  conversationLiveMessageIds = new Set();
+}
+
+function findOptimisticConversationMessage(role, text = "") {
+  const displayText = formatConversationText(role, text);
+  return [...conversationLog.querySelectorAll(".conversation-message")]
+    .find((message) => !message.dataset.messageId && message.dataset.role === role && message.dataset.copyText === displayText) || null;
+}
+
 function nextConversationTabId() {
   conversationTabSerial += 1;
   return `tab-${Date.now().toString(36)}-${conversationTabSerial}`;
@@ -2026,8 +2054,9 @@ async function loadConversationMessages(nodeId) {
     conversationViewingSessionId = normalizeConversationId(data.conversationId);
     conversationViewingAllSessions = false;
     conversationLog.innerHTML = "";
+    resetConversationMessageIds();
     for (const message of data.messages || []) {
-      appendConversationMessage(message.role, message.text || "");
+      appendConversationMessage(message.role, message.text || "", { messageId: message.id });
     }
     if (data.activeRun) {
       rememberRunningPowanRun(data.activeRun);
@@ -2065,8 +2094,9 @@ async function loadConversationSession(nodeId, conversationId) {
       conversationActiveSessionId = conversationViewingSessionId;
     }
     conversationLog.innerHTML = "";
+    resetConversationMessageIds();
     for (const message of data.messages || []) {
-      appendConversationMessage(message.role, message.text || "");
+      appendConversationMessage(message.role, message.text || "", { messageId: message.id });
     }
     if (data.activeRun) {
       rememberRunningPowanRun(data.activeRun);
@@ -2110,6 +2140,7 @@ async function loadAllConversationSessions(nodeId) {
     renderConversationSessions(conversationSessionList, CONVERSATION_ALL_SESSIONS_VALUE);
     renderConversationTabs();
     conversationLog.innerHTML = "";
+    resetConversationMessageIds();
     conversationAutoFollow = false;
     const orderedSessions = [...conversationSessionList].sort((left, right) => normalizeConversationId(left.id) - normalizeConversationId(right.id));
     for (const session of orderedSessions) {
@@ -2132,7 +2163,7 @@ async function loadAllConversationSessions(nodeId) {
         return;
       }
       for (const message of payload.messages || []) {
-        appendConversationMessage(message.role, message.text || "");
+        appendConversationMessage(message.role, message.text || "", { messageId: message.id });
       }
     }
     updateConversationSessionMode();
@@ -2892,6 +2923,109 @@ function startConversationWorkPolling(afterSequence = conversationWorkEventSeque
   }, 500);
 }
 
+function liveConversationTargetIsVisible(payload) {
+  const nodeId = String(payload?.nodeId || "");
+  const conversationId = normalizeConversationId(payload?.conversationId);
+  if (!nodeId || conversationNodeId !== nodeId || isBulkCommandTab(activeConversationTab())) {
+    return false;
+  }
+  if (conversationViewingAllSessions) {
+    return true;
+  }
+  const visibleConversationId = normalizeConversationId(conversationViewingSessionId || conversationActiveSessionId);
+  return visibleConversationId !== null && conversationId === visibleConversationId;
+}
+
+function absorbLiveConversationMessage(messagePayload) {
+  if (!messagePayload || typeof messagePayload !== "object") {
+    return false;
+  }
+  const messageId = normalizeConversationMessageId(messagePayload.id);
+  if (messageId !== null && conversationHasMessageId(messageId)) {
+    return false;
+  }
+  const role = String(messagePayload.role || "system");
+  const text = String(messagePayload.text || "");
+  const optimistic = findOptimisticConversationMessage(role, text);
+  if (optimistic && messageId !== null) {
+    optimistic.dataset.messageId = String(messageId);
+    rememberConversationMessageId(messageId);
+    return true;
+  }
+  appendConversationMessage(role, text, { forceFollow: true, messageId });
+  return true;
+}
+
+function markInactiveConversationMessage(payload) {
+  const nodeId = String(payload?.nodeId || "");
+  const conversationId = normalizeConversationId(payload?.conversationId);
+  const tab = conversationTabForNode(nodeId);
+  if (!tab || tab.id === activeConversationTabId) {
+    return;
+  }
+  const state = conversationTabState(tab.id);
+  state.nodeId = nodeId;
+  state.activeSessionId = conversationId;
+  state.viewingSessionId = conversationId;
+  state.viewingAllSessions = false;
+  markConversationTabAttention(tab.id, nodeId, "reply", "新しい会話が届きました", conversationId);
+}
+
+function handleConversationEventMessage(payload) {
+  const message = payload?.message;
+  if (!message || typeof message !== "object") {
+    return;
+  }
+  if (liveConversationTargetIsVisible(payload)) {
+    const added = absorbLiveConversationMessage(message);
+    if (added && String(message.role || "") === "assistant") {
+      stopInputWaitingSound("conversation-live-assistant", visibleConversationRequest()?.soundOwner || "");
+    }
+    return;
+  }
+  markInactiveConversationMessage(payload);
+}
+
+function stopConversationEventStream(reason = "conversation-event-stream-stop") {
+  if (!conversationEventSource) {
+    return;
+  }
+  conversationEventSource.close();
+  conversationEventSource = null;
+  conversationEventSourceKey = "";
+  logEvent("debug", reason, {});
+}
+
+function startConversationEventStream(reason = "conversation-event-stream-start") {
+  if (!window.EventSource || !projectName || !documentName) {
+    return;
+  }
+  const key = `${projectName}\n${documentName}`;
+  if (
+    conversationEventSource
+    && conversationEventSourceKey === key
+    && conversationEventSource.readyState !== EventSource.CLOSED
+  ) {
+    return;
+  }
+  stopConversationEventStream("conversation-event-stream-restart");
+  const url = `/api/conversation-events?project=${encodeURIComponent(projectName)}&file=${encodeURIComponent(documentName)}`;
+  const source = new EventSource(url);
+  conversationEventSource = source;
+  conversationEventSourceKey = key;
+  source.addEventListener("conversation-message", (event) => {
+    try {
+      handleConversationEventMessage(JSON.parse(event.data || "{}"));
+    } catch (error) {
+      logEvent("warn", "conversation-event-message-parse-error", { message: error.message });
+    }
+  });
+  source.onerror = () => {
+    logEvent("debug", "conversation-event-stream-error", { key });
+  };
+  logEvent("debug", reason, { key });
+}
+
 async function writeTextToClipboard(text) {
   if (navigator.clipboard?.writeText) {
     await navigator.clipboard.writeText(text);
@@ -3027,6 +3161,7 @@ function openConversationPanel(nodeId, options = {}) {
   conversationSessionList = [];
   conversationNodeName.textContent = meaningName(node);
   conversationPanel.hidden = false;
+  startConversationEventStream("conversation-open-event-stream");
   setConversationPanelCollapsed(false, "conversation-open-expand");
   conversationAutoFollow = true;
   conversationLog.innerHTML = "";
@@ -3049,20 +3184,26 @@ function openConversationPanel(nodeId, options = {}) {
 function closeConversationPanel(reason = "conversation-close") {
   if (!conversationNodeId) {
     conversationPanel.hidden = true;
+    stopConversationEventStream("conversation-close-empty-event-stream");
     logEvent("debug", reason, { nodeId: null, collapsed: false });
     return;
   }
   rememberConversationTabState(activeConversationTabId);
   setConversationPanelCollapsed(true, reason);
+  stopConversationEventStream("conversation-close-event-stream");
 }
 
 function appendConversationMessage(role, text = "", options = {}) {
   const shouldFollow = Boolean(options.forceFollow) || conversationAutoFollow || conversationIsAtBottom();
   const attachments = Array.isArray(options.attachments) ? options.attachments : [];
+  const messageId = rememberConversationMessageId(options.messageId);
   const message = document.createElement("div");
   const roleClass = conversationRoleClass(role);
   message.className = `conversation-message ${roleClass}`;
   message.dataset.role = role;
+  if (messageId !== null) {
+    message.dataset.messageId = String(messageId);
+  }
   const body = document.createElement("div");
   body.className = "conversation-message-body";
   message.appendChild(body);
@@ -3215,11 +3356,11 @@ function conversationTypingPauseMs(char) {
   return 0;
 }
 
-function typeConversationReply(nodeId, text, onComplete = null) {
+function typeConversationReply(nodeId, text, onComplete = null, options = {}) {
   stopConversationTyping();
   clearBackgroundSpeaking(nodeId);
   const typingTabId = activeConversationTabId;
-  const message = appendConversationMessage("assistant", "");
+  const message = appendConversationMessage("assistant", "", { messageId: options.messageId });
   const visibleText = formatConversationText("assistant", text);
   let index = 0;
   conversationTypingNodeId = nodeId;
@@ -3337,9 +3478,10 @@ async function startNewConversationSession(nodeId, reason = "conversation-new-se
     conversationViewingSessionId = normalizeConversationId(data.conversationId);
     conversationViewingAllSessions = false;
     conversationLog.innerHTML = "";
+    resetConversationMessageIds();
     conversationAutoFollow = true;
     for (const message of data.messages || []) {
-      appendConversationMessage(message.role, message.text || "");
+      appendConversationMessage(message.role, message.text || "", { messageId: message.id });
     }
     appendConversationMessage("system", "新規セッションを開始しました", { forceFollow: true });
     rememberConversationTabState(activeConversationTabId);
@@ -3384,9 +3526,10 @@ async function summarizeConversationIntoNewSession(nodeId, reason = "conversatio
     conversationViewingSessionId = normalizeConversationId(data.conversationId);
     conversationViewingAllSessions = false;
     conversationLog.innerHTML = "";
+    resetConversationMessageIds();
     conversationAutoFollow = true;
     for (const message of data.messages || []) {
-      appendConversationMessage(message.role, message.text || "");
+      appendConversationMessage(message.role, message.text || "", { messageId: message.id });
     }
     if (!(data.messages || []).length) {
       appendConversationMessage("system", "要約できる会話がまだありません", { forceFollow: true });
@@ -4055,8 +4198,13 @@ async function sendConversation({ forceDirectChildCode = false, queuedSend = nul
       pendingMessage.remove();
     }
     const reply = data.assistantMessage?.text || "";
+    const replyMessageId = normalizeConversationMessageId(data.assistantMessage?.id);
     if (requestViewIsActive) {
-      typeConversationReply(node.id, reply, () => maybeAutoSummarizeConversation(node.id));
+      if (replyMessageId !== null && conversationHasMessageId(replyMessageId)) {
+        maybeAutoSummarizeConversation(node.id);
+      } else {
+        typeConversationReply(node.id, reply, () => maybeAutoSummarizeConversation(node.id), { messageId: replyMessageId });
+      }
     } else {
       typeConversationReplyMouthOnly(node.id, reply);
     }

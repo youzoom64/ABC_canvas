@@ -5,6 +5,7 @@ import binascii
 import hashlib
 import json
 import os
+import queue
 import random
 import subprocess
 import sys
@@ -13,13 +14,13 @@ import time
 from concurrent.futures import ThreadPoolExecutor, as_completed
 from datetime import datetime
 from pathlib import Path
-from typing import Any, Callable
+from typing import Any, Callable, Iterator
 from urllib.parse import unquote
 from uuid import uuid4
 
 from fastapi import FastAPI, Header, HTTPException, Request
 from fastapi.exceptions import RequestValidationError
-from fastapi.responses import FileResponse, JSONResponse
+from fastapi.responses import FileResponse, JSONResponse, StreamingResponse
 from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel, Field
 
@@ -143,6 +144,8 @@ COMMAND_CHILDREN_ACTIVE_LOCK = threading.Lock()
 COMMAND_CHILDREN_ACTIVE_KEYS: set[str] = set()
 PENDING_CODEX_DRAIN_LOCK = threading.Lock()
 PENDING_CODEX_DRAIN_KEYS: set[str] = set()
+CONVERSATION_EVENT_SUBSCRIBERS_LOCK = threading.Lock()
+CONVERSATION_EVENT_SUBSCRIBERS: set[queue.Queue[dict[str, Any]]] = set()
 
 
 def reset_logs() -> None:
@@ -256,6 +259,27 @@ def no_cache_file(path: Path) -> FileResponse:
             "Expires": "0",
         },
     )
+
+
+def conversation_sse_frame(payload: dict[str, Any]) -> str:
+    return f"event: conversation-message\ndata: {json.dumps(payload, ensure_ascii=False, separators=(',', ':'))}\n\n"
+
+
+def publish_conversation_message(payload: dict[str, Any]) -> None:
+    with CONVERSATION_EVENT_SUBSCRIBERS_LOCK:
+        subscribers = list(CONVERSATION_EVENT_SUBSCRIBERS)
+    for subscriber in subscribers:
+        try:
+            subscriber.put_nowait(payload)
+        except queue.Full:
+            try:
+                subscriber.get_nowait()
+            except queue.Empty:
+                pass
+            try:
+                subscriber.put_nowait(payload)
+            except queue.Full:
+                pass
 
 
 app = FastAPI(title="ABC Canvas")
@@ -1361,6 +1385,7 @@ def ensure_project(project: str) -> Path:
 
 
 STORE = PowanStore(POWAN_WORK_ROOT, DEFAULT_FILE, blank_document, log_server_event)
+STORE.on_conversation_message = publish_conversation_message
 STORE.recover_interrupted_work(reason="server-startup")
 CODEX_BRIDGE = CodexPowanBridge(log_server_event)
 ABC_DISCORD_BRIDGE: AbcDiscordBridge | None = None
@@ -3463,6 +3488,40 @@ def upsert_bulk_conversation_history(request: BulkCommandHistoryRequest) -> dict
         [base_model_payload(message) for message in request.messages],
         created_at=request.createdAt,
         updated_at=request.updatedAt,
+    )
+
+
+@app.get("/api/conversation-events")
+def stream_conversation_events(project: str, file: str = DEFAULT_FILE) -> StreamingResponse:
+    safe_project = STORE.safe_project_name(project)
+    safe_file = STORE.safe_powan_name(file)
+    subscriber: queue.Queue[dict[str, Any]] = queue.Queue(maxsize=200)
+    with CONVERSATION_EVENT_SUBSCRIBERS_LOCK:
+        CONVERSATION_EVENT_SUBSCRIBERS.add(subscriber)
+
+    def event_stream() -> Iterator[str]:
+        try:
+            yield ": connected\n\n"
+            while True:
+                try:
+                    payload = subscriber.get(timeout=15)
+                except queue.Empty:
+                    yield ": ping\n\n"
+                    continue
+                if payload.get("project") != safe_project or payload.get("file") != safe_file:
+                    continue
+                yield conversation_sse_frame(payload)
+        finally:
+            with CONVERSATION_EVENT_SUBSCRIBERS_LOCK:
+                CONVERSATION_EVENT_SUBSCRIBERS.discard(subscriber)
+
+    return StreamingResponse(
+        event_stream(),
+        media_type="text/event-stream",
+        headers={
+            "Cache-Control": "no-cache, no-transform",
+            "X-Accel-Buffering": "no",
+        },
     )
 
 
