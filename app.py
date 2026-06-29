@@ -138,6 +138,8 @@ POWAN_WORK_EVENT_SEQUENCE = 0
 POWAN_WORK_EVENT_LOCK = threading.Lock()
 COMMAND_CHILDREN_ACTIVE_LOCK = threading.Lock()
 COMMAND_CHILDREN_ACTIVE_KEYS: set[str] = set()
+PENDING_CODEX_DRAIN_LOCK = threading.Lock()
+PENDING_CODEX_DRAIN_KEYS: set[str] = set()
 
 
 def reset_logs() -> None:
@@ -1802,6 +1804,10 @@ def mark_codex_disconnected_safe(
         )
 
 
+def codex_result_already_running(result: Any) -> bool:
+    return int(getattr(result, "returncode", 0) or 0) == 409 and "already running" in str(getattr(result, "stderr", "")).lower()
+
+
 DEAD_CODEX_RUN_ERROR = "Codexプロセスが見つかりません。DBの作業中状態だけが残っていたため失敗にしました。"
 
 
@@ -2196,6 +2202,188 @@ def remember_powan_batch_work_event(
     remember_powan_work_event(details)
 
 
+def pending_codex_drain_key(project: str, file: str, node_id: str) -> str:
+    return f"{STORE.safe_project_name(project)}\n{STORE.safe_powan_name(file)}\n{node_id}"
+
+
+def render_pending_codex_message_bundle(items: list[dict[str, Any]]) -> str:
+    if len(items) == 1:
+        return str(items[0].get("text") or "")
+    parts = []
+    for index, item in enumerate(items, start=1):
+        parts.append(
+            "\n".join(
+                [
+                    f"## {index}. 未処理メッセージ",
+                    f"messageId: {item.get('messageId')}",
+                    f"source: {item.get('source') or 'unknown'}",
+                    "",
+                    str(item.get("text") or ""),
+                ]
+            )
+        )
+    return "\n\n".join(parts)
+
+
+def build_pending_codex_incoming_message(
+    *,
+    node_id: str,
+    receiver_label: str,
+    conversation_id: int,
+    text: str,
+    items: list[dict[str, Any]],
+) -> dict[str, Any]:
+    first = items[0]
+    continue_after_child_replies = any(
+        bool((item.get("payload") or {}).get("commandChildren", {}).get("continueAfterChildReplies"))
+        for item in items
+    )
+    incoming = build_incoming_message_payload(
+        source="command-child-return",
+        text=text,
+        sender_node_id=str(first.get("senderId") or "") or None,
+        sender_label=str(first.get("senderLabel") or "DB未処理メッセージ"),
+        receiver_node_id=node_id,
+        receiver_label=receiver_label,
+        conversation_id=conversation_id,
+        user_message_id=int(items[-1]["messageId"]) if items[-1].get("messageId") is not None else None,
+        continue_after_child_replies=continue_after_child_replies,
+        command_children_context={
+            "pendingIds": [item.get("id") for item in items],
+            "pendingMessageIds": [item.get("messageId") for item in items],
+        },
+    )
+    child_replies: list[dict[str, Any]] = []
+    for item in items:
+        payload = item.get("payload") if isinstance(item.get("payload"), dict) else {}
+        for reply in payload.get("childReplies") or []:
+            if isinstance(reply, dict):
+                child_replies.append(reply)
+    incoming["childReplies"] = child_replies
+    incoming["queuedMessages"] = [
+        {
+            "pendingId": item.get("id"),
+            "messageId": item.get("messageId"),
+            "source": item.get("source"),
+            "senderId": item.get("senderId"),
+            "senderLabel": item.get("senderLabel"),
+        }
+        for item in items
+    ]
+    return incoming
+
+
+def schedule_pending_codex_drain(project: str, file: str, node_id: str, reason: str = "pending-codex-drain") -> None:
+    key = pending_codex_drain_key(project, file, node_id)
+    with PENDING_CODEX_DRAIN_LOCK:
+        if key in PENDING_CODEX_DRAIN_KEYS:
+            return
+        PENDING_CODEX_DRAIN_KEYS.add(key)
+    threading.Thread(
+        target=drain_pending_codex_messages,
+        args=(project, file, node_id, key, reason),
+        name=f"abc-pending-codex-{node_id}",
+        daemon=True,
+    ).start()
+
+
+def schedule_all_pending_codex_drains(reason: str = "pending-codex-drain") -> int:
+    targets = STORE.list_pending_codex_message_targets()
+    for target in targets:
+        schedule_pending_codex_drain(
+            str(target["project"]),
+            str(target["documentName"]),
+            str(target["powanId"]),
+            reason=reason,
+        )
+    if targets:
+        log_server_event(
+            "info",
+            "pending-codex-drains-scheduled",
+            {
+                "console": True,
+                "reason": reason,
+                "targetCount": len(targets),
+                "messageCount": sum(int(target.get("count") or 0) for target in targets),
+            },
+        )
+    return len(targets)
+
+
+def drain_pending_codex_messages(project: str, file: str, node_id: str, drain_key: str, reason: str) -> None:
+    try:
+        while True:
+            if reconcile_running_agent_runs(project, file, node_id=node_id):
+                time.sleep(1)
+                continue
+            items = STORE.claim_pending_codex_messages(project, file, node_id, limit=20)
+            if not items:
+                return
+            groups: dict[int, list[dict[str, Any]]] = {}
+            for item in items:
+                groups.setdefault(int(item["conversationId"]), []).append(item)
+            for conversation_id, group in groups.items():
+                pending_ids = [int(item["id"]) for item in group]
+                receiver_label = powan_label_from_document(STORE.load_document(project, file), node_id)
+                text = render_pending_codex_message_bundle(group)
+                pre_message = {
+                    "id": int(group[-1]["messageId"]),
+                    "conversationId": int(conversation_id),
+                    "role": group[-1].get("role") or "user",
+                    "text": group[-1].get("text") or "",
+                    "createdAt": group[-1].get("messageCreatedAt") or group[-1].get("createdAt") or "",
+                }
+                incoming_message = build_pending_codex_incoming_message(
+                    node_id=node_id,
+                    receiver_label=receiver_label,
+                    conversation_id=int(conversation_id),
+                    text=text,
+                    items=group,
+                )
+                log_server_event(
+                    "info",
+                    "pending-codex-messages-dispatch",
+                    {
+                        "console": True,
+                        "project": STORE.safe_project_name(project),
+                        "file": STORE.safe_powan_name(file),
+                        "nodeId": node_id,
+                        "conversationId": int(conversation_id),
+                        "count": len(group),
+                        "pendingIds": pending_ids,
+                        "reason": reason,
+                    },
+                )
+                try:
+                    run_powan_codex_message(
+                        node_id,
+                        project=project,
+                        file=file,
+                        text=text,
+                        include_meaning_tree=False,
+                        include_direct_child_code=False,
+                        attachments=[],
+                        source="command-child-return",
+                        sender_node_id=str(group[0].get("senderId") or "") or None,
+                        sender_label_override=str(group[0].get("senderLabel") or "DB未処理メッセージ"),
+                        pre_appended_user_message=pre_message,
+                        incoming_message=incoming_message,
+                    )
+                except HTTPException as exc:
+                    if exc.status_code == 409:
+                        STORE.finish_pending_codex_messages(project, pending_ids, "pending", error_text=str(exc.detail))
+                        time.sleep(1)
+                        break
+                    STORE.finish_pending_codex_messages(project, pending_ids, "failed", error_text=str(exc.detail))
+                except Exception as exc:
+                    STORE.finish_pending_codex_messages(project, pending_ids, "failed", error_text=repr(exc))
+                else:
+                    STORE.finish_pending_codex_messages(project, pending_ids, "processed")
+    finally:
+        with PENDING_CODEX_DRAIN_LOCK:
+            PENDING_CODEX_DRAIN_KEYS.discard(drain_key)
+
+
 def run_powan_codex_message(
     node_id: str,
     *,
@@ -2452,6 +2640,7 @@ def run_powan_codex_message(
                 "durationMs": result.duration_ms,
             },
         )
+        schedule_pending_codex_drain(project, file, node_id, reason="codex-run-cancelled")
         return {
             "conversationId": conversation["id"],
             "codexThreadId": result.thread_id,
@@ -2500,6 +2689,8 @@ def run_powan_codex_message(
                 "durationMs": result.duration_ms,
             },
         )
+        if codex_result_already_running(result):
+            raise HTTPException(status_code=409, detail="Codex exec already running for this powan")
         mark_codex_disconnected_safe(project, file, node_id, int(conversation["id"]), "codex-exec-failed")
         raise HTTPException(status_code=502, detail="Codex exec failed")
     assistant_message = STORE.append_conversation_message(project, file, node_id, "assistant", result.text)
@@ -2543,6 +2734,7 @@ def run_powan_codex_message(
             "outputLength": len(result.text),
         },
     )
+    schedule_pending_codex_drain(project, file, node_id, reason="codex-run-completed")
     return {
         "conversationId": conversation["id"],
         "codexThreadId": result.thread_id,
@@ -2664,6 +2856,7 @@ ABC_DISCORD_BRIDGE = AbcDiscordBridge(
 
 @app.on_event("startup")
 def start_discord_bridge() -> None:
+    schedule_all_pending_codex_drains(reason="server-startup")
     if ABC_DISCORD_BRIDGE is None:
         return
     ABC_DISCORD_BRIDGE.apply_settings(load_app_settings())
@@ -3332,7 +3525,7 @@ def command_child_powans(node_id: str, request: CommandChildrenRequest) -> dict[
             job["dispatchId"] = dispatch["id"]
         STORE.update_child_command_session_status(request.project, request.file, dispatch_session_id, "sent")
 
-        def run_parent_followup_from_child_returns(results: list[dict[str, Any]]) -> dict[str, Any] | None:
+        def append_parent_child_return_message(results: list[dict[str, Any]]) -> dict[str, Any] | None:
             if not results:
                 return None
             parent_text = render_child_return_bundle_message(parent_label, results, dispatch_session_id)
@@ -3357,55 +3550,29 @@ def command_child_powans(node_id: str, request: CommandChildrenRequest) -> dict[
                 continue_after_child_replies=bool(request.continueAfterChildReplies),
                 dispatch_session_id=dispatch_session_id,
             )
-            log_server_event(
-                "info",
-                "command-child-powans-parent-followup-start",
-                {
-                    "console": True,
-                    "project": STORE.safe_project_name(request.project),
-                    "file": STORE.safe_powan_name(request.file),
-                    "parentId": node_id,
-                    "parentMeaning": parent_label,
-                    "parentConversationId": parent_conversation_id,
-                    "parentMessageId": parent_message.get("id"),
-                    "senderNodeId": sender_id,
-                    "dispatchSessionId": dispatch_session_id,
-                    "continueAfterChildReplies": bool(request.continueAfterChildReplies),
-                    "allowedAction": incoming_message.get("allowedAction"),
-                    "childResultCount": len(results),
-                },
-            )
-            followup = run_powan_codex_message(
+            STORE.queue_pending_codex_message(
+                request.project,
+                request.file,
                 node_id,
-                project=request.project,
-                file=request.file,
-                text=parent_text,
-                include_meaning_tree=bool(request.includeMeaningTree),
-                include_direct_child_code=False,
-                attachments=[],
+                int(parent_conversation_id),
+                int(parent_message["id"]),
                 source="command-child-return",
-                sender_node_id=sender_id,
-                sender_label_override="子ポワン一括返答",
-                pre_appended_user_message=parent_message,
-                incoming_message=incoming_message,
+                sender_id=sender_id,
+                sender_label="子ポワン一括返答",
+                payload=incoming_message,
             )
-            log_server_event(
-                "info",
-                "command-child-powans-parent-followup-complete",
-                {
-                    "console": True,
-                    "project": STORE.safe_project_name(request.project),
-                    "file": STORE.safe_powan_name(request.file),
-                    "parentId": node_id,
-                    "parentMeaning": parent_label,
-                    "parentConversationId": followup.get("conversationId"),
-                    "assistantMessageId": (followup.get("assistantMessage") or {}).get("id") if isinstance(followup.get("assistantMessage"), dict) else None,
-                    "agentRunId": (followup.get("agentRun") or {}).get("id") if isinstance(followup.get("agentRun"), dict) else None,
-                    "dispatchSessionId": dispatch_session_id,
-                    "childResultCount": len(results),
-                },
+            schedule_pending_codex_drain(
+                request.project,
+                request.file,
+                node_id,
+                reason="child-command-return-queued",
             )
-            return followup
+            return {
+                "text": parent_text,
+                "message": parent_message,
+                "senderId": sender_id,
+                "incomingMessage": incoming_message,
+            }
 
         def run_job(index: int, job: dict[str, Any]) -> dict[str, Any]:
             delay_ms = dispatch_interval_ms * index
@@ -3628,26 +3795,21 @@ def command_child_powans(node_id: str, request: CommandChildrenRequest) -> dict[
                 )
                 with COMMAND_CHILDREN_ACTIVE_LOCK:
                     COMMAND_CHILDREN_ACTIVE_KEYS.discard(active_key)
-                parent_followup = None
-                try:
-                    parent_followup = run_parent_followup_from_child_returns(results)
-                except Exception as exc:
-                    log_server_event(
-                        "error",
-                        "command-child-powans-parent-followup-failed",
-                        {
-                            "console": True,
-                            "project": STORE.safe_project_name(request.project),
-                            "file": STORE.safe_powan_name(request.file),
-                            "parentId": node_id,
-                            "parentMeaning": parent_label,
-                            "parentConversationId": parent_conversation_id,
-                            "dispatchSessionId": dispatch_session_id,
-                            "error": repr(exc),
-                        },
-                    )
-                if parent_followup:
-                    response["parentFollowup"] = parent_followup
+                parent_return = append_parent_child_return_message(results)
+                log_server_event(
+                    "info",
+                    "command-child-powans-parent-followup-queued",
+                    {
+                        "console": True,
+                        "project": STORE.safe_project_name(request.project),
+                        "file": STORE.safe_powan_name(request.file),
+                        "parentId": node_id,
+                        "parentMeaning": parent_label,
+                        "parentConversationId": parent_conversation_id,
+                        "dispatchSessionId": dispatch_session_id,
+                        "parentMessageId": (parent_return.get("message") or {}).get("id") if isinstance(parent_return, dict) else None,
+                    },
+                )
             except Exception as exc:
                 STORE.update_child_command_session_status(request.project, request.file, dispatch_session_id, "failed")
                 failed_message = f"{parent_label} -> 子ポワン {job_count or ''}件 / 一括命令失敗" if job_count else f"{parent_label} -> 子ポワン / 一括命令失敗"

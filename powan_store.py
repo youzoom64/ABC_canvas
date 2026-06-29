@@ -543,6 +543,32 @@ class PowanStore:
               FOREIGN KEY (conversation_id) REFERENCES conversations(id) ON DELETE CASCADE
             );
 
+            CREATE TABLE IF NOT EXISTS pending_codex_messages (
+              id INTEGER PRIMARY KEY AUTOINCREMENT,
+              document_name TEXT NOT NULL,
+              powan_id TEXT NOT NULL,
+              conversation_id INTEGER NOT NULL,
+              message_id INTEGER NOT NULL,
+              source TEXT NOT NULL DEFAULT '',
+              sender_id TEXT,
+              sender_label TEXT NOT NULL DEFAULT '',
+              payload_json TEXT NOT NULL DEFAULT '{}',
+              status TEXT NOT NULL DEFAULT 'pending',
+              error_text TEXT NOT NULL DEFAULT '',
+              created_at TEXT NOT NULL,
+              claimed_at TEXT,
+              processed_at TEXT,
+              updated_at TEXT NOT NULL,
+              FOREIGN KEY (conversation_id) REFERENCES conversations(id) ON DELETE CASCADE,
+              FOREIGN KEY (message_id) REFERENCES conversation_messages(id) ON DELETE CASCADE
+            );
+
+            CREATE UNIQUE INDEX IF NOT EXISTS idx_pending_codex_messages_message
+            ON pending_codex_messages(document_name, message_id);
+
+            CREATE INDEX IF NOT EXISTS idx_pending_codex_messages_target
+            ON pending_codex_messages(document_name, powan_id, status, id);
+
             CREATE TABLE IF NOT EXISTS agent_runs (
               id INTEGER PRIMARY KEY AUTOINCREMENT,
               conversation_id INTEGER,
@@ -1445,6 +1471,249 @@ class PowanStore:
             "text": clean_text,
             "createdAt": now,
         }
+
+    def queue_pending_codex_message(
+        self,
+        project: str,
+        document_name: str,
+        powan_id: str,
+        conversation_id: int,
+        message_id: int,
+        *,
+        source: str = "",
+        sender_id: str | None = None,
+        sender_label: str = "",
+        payload: dict[str, Any] | None = None,
+    ) -> dict[str, Any]:
+        document_name = self.safe_powan_name(document_name)
+        now = datetime.now().isoformat(timespec="milliseconds")
+        payload_json = json.dumps(payload or {}, ensure_ascii=False, separators=(",", ":"))
+        with self.session(project) as connection:
+            row = connection.execute(
+                """
+                SELECT id FROM pending_codex_messages
+                WHERE document_name = ? AND message_id = ?
+                """,
+                (document_name, int(message_id)),
+            ).fetchone()
+            if row is not None:
+                pending_id = int(row["id"])
+            else:
+                cursor = connection.execute(
+                    """
+                    INSERT INTO pending_codex_messages(
+                      document_name, powan_id, conversation_id, message_id,
+                      source, sender_id, sender_label, payload_json,
+                      status, created_at, updated_at
+                    )
+                    VALUES (?, ?, ?, ?, ?, ?, ?, ?, 'pending', ?, ?)
+                    """,
+                    (
+                        document_name,
+                        powan_id,
+                        int(conversation_id),
+                        int(message_id),
+                        source,
+                        sender_id,
+                        sender_label,
+                        payload_json,
+                        now,
+                        now,
+                    ),
+                )
+                pending_id = int(cursor.lastrowid)
+        self.log_event(
+            "info",
+            "powan-db-pending-codex-message-queued",
+            {
+                "project": self.safe_project_name(project),
+                "file": document_name,
+                "nodeId": powan_id,
+                "conversationId": int(conversation_id),
+                "messageId": int(message_id),
+                "pendingId": pending_id,
+                "source": source,
+            },
+        )
+        return {
+            "id": pending_id,
+            "documentName": document_name,
+            "powanId": powan_id,
+            "conversationId": int(conversation_id),
+            "messageId": int(message_id),
+            "source": source,
+            "status": "pending",
+            "createdAt": now,
+        }
+
+    def claim_pending_codex_messages(
+        self,
+        project: str,
+        document_name: str,
+        powan_id: str,
+        *,
+        limit: int = 20,
+    ) -> list[dict[str, Any]]:
+        document_name = self.safe_powan_name(document_name)
+        now = datetime.now().isoformat(timespec="milliseconds")
+        with self.session(project) as connection:
+            rows = connection.execute(
+                """
+                SELECT
+                  p.id, p.document_name, p.powan_id, p.conversation_id,
+                  p.message_id, p.source, p.sender_id, p.sender_label,
+                  p.payload_json, p.created_at,
+                  m.role, m.text, m.created_at AS message_created_at
+                FROM pending_codex_messages p
+                JOIN conversation_messages m ON m.id = p.message_id
+                WHERE p.document_name = ?
+                  AND p.powan_id = ?
+                  AND p.status IN ('pending', 'claimed')
+                ORDER BY p.id
+                LIMIT ?
+                """,
+                (document_name, powan_id, int(limit)),
+            ).fetchall()
+            ids = [int(row["id"]) for row in rows]
+            if ids:
+                placeholders = ",".join("?" for _ in ids)
+                connection.execute(
+                    f"""
+                    UPDATE pending_codex_messages
+                    SET status = 'claimed',
+                        claimed_at = COALESCE(claimed_at, ?),
+                        updated_at = ?
+                    WHERE id IN ({placeholders})
+                    """,
+                    (now, now, *ids),
+                )
+        claimed: list[dict[str, Any]] = []
+        for row in rows:
+            payload: dict[str, Any] = {}
+            try:
+                payload = json.loads(row["payload_json"] or "{}")
+            except (TypeError, json.JSONDecodeError):
+                payload = {}
+            claimed.append(
+                {
+                    "id": int(row["id"]),
+                    "documentName": row["document_name"],
+                    "powanId": row["powan_id"],
+                    "conversationId": int(row["conversation_id"]),
+                    "messageId": int(row["message_id"]),
+                    "source": row["source"],
+                    "senderId": row["sender_id"],
+                    "senderLabel": row["sender_label"],
+                    "payload": payload,
+                    "role": row["role"],
+                    "text": row["text"],
+                    "createdAt": row["created_at"],
+                    "messageCreatedAt": row["message_created_at"],
+                }
+            )
+        if claimed:
+            self.log_event(
+                "info",
+                "powan-db-pending-codex-messages-claimed",
+                {
+                    "project": self.safe_project_name(project),
+                    "file": document_name,
+                    "nodeId": powan_id,
+                    "count": len(claimed),
+                    "ids": [item["id"] for item in claimed],
+                },
+            )
+        return claimed
+
+    def list_pending_codex_message_targets(
+        self,
+        project: str | None = None,
+        document_name: str | None = None,
+    ) -> list[dict[str, Any]]:
+        projects = [self.safe_project_name(project)] if project else [
+            path.name
+            for path in self.work_root.iterdir()
+            if path.is_dir() and (path / "powan.db").is_file()
+        ]
+        targets: list[dict[str, Any]] = []
+        document_filter = ""
+        parameters: list[Any] = []
+        if document_name is not None:
+            document_filter = "AND document_name = ?"
+            parameters.append(self.safe_powan_name(document_name))
+        for project_name in projects:
+            with self.session(project_name) as connection:
+                rows = connection.execute(
+                    f"""
+                    SELECT document_name, powan_id, COUNT(*) AS count
+                    FROM pending_codex_messages
+                    WHERE status IN ('pending', 'claimed')
+                      {document_filter}
+                    GROUP BY document_name, powan_id
+                    ORDER BY document_name, powan_id
+                    """,
+                    parameters,
+                ).fetchall()
+            for row in rows:
+                targets.append(
+                    {
+                        "project": project_name,
+                        "documentName": row["document_name"],
+                        "powanId": row["powan_id"],
+                        "count": int(row["count"]),
+                    }
+                )
+        return targets
+
+    def finish_pending_codex_messages(
+        self,
+        project: str,
+        pending_ids: list[int],
+        status: str,
+        *,
+        error_text: str = "",
+    ) -> None:
+        ids = [int(item) for item in pending_ids if item is not None]
+        if not ids:
+            return
+        clean_status = status if status in {"processed", "pending", "failed"} else "processed"
+        now = datetime.now().isoformat(timespec="milliseconds")
+        with self.session(project) as connection:
+            placeholders = ",".join("?" for _ in ids)
+            if clean_status == "pending":
+                connection.execute(
+                    f"""
+                    UPDATE pending_codex_messages
+                    SET status = 'pending',
+                        error_text = ?,
+                        claimed_at = NULL,
+                        updated_at = ?
+                    WHERE id IN ({placeholders})
+                    """,
+                    (error_text, now, *ids),
+                )
+            else:
+                connection.execute(
+                    f"""
+                    UPDATE pending_codex_messages
+                    SET status = ?,
+                        error_text = ?,
+                        processed_at = ?,
+                        updated_at = ?
+                    WHERE id IN ({placeholders})
+                    """,
+                    (clean_status, error_text, now, now, *ids),
+                )
+        self.log_event(
+            "info" if clean_status != "failed" else "error",
+            "powan-db-pending-codex-messages-finished",
+            {
+                "project": self.safe_project_name(project),
+                "ids": ids,
+                "status": clean_status,
+                "error": error_text[:240] if error_text else "",
+            },
+        )
 
     def record_agent_run(
         self,

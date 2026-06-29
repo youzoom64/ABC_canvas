@@ -78,18 +78,21 @@ def load_env_files(root_dir: Path, *, override: bool = False) -> list[str]:
         if not path.is_file():
             continue
         loaded_any = False
-        for line in path.read_text(encoding="utf-8", errors="replace").splitlines():
+        for line in path.read_text(encoding="utf-8-sig", errors="replace").splitlines():
             stripped = line.strip()
             if not stripped or stripped.startswith("#") or "=" not in stripped:
                 continue
             key, value = stripped.split("=", 1)
-            key = key.strip()
+            key = key.strip().lstrip("\ufeff")
+            if not key:
+                continue
             value = value.strip().strip("\"'")
             if key in loaded_keys:
                 continue
             loaded_keys.add(key)
             loaded_any = True
-            if override:
+            current_value = os.environ.get(key)
+            if override or current_value is None or not current_value.strip():
                 os.environ[key] = value
             else:
                 os.environ.setdefault(key, value)

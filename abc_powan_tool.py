@@ -167,7 +167,8 @@ def dispatch(args: argparse.Namespace, payload: dict[str, Any]) -> dict[str, Any
             "includeMeaningTree": payload_flag(payload, "includeMeaningTree", "include_meaning_tree"),
             "continueAfterChildReplies": payload_flag(payload, "continueAfterChildReplies", "continue_after_child_replies"),
         }
-        return request_json(args.api_base, "POST", f"/api/ai/powans/{node_id}/actions/command-children", body)
+        response = request_json(args.api_base, "POST", f"/api/ai/powans/{node_id}/actions/command-children", body)
+        return summarize_command_children_response(response)
     if args.operation == "command-child-powan":
         body = {
             **base_payload,
@@ -182,7 +183,8 @@ def dispatch(args: argparse.Namespace, payload: dict[str, Any]) -> dict[str, Any
             "includeMeaningTree": payload_flag(payload, "includeMeaningTree", "include_meaning_tree"),
             "continueAfterChildReplies": payload_flag(payload, "continueAfterChildReplies", "continue_after_child_replies"),
         }
-        return request_json(args.api_base, "POST", f"/api/ai/powans/{node_id}/actions/command-children", body)
+        response = request_json(args.api_base, "POST", f"/api/ai/powans/{node_id}/actions/command-children", body)
+        return summarize_command_children_response(response)
     if args.operation == "read-powan-codes":
         targets = payload.get("targets", [])
         if not isinstance(targets, list):
@@ -229,6 +231,45 @@ def request_json(api_base: str, method: str, path: str, payload: dict[str, Any])
         raise ToolError(f"{method} {url} failed: {exc.code} {detail}") from exc
     except urllib.error.URLError as exc:
         raise ToolError(f"{method} {url} failed: {exc}") from exc
+
+
+def summarize_command_children_response(response: dict[str, Any]) -> dict[str, Any]:
+    results = response.get("results") if isinstance(response.get("results"), list) else []
+    sent_children = []
+    skipped_children = []
+    failed_children = []
+    for item in results:
+        if not isinstance(item, dict):
+            continue
+        child = {
+            "childId": item.get("nodeId"),
+            "title": item.get("meaning"),
+            "status": item.get("status"),
+        }
+        status = str(item.get("status") or "")
+        if status in {"accepted", "completed"}:
+            sent_children.append(child)
+        elif status == "skipped":
+            skipped_children.append({**child, "skipReason": item.get("skipReason") or ""})
+        else:
+            failed_children.append({**child, "error": item.get("error") or ""})
+    detached = bool(response.get("detached"))
+    return {
+        "status": "accepted" if detached else "completed",
+        "detached": detached,
+        "dispatchSessionId": response.get("dispatchSessionId") or "",
+        "dispatchIntervalMs": response.get("dispatchIntervalMs"),
+        "continueAfterChildReplies": bool(response.get("continueAfterChildReplies")),
+        "parent": response.get("parent") or {},
+        "sent": len(sent_children),
+        "skipped": len(skipped_children),
+        "failed": len(failed_children),
+        "sentChildren": sent_children,
+        "skippedChildren": skipped_children,
+        "failedChildren": failed_children,
+        "nextAction": "report_acceptance_and_stop",
+        "message": "子ポワンへの一括指示を受け付けました。子の返答は後で親会話に戻ります。",
+    }
 
 
 def payload_flag(payload: dict[str, Any], *names: str) -> bool:

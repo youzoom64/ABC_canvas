@@ -4092,8 +4092,7 @@ async function sendConversation({ forceDirectChildCode = false, queuedSend = nul
     if (conversationRequestForNode(node.id) === request) {
       conversationActiveRequests.delete(conversationRequestKey(node.id));
     }
-    runningPowanRuns.delete(node.id);
-    schedulePowanFaceRefresh([node.id], "conversation-send-finally-face");
+    await refreshRunningAgentRuns("conversation-send-finally-running-runs");
     clearConversationTabRunningStatus(requestTabId, node.id);
     if (request.pendingMessage === pendingMessage) {
       request.pendingMessage = null;
