@@ -118,6 +118,9 @@ DEFAULT_NODE_WIDTH = 280
 DEFAULT_NODE_HEIGHT = 160
 CONSOLE_TEXT_PREVIEW_CHARS = 30
 LOG_LEVEL_NAMES = ("trace", "debug", "info", "warn", "error", "fatal")
+ORIGIN_CHAIN_SCHEMA = "powan_origin_chain.v1"
+ORIGIN_JUDGEMENT_SCHEMA = "powan_origin_judgement.v1"
+ORIGIN_JUDGEMENT_MAX_ATTEMPTS = 3
 DEFAULT_CONSOLE_LOG_LEVELS = ("info", "warn", "error")
 POWAN_WORK_EVENT_LIMIT = 500
 POWAN_COLOR_PALETTE = [
@@ -431,6 +434,7 @@ class CommandChildrenRequest(BaseModel):
     bulkHistoryId: str = ""
     includeMeaningTree: bool = False
     continueAfterChildReplies: bool = False
+    originChain: list[dict[str, Any]] = Field(default_factory=list)
 
 
 class BulkCommandHistoryMessage(BaseModel):
@@ -2038,10 +2042,16 @@ def incoming_kind_for_source(source: str) -> str:
         return "parent_command"
     if source == "command-child-return":
         return "child_replies"
+    if source in {"origin-report-judgement", "origin-report-judgement-retry"}:
+        return "origin_report_judgement"
+    if source in {"origin-report-promoted", "origin-report-unmet"}:
+        return "origin_report"
     return "operator_message"
 
 
 def incoming_allowed_action(source: str, *, continue_after_child_replies: bool = False) -> str:
+    if source in {"origin-report-judgement", "origin-report-judgement-retry"}:
+        return "must_judge_origin_report"
     if source == "command-child-return" and not continue_after_child_replies:
         return "read_only"
     return "may_command_children"
@@ -2060,6 +2070,12 @@ def incoming_from_payload(source: str, sender_node_id: str | None, sender_label:
             "id": sender_node_id,
             "name": sender_label,
         }
+    if source in {"origin-report-judgement", "origin-report-judgement-retry", "origin-report-promoted", "origin-report-unmet"}:
+        return {
+            "kind": "origin_route",
+            "id": sender_node_id,
+            "name": sender_label,
+        }
     return {
         "kind": "operator",
         "id": None,
@@ -2074,6 +2090,10 @@ def incoming_system_instruction(kind: str, allowed_action: str) -> str:
         if allowed_action == "may_command_children":
             return "これは子ポワンから親ポワンへ戻った返答通知です。commandChildren.continueAfterChildReplies=true により、必要なら子返答後も command-children を続けて実行できます。"
         return "これは子ポワンから親ポワンへ戻った返答通知です。allowedAction=read_only の範囲で、返答内容の確認と要約だけを行ってください。"
+    if kind == "origin_report_judgement":
+        return "これは由来つき報告の判定です。requiredJudgement を読み、指定されたJSONだけを返してください。"
+    if kind == "origin_report":
+        return "これは由来つき作業の上流または下流から届いた報告です。originChain を維持して処理してください。"
     return "これはユーザーからこのポワンへの入力です。"
 
 
@@ -2179,6 +2199,261 @@ def child_return_incoming_message(
     )
     payload["childReplies"] = child_reply_payloads(results)
     return payload
+
+
+def normalize_origin_chain(value: Any) -> list[dict[str, Any]]:
+    if not isinstance(value, list):
+        return []
+    chain: list[dict[str, Any]] = []
+    for raw in value[:50]:
+        if not isinstance(raw, dict):
+            continue
+        from_node = raw.get("from") if isinstance(raw.get("from"), dict) else {}
+        to_node = raw.get("to") if isinstance(raw.get("to"), dict) else {}
+        from_id = str(raw.get("fromId") or from_node.get("id") or "").strip()
+        to_id = str(raw.get("toId") or to_node.get("id") or "").strip()
+        if not from_id or not to_id:
+            continue
+        chain.append(
+            {
+                "schema": ORIGIN_CHAIN_SCHEMA,
+                "fromId": from_id,
+                "fromName": str(raw.get("fromName") or from_node.get("name") or "").strip(),
+                "toId": to_id,
+                "toName": str(raw.get("toName") or to_node.get("name") or "").strip(),
+                "dispatchSessionId": str(raw.get("dispatchSessionId") or "").strip(),
+                "dispatchId": raw.get("dispatchId"),
+                "instruction": limit_prompt_text(raw.get("instruction") or "", 4000),
+            }
+        )
+    return chain
+
+
+def origin_hop(
+    *,
+    from_id: str,
+    from_name: str,
+    to_id: str,
+    to_name: str,
+    dispatch_session_id: str = "",
+    dispatch_id: Any = None,
+    instruction: str = "",
+) -> dict[str, Any]:
+    return {
+        "schema": ORIGIN_CHAIN_SCHEMA,
+        "fromId": str(from_id or "").strip(),
+        "fromName": str(from_name or "").strip(),
+        "toId": str(to_id or "").strip(),
+        "toName": str(to_name or "").strip(),
+        "dispatchSessionId": str(dispatch_session_id or "").strip(),
+        "dispatchId": dispatch_id,
+        "instruction": limit_prompt_text(instruction, 4000),
+    }
+
+
+def append_origin_hop(chain: Any, hop: dict[str, Any]) -> list[dict[str, Any]]:
+    clean_chain = normalize_origin_chain(chain)
+    if hop.get("fromId") and hop.get("toId"):
+        clean_chain.append(hop)
+    return clean_chain
+
+
+def origin_upstream(chain: list[dict[str, Any]]) -> dict[str, Any] | None:
+    if not chain:
+        return None
+    hop = chain[-1]
+    upstream_id = str(hop.get("fromId") or "").strip()
+    if not upstream_id:
+        return None
+    return {
+        "id": upstream_id,
+        "name": str(hop.get("fromName") or "名前のないポワン").strip() or "名前のないポワン",
+        "originChain": chain[:-1],
+    }
+
+
+def build_downstream_origin_reports(
+    *,
+    base_chain: list[dict[str, Any]],
+    parent_id: str,
+    parent_label: str,
+    results: list[dict[str, Any]],
+    dispatch_session_id: str,
+) -> list[dict[str, Any]]:
+    reports: list[dict[str, Any]] = []
+    for result in results:
+        child_id = str(result.get("nodeId") or "").strip()
+        if not child_id:
+            continue
+        child_label = str(result.get("meaning") or "名前のないポワン").strip() or "名前のないポワン"
+        assistant_message = result.get("assistantMessage") if isinstance(result.get("assistantMessage"), dict) else None
+        report_text = str((assistant_message or {}).get("text") or result.get("error") or "").strip()
+        report_chain = append_origin_hop(
+            base_chain,
+            origin_hop(
+                from_id=parent_id,
+                from_name=parent_label,
+                to_id=child_id,
+                to_name=child_label,
+                dispatch_session_id=dispatch_session_id,
+                dispatch_id=result.get("dispatchId"),
+                instruction=str(result.get("instruction") or ""),
+            ),
+        )
+        reports.append(
+            {
+                "childId": child_id,
+                "childName": child_label,
+                "status": str(result.get("status") or "unknown"),
+                "conversationId": result.get("conversationId"),
+                "dispatchSessionId": dispatch_session_id,
+                "dispatchId": result.get("dispatchId"),
+                "originChain": report_chain,
+                "reportText": limit_prompt_text(report_text, 12000),
+            }
+        )
+    return reports
+
+
+def origin_judgement_template() -> dict[str, str]:
+    return {
+        "status": "achieved",
+        "reason": "判定理由",
+        "returnInstruction": "",
+    }
+
+
+def origin_judgement_text(
+    *,
+    report_text: str,
+    required_judgement: dict[str, Any],
+) -> str:
+    attempt = int(required_judgement.get("attempt") or 1)
+    max_attempts = int(required_judgement.get("maxAttempts") or ORIGIN_JUDGEMENT_MAX_ATTEMPTS)
+    validation_error = str(required_judgement.get("validationError") or "").strip()
+    lines = [
+        "由来つき報告が戻りました。",
+        "この報告を読んで、達成なら上流へ、未達なら下流へ返します。",
+        "",
+        f"判定試行: {attempt}/{max_attempts}",
+    ]
+    if validation_error:
+        lines.extend(["", "前回のJSONが不正でした。", validation_error])
+    lines.extend(
+        [
+            "",
+            "status は achieved か unmet のどちらかです。",
+            "unmet の時だけ returnInstruction に下流への具体的な差し戻し指示を書いてください。",
+            "",
+            "返答は次のJSONだけにしてください。",
+            json.dumps(origin_judgement_template(), ensure_ascii=False, indent=2),
+            "",
+            "--- 報告本文 ---",
+            report_text.strip(),
+        ]
+    )
+    return "\n".join(lines).strip()
+
+
+def build_required_origin_judgement(
+    *,
+    judge_id: str,
+    judge_label: str,
+    origin_chain: list[dict[str, Any]],
+    downstream_reports: list[dict[str, Any]],
+    report_text: str,
+    dispatch_session_id: str = "",
+    attempt: int = 1,
+    validation_error: str = "",
+    previous_output: str = "",
+) -> dict[str, Any]:
+    return {
+        "schema": ORIGIN_JUDGEMENT_SCHEMA,
+        "required": True,
+        "attempt": int(attempt),
+        "maxAttempts": ORIGIN_JUDGEMENT_MAX_ATTEMPTS,
+        "judge": {
+            "id": judge_id,
+            "name": judge_label,
+        },
+        "upstream": origin_upstream(origin_chain),
+        "originChain": normalize_origin_chain(origin_chain),
+        "downstreamReports": downstream_reports,
+        "dispatchSessionId": dispatch_session_id,
+        "reportText": limit_prompt_text(report_text, 16000),
+        "validationError": validation_error,
+        "previousOutput": limit_prompt_text(previous_output, 4000),
+        "responseFormat": origin_judgement_template(),
+    }
+
+
+def attach_origin_judgement(
+    incoming: dict[str, Any],
+    *,
+    required_judgement: dict[str, Any],
+) -> dict[str, Any]:
+    incoming["kind"] = "origin_report_judgement"
+    incoming["allowedAction"] = "must_judge_origin_report"
+    incoming["systemInstruction"] = incoming_system_instruction("origin_report_judgement", "must_judge_origin_report")
+    incoming["originChain"] = normalize_origin_chain(required_judgement.get("originChain"))
+    incoming["requiredJudgement"] = required_judgement
+    return incoming
+
+
+def strip_json_code_fence(text: str) -> str:
+    clean = str(text or "").strip()
+    if clean.startswith("```"):
+        lines = clean.splitlines()
+        if len(lines) >= 3 and lines[-1].strip() == "```":
+            return "\n".join(lines[1:-1]).strip()
+    return clean
+
+
+def parse_origin_judgement_response(text: str) -> tuple[dict[str, Any] | None, str]:
+    clean = strip_json_code_fence(text)
+    if not clean:
+        return None, "返答が空です。"
+    try:
+        payload = json.loads(clean)
+    except json.JSONDecodeError as exc:
+        return None, f"JSONとして読めません: {exc}"
+    if not isinstance(payload, dict):
+        return None, "JSONの最上位がobjectではありません。"
+    raw_status = str(payload.get("status") or payload.get("decision") or "").strip().lower()
+    status_aliases = {
+        "achieved": "achieved",
+        "complete": "achieved",
+        "completed": "achieved",
+        "done": "achieved",
+        "達成": "achieved",
+        "完了": "achieved",
+        "unmet": "unmet",
+        "incomplete": "unmet",
+        "not_achieved": "unmet",
+        "not-achieved": "unmet",
+        "未達": "unmet",
+        "差し戻し": "unmet",
+    }
+    status = status_aliases.get(raw_status, "")
+    if not status:
+        return None, "status は achieved または unmet にしてください。"
+    reason = str(payload.get("reason") or "").strip()
+    if not reason:
+        return None, "reason が空です。"
+    return_instruction = str(
+        payload.get("returnInstruction")
+        or payload.get("return_instruction")
+        or payload.get("instruction")
+        or ""
+    ).strip()
+    if status == "unmet" and not return_instruction:
+        return None, "status が unmet の時は returnInstruction が必要です。"
+    return {
+        "status": status,
+        "reason": reason,
+        "returnInstruction": return_instruction,
+        "raw": payload,
+    }, ""
 
 
 def remember_powan_work_event(details: dict[str, Any]) -> dict[str, Any]:
@@ -2301,6 +2576,20 @@ def build_pending_codex_incoming_message(
     items: list[dict[str, Any]],
 ) -> dict[str, Any]:
     first = items[0]
+    first_payload = first.get("payload") if isinstance(first.get("payload"), dict) else {}
+    if len(items) == 1 and isinstance(first_payload.get("requiredJudgement"), dict):
+        incoming = dict(first_payload)
+        incoming["body"] = text
+        incoming["queuedMessages"] = [
+            {
+                "pendingId": first.get("id"),
+                "messageId": first.get("messageId"),
+                "source": first.get("source"),
+                "senderId": first.get("senderId"),
+                "senderLabel": first.get("senderLabel"),
+            }
+        ]
+        return incoming
     continue_after_child_replies = any(
         bool((item.get("payload") or {}).get("commandChildren", {}).get("continueAfterChildReplies"))
         for item in items
@@ -2338,6 +2627,534 @@ def build_pending_codex_incoming_message(
         for item in items
     ]
     return incoming
+
+
+def pending_item_requires_origin_judgement(item: dict[str, Any]) -> bool:
+    payload = item.get("payload") if isinstance(item.get("payload"), dict) else {}
+    required = payload.get("requiredJudgement") if isinstance(payload.get("requiredJudgement"), dict) else {}
+    return bool(required.get("required"))
+
+
+def queue_origin_judgement_message(
+    *,
+    project: str,
+    file: str,
+    judge_id: str,
+    judge_label: str,
+    sender_id: str | None,
+    sender_label: str,
+    report_text: str,
+    required_judgement: dict[str, Any],
+    source: str,
+    reason: str,
+) -> dict[str, Any]:
+    conversation = STORE.active_conversation(project, file, judge_id)
+    text = origin_judgement_text(
+        report_text=report_text,
+        required_judgement=required_judgement,
+    )
+    message = emit_conversation_event(
+        project=project,
+        file=file,
+        node_id=judge_id,
+        conversation_id=int(conversation["id"]),
+        kind="origin_report_judgement",
+        role="user",
+        text=text,
+        receiver_label=judge_label,
+        source=source,
+        metadata={
+            "originSchema": ORIGIN_JUDGEMENT_SCHEMA,
+            "originAttempt": required_judgement.get("attempt"),
+            "originReason": reason,
+        },
+    )
+    incoming = build_incoming_message_payload(
+        source=source,
+        text=text,
+        sender_node_id=sender_id,
+        sender_label=sender_label,
+        receiver_node_id=judge_id,
+        receiver_label=judge_label,
+        conversation_id=int(conversation["id"]),
+        user_message_id=int(message["id"]) if message.get("id") is not None else None,
+    )
+    attach_origin_judgement(incoming, required_judgement=required_judgement)
+    STORE.queue_pending_codex_message(
+        project,
+        file,
+        judge_id,
+        int(conversation["id"]),
+        int(message["id"]),
+        source=source,
+        sender_id=sender_id,
+        sender_label=sender_label,
+        payload=incoming,
+    )
+    schedule_pending_codex_drain(project, file, judge_id, reason=reason)
+    log_server_event(
+        "info",
+        "origin-report-judgement-queued",
+        {
+            "console": True,
+            "project": STORE.safe_project_name(project),
+            "file": STORE.safe_powan_name(file),
+            "judgeId": judge_id,
+            "judgeLabel": judge_label,
+            "senderId": sender_id,
+            "senderLabel": sender_label,
+            "conversationId": int(conversation["id"]),
+            "messageId": message.get("id"),
+            "attempt": required_judgement.get("attempt"),
+            "reason": reason,
+            "upstream": required_judgement.get("upstream"),
+            "downstreamCount": len(required_judgement.get("downstreamReports") or []),
+        },
+    )
+    return {
+        "conversation": conversation,
+        "message": message,
+        "incomingMessage": incoming,
+    }
+
+
+def queue_origin_judgement_retry(
+    *,
+    project: str,
+    file: str,
+    node_id: str,
+    receiver_label: str,
+    sender_id: str | None,
+    sender_label: str,
+    required_judgement: dict[str, Any],
+    validation_error: str,
+    previous_output: str,
+) -> None:
+    attempt = int(required_judgement.get("attempt") or 1) + 1
+    max_attempts = int(required_judgement.get("maxAttempts") or ORIGIN_JUDGEMENT_MAX_ATTEMPTS)
+    if attempt > max_attempts:
+        conversation = STORE.active_conversation(project, file, node_id)
+        emit_conversation_event(
+            project=project,
+            file=file,
+            node_id=node_id,
+            conversation_id=int(conversation["id"]),
+            kind="origin_report_judgement_failed",
+            role="system",
+            text=f"由来報告の判定JSONが{max_attempts}回不正だったため停止しました。\n{validation_error}",
+            receiver_label=receiver_label,
+            source="origin-report-judgement",
+            metadata={"originSchema": ORIGIN_JUDGEMENT_SCHEMA},
+        )
+        log_server_event(
+            "error",
+            "origin-report-judgement-retry-exhausted",
+            {
+                "console": True,
+                "project": STORE.safe_project_name(project),
+                "file": STORE.safe_powan_name(file),
+                "nodeId": node_id,
+                "receiverLabel": receiver_label,
+                "attempt": attempt - 1,
+                "maxAttempts": max_attempts,
+                "validationError": validation_error,
+                "previousOutput": limit_prompt_text(previous_output, 1000),
+            },
+        )
+        return
+    retry_required = {
+        **required_judgement,
+        "attempt": attempt,
+        "validationError": validation_error,
+        "previousOutput": limit_prompt_text(previous_output, 4000),
+    }
+    queue_origin_judgement_message(
+        project=project,
+        file=file,
+        judge_id=node_id,
+        judge_label=receiver_label,
+        sender_id=sender_id,
+        sender_label=sender_label,
+        report_text=str(required_judgement.get("reportText") or ""),
+        required_judgement=retry_required,
+        source="origin-report-judgement-retry",
+        reason="origin-judgement-invalid-retry",
+    )
+
+
+def render_origin_promoted_report(
+    *,
+    judge_label: str,
+    decision: dict[str, Any],
+    report_text: str,
+) -> str:
+    lines = [
+        f"{judge_label} が由来つき報告を達成として上流へ上げました。",
+        "",
+        f"理由: {decision.get('reason') or ''}",
+        "",
+        "--- 下流からの報告 ---",
+        report_text.strip(),
+    ]
+    return "\n".join(lines).strip()
+
+
+def render_origin_unmet_instruction(
+    *,
+    judge_label: str,
+    decision: dict[str, Any],
+    report: dict[str, Any],
+) -> str:
+    lines = [
+        f"上位ポワン「{judge_label}」から、由来つき作業の差し戻しです。",
+        "",
+        "--- 差し戻し指示 ---",
+        str(decision.get("returnInstruction") or "").strip(),
+        "",
+        "--- 未達理由 ---",
+        str(decision.get("reason") or "").strip(),
+    ]
+    report_text = str(report.get("reportText") or "").strip()
+    if report_text:
+        lines.extend(["", "--- 直前の報告 ---", report_text])
+    return "\n".join(lines).strip()
+
+
+def queue_origin_worker_completion(
+    *,
+    project: str,
+    file: str,
+    worker_id: str,
+    worker_label: str,
+    origin_chain: list[dict[str, Any]],
+    assistant_message: dict[str, Any],
+    agent_run: dict[str, Any],
+) -> None:
+    full_chain = normalize_origin_chain(origin_chain)
+    if not full_chain:
+        return
+    last_hop = full_chain[-1]
+    upstream_id = str(last_hop.get("fromId") or "").strip()
+    if not upstream_id:
+        return
+    document = STORE.load_document(project, file)
+    upstream_label = powan_label_from_document(document, upstream_id)
+    assistant_text = str(assistant_message.get("text") or "").strip()
+    report_text = "\n".join(
+        [
+            f"下流ポワン「{worker_label}」から、差し戻し後の報告が戻りました。",
+            "",
+            assistant_text or "報告本文なし。",
+        ]
+    ).strip()
+    downstream_reports = [
+        {
+            "childId": worker_id,
+            "childName": worker_label,
+            "status": "completed",
+            "conversationId": assistant_message.get("conversationId"),
+            "assistantMessageId": assistant_message.get("id"),
+            "agentRunId": agent_run.get("id"),
+            "originChain": full_chain,
+            "reportText": limit_prompt_text(assistant_text, 12000),
+        }
+    ]
+    required = build_required_origin_judgement(
+        judge_id=upstream_id,
+        judge_label=upstream_label,
+        origin_chain=full_chain[:-1],
+        downstream_reports=downstream_reports,
+        report_text=report_text,
+        dispatch_session_id=str(last_hop.get("dispatchSessionId") or ""),
+    )
+    queue_origin_judgement_message(
+        project=project,
+        file=file,
+        judge_id=upstream_id,
+        judge_label=upstream_label,
+        sender_id=worker_id,
+        sender_label=worker_label,
+        report_text=report_text,
+        required_judgement=required,
+        source="origin-report-judgement",
+        reason="origin-worker-complete",
+    )
+    log_server_event(
+        "info",
+        "origin-report-worker-completion-routed",
+        {
+            "console": True,
+            "project": STORE.safe_project_name(project),
+            "file": STORE.safe_powan_name(file),
+            "workerId": worker_id,
+            "workerLabel": worker_label,
+            "upstreamId": upstream_id,
+            "upstreamLabel": upstream_label,
+            "originDepth": len(full_chain),
+        },
+    )
+
+
+def route_origin_achieved(
+    *,
+    project: str,
+    file: str,
+    node_id: str,
+    receiver_label: str,
+    required_judgement: dict[str, Any],
+    decision: dict[str, Any],
+) -> None:
+    origin_chain = normalize_origin_chain(required_judgement.get("originChain"))
+    upstream = origin_upstream(origin_chain)
+    report_text = str(required_judgement.get("reportText") or "").strip()
+    if not upstream:
+        conversation = STORE.active_conversation(project, file, node_id)
+        emit_conversation_event(
+            project=project,
+            file=file,
+            node_id=node_id,
+            conversation_id=int(conversation["id"]),
+            kind="origin_report_resolved",
+            role="system",
+            text=f"由来つき報告を達成として完了しました。\n理由: {decision.get('reason') or ''}",
+            receiver_label=receiver_label,
+            source="origin-report-judgement",
+            metadata={"originSchema": ORIGIN_JUDGEMENT_SCHEMA},
+        )
+        log_server_event(
+            "info",
+            "origin-report-resolved-at-root",
+            {
+                "console": True,
+                "project": STORE.safe_project_name(project),
+                "file": STORE.safe_powan_name(file),
+                "nodeId": node_id,
+                "receiverLabel": receiver_label,
+                "reason": decision.get("reason"),
+            },
+        )
+        return
+    promoted_text = render_origin_promoted_report(
+        judge_label=receiver_label,
+        decision=decision,
+        report_text=report_text,
+    )
+    upstream_id = str(upstream.get("id") or "")
+    upstream_label = str(upstream.get("name") or powan_label_from_document(STORE.load_document(project, file), upstream_id))
+    downstream_reports = [
+        {
+            "childId": node_id,
+            "childName": receiver_label,
+            "status": "achieved",
+            "originChain": origin_chain,
+            "reportText": limit_prompt_text(promoted_text, 12000),
+        }
+    ]
+    required = build_required_origin_judgement(
+        judge_id=upstream_id,
+        judge_label=upstream_label,
+        origin_chain=normalize_origin_chain(upstream.get("originChain")),
+        downstream_reports=downstream_reports,
+        report_text=promoted_text,
+        dispatch_session_id=str(required_judgement.get("dispatchSessionId") or ""),
+    )
+    queue_origin_judgement_message(
+        project=project,
+        file=file,
+        judge_id=upstream_id,
+        judge_label=upstream_label,
+        sender_id=node_id,
+        sender_label=receiver_label,
+        report_text=promoted_text,
+        required_judgement=required,
+        source="origin-report-judgement",
+        reason="origin-judgement-achieved-promote",
+    )
+    log_server_event(
+        "info",
+        "origin-report-promoted",
+        {
+            "console": True,
+            "project": STORE.safe_project_name(project),
+            "file": STORE.safe_powan_name(file),
+            "fromId": node_id,
+            "fromLabel": receiver_label,
+            "toId": upstream_id,
+            "toLabel": upstream_label,
+            "originDepth": len(origin_chain),
+            "reason": decision.get("reason"),
+        },
+    )
+
+
+def route_origin_unmet(
+    *,
+    project: str,
+    file: str,
+    node_id: str,
+    receiver_label: str,
+    required_judgement: dict[str, Any],
+    decision: dict[str, Any],
+) -> None:
+    reports = required_judgement.get("downstreamReports")
+    if not isinstance(reports, list) or not reports:
+        log_server_event(
+            "error",
+            "origin-report-unmet-no-downstream",
+            {
+                "console": True,
+                "project": STORE.safe_project_name(project),
+                "file": STORE.safe_powan_name(file),
+                "nodeId": node_id,
+                "receiverLabel": receiver_label,
+                "requiredJudgement": required_judgement,
+            },
+        )
+        return
+    document = STORE.load_document(project, file)
+    queued = 0
+    for report in reports:
+        if not isinstance(report, dict):
+            continue
+        child_id = str(report.get("childId") or "").strip()
+        if not child_id:
+            continue
+        child_label = str(report.get("childName") or powan_label_from_document(document, child_id)).strip() or "名前のないポワン"
+        origin_chain = normalize_origin_chain(report.get("originChain"))
+        text = render_origin_unmet_instruction(
+            judge_label=receiver_label,
+            decision=decision,
+            report=report,
+        )
+        conversation = STORE.active_conversation(project, file, child_id)
+        message = emit_conversation_event(
+            project=project,
+            file=file,
+            node_id=child_id,
+            conversation_id=int(conversation["id"]),
+            kind="origin_report_unmet",
+            role="user",
+            text=text,
+            receiver_label=child_label,
+            source="origin-report-unmet",
+            metadata={
+                "originSchema": ORIGIN_JUDGEMENT_SCHEMA,
+                "judgeId": node_id,
+                "judgeLabel": receiver_label,
+            },
+        )
+        incoming = build_incoming_message_payload(
+            source="origin-report-unmet",
+            text=text,
+            sender_node_id=node_id,
+            sender_label=receiver_label,
+            receiver_node_id=child_id,
+            receiver_label=child_label,
+            conversation_id=int(conversation["id"]),
+            user_message_id=int(message["id"]) if message.get("id") is not None else None,
+        )
+        incoming["originChain"] = origin_chain
+        incoming["originRoute"] = {
+            "kind": "unmet_return",
+            "reportBackOnComplete": True,
+            "originChain": origin_chain,
+            "judge": {
+                "id": node_id,
+                "name": receiver_label,
+            },
+            "reason": decision.get("reason"),
+        }
+        STORE.queue_pending_codex_message(
+            project,
+            file,
+            child_id,
+            int(conversation["id"]),
+            int(message["id"]),
+            source="origin-report-unmet",
+            sender_id=node_id,
+            sender_label=receiver_label,
+            payload=incoming,
+        )
+        schedule_pending_codex_drain(project, file, child_id, reason="origin-judgement-unmet-return")
+        queued += 1
+    log_server_event(
+        "info",
+        "origin-report-unmet-routed",
+        {
+            "console": True,
+            "project": STORE.safe_project_name(project),
+            "file": STORE.safe_powan_name(file),
+            "nodeId": node_id,
+            "receiverLabel": receiver_label,
+            "queued": queued,
+            "reason": decision.get("reason"),
+        },
+    )
+
+
+def handle_origin_judgement_result(
+    *,
+    project: str,
+    file: str,
+    node_id: str,
+    receiver_label: str,
+    group: list[dict[str, Any]],
+    incoming_message: dict[str, Any],
+    result: dict[str, Any],
+) -> None:
+    required = incoming_message.get("requiredJudgement") if isinstance(incoming_message.get("requiredJudgement"), dict) else {}
+    if not required.get("required"):
+        return
+    assistant = result.get("assistantMessage") if isinstance(result.get("assistantMessage"), dict) else {}
+    assistant_text = str((assistant or {}).get("text") or "").strip()
+    decision, validation_error = parse_origin_judgement_response(assistant_text)
+    sender_id = str(group[0].get("senderId") or "") or None
+    sender_label = str(group[0].get("senderLabel") or "由来報告")
+    if not decision:
+        queue_origin_judgement_retry(
+            project=project,
+            file=file,
+            node_id=node_id,
+            receiver_label=receiver_label,
+            sender_id=sender_id,
+            sender_label=sender_label,
+            required_judgement=required,
+            validation_error=validation_error,
+            previous_output=assistant_text,
+        )
+        return
+    log_server_event(
+        "info",
+        "origin-report-judgement-accepted",
+        {
+            "console": True,
+            "project": STORE.safe_project_name(project),
+            "file": STORE.safe_powan_name(file),
+            "nodeId": node_id,
+            "receiverLabel": receiver_label,
+            "status": decision.get("status"),
+            "reason": decision.get("reason"),
+            "pendingIds": [item.get("id") for item in group],
+        },
+    )
+    if decision["status"] == "achieved":
+        route_origin_achieved(
+            project=project,
+            file=file,
+            node_id=node_id,
+            receiver_label=receiver_label,
+            required_judgement=required,
+            decision=decision,
+        )
+    else:
+        route_origin_unmet(
+            project=project,
+            file=file,
+            node_id=node_id,
+            receiver_label=receiver_label,
+            required_judgement=required,
+            decision=decision,
+        )
 
 
 def schedule_pending_codex_drain(project: str, file: str, node_id: str, reason: str = "pending-codex-drain") -> None:
@@ -2390,9 +3207,36 @@ def drain_pending_codex_messages(project: str, file: str, node_id: str, drain_ke
             for item in items:
                 groups.setdefault(int(item["conversationId"]), []).append(item)
             for conversation_id, group in groups.items():
+                if any(pending_item_requires_origin_judgement(item) for item in group):
+                    origin_items = [item for item in group if pending_item_requires_origin_judgement(item)]
+                    process_item = origin_items[0]
+                    requeue_ids = [
+                        int(item["id"])
+                        for item in group
+                        if int(item["id"]) != int(process_item["id"])
+                    ]
+                    if requeue_ids:
+                        STORE.finish_pending_codex_messages(
+                            project,
+                            requeue_ids,
+                            "pending",
+                            error_text="waiting for origin judgement item to finish",
+                        )
+                    group = [process_item]
+                    conversation_id = int(process_item["conversationId"])
                 pending_ids = [int(item["id"]) for item in group]
                 receiver_label = powan_label_from_document(STORE.load_document(project, file), node_id)
                 text = render_pending_codex_message_bundle(group)
+                required_for_text = (
+                    (group[0].get("payload") or {}).get("requiredJudgement")
+                    if isinstance(group[0].get("payload"), dict)
+                    else None
+                )
+                if isinstance(required_for_text, dict):
+                    text = origin_judgement_text(
+                        report_text=str(required_for_text.get("reportText") or text),
+                        required_judgement=required_for_text,
+                    )
                 pre_message = {
                     "id": int(group[-1]["messageId"]),
                     "conversationId": int(conversation_id),
@@ -2407,6 +3251,7 @@ def drain_pending_codex_messages(project: str, file: str, node_id: str, drain_ke
                     text=text,
                     items=group,
                 )
+                run_source = str(group[0].get("source") or "command-child-return")
                 log_server_event(
                     "info",
                     "pending-codex-messages-dispatch",
@@ -2422,7 +3267,7 @@ def drain_pending_codex_messages(project: str, file: str, node_id: str, drain_ke
                     },
                 )
                 try:
-                    run_powan_codex_message(
+                    result = run_powan_codex_message(
                         node_id,
                         project=project,
                         file=file,
@@ -2430,7 +3275,7 @@ def drain_pending_codex_messages(project: str, file: str, node_id: str, drain_ke
                         include_meaning_tree=False,
                         include_direct_child_code=False,
                         attachments=[],
-                        source="command-child-return",
+                        source=run_source,
                         sender_node_id=str(group[0].get("senderId") or "") or None,
                         sender_label_override=str(group[0].get("senderLabel") or "DB未処理メッセージ"),
                         pre_appended_user_message=pre_message,
@@ -2445,6 +3290,16 @@ def drain_pending_codex_messages(project: str, file: str, node_id: str, drain_ke
                 except Exception as exc:
                     STORE.finish_pending_codex_messages(project, pending_ids, "failed", error_text=repr(exc))
                 else:
+                    if isinstance(incoming_message.get("requiredJudgement"), dict):
+                        handle_origin_judgement_result(
+                            project=project,
+                            file=file,
+                            node_id=node_id,
+                            receiver_label=receiver_label,
+                            group=group,
+                            incoming_message=incoming_message,
+                            result=result,
+                        )
                     STORE.finish_pending_codex_messages(project, pending_ids, "processed")
     finally:
         with PENDING_CODEX_DRAIN_LOCK:
@@ -2820,6 +3675,11 @@ def run_powan_codex_message(
         "incomingFrom": incoming_message_payload.get("from"),
         "allowedAction": incoming_message_payload.get("allowedAction"),
         "commandChildren": incoming_message_payload.get("commandChildren"),
+        "originDepth": len(normalize_origin_chain(incoming_message_payload.get("originChain"))),
+        "requiresOriginJudgement": bool(
+            isinstance(incoming_message_payload.get("requiredJudgement"), dict)
+            and incoming_message_payload.get("requiredJudgement", {}).get("required")
+        ),
     }
     agent_run = STORE.start_agent_run(project, conversation["id"], node_id, run_payload)
     try:
@@ -3043,6 +3903,17 @@ def run_powan_codex_message(
             "outputLength": len(result.text),
         },
     )
+    origin_route = incoming_message_payload.get("originRoute") if isinstance(incoming_message_payload.get("originRoute"), dict) else {}
+    if origin_route.get("reportBackOnComplete") and not result.early_completed:
+        queue_origin_worker_completion(
+            project=project,
+            file=file,
+            worker_id=node_id,
+            worker_label=receiver_label,
+            origin_chain=normalize_origin_chain(origin_route.get("originChain") or incoming_message_payload.get("originChain")),
+            assistant_message=assistant_message,
+            agent_run=agent_run,
+        )
     schedule_pending_codex_drain(project, file, node_id, reason="codex-run-completed")
     return {
         "conversationId": conversation["id"],
@@ -3786,6 +4657,7 @@ def command_child_powans(node_id: str, request: CommandChildrenRequest) -> dict[
         document = STORE.load_document(request.project, request.file)
         parent = document_node(document, node_id)
         parent_label = powan_label(parent)
+        request_origin_chain = normalize_origin_chain(request.originChain)
         parent_conversation = STORE.active_conversation(request.project, request.file, node_id)
         parent_conversation_id = int(parent_conversation["id"])
         jobs, skipped_jobs = child_command_jobs(document, node_id, request)
@@ -3812,6 +4684,7 @@ def command_child_powans(node_id: str, request: CommandChildrenRequest) -> dict[
                 "meaning": parent_label,
                 "jobCount": job_count,
                 "skippedCount": len(skipped_results),
+                "originDepth": len(request_origin_chain),
                 "jobs": [
                     {
                         "index": index,
@@ -3914,6 +4787,7 @@ def command_child_powans(node_id: str, request: CommandChildrenRequest) -> dict[
                 "instructionPreview": compact_console_text(request.instruction),
                 "includeMeaningTree": bool(request.includeMeaningTree),
                 "continueAfterChildReplies": bool(request.continueAfterChildReplies),
+                "originDepth": len(request_origin_chain),
                 "dispatchSessionId": dispatch_session_id,
                 "dispatchIntervalMs": dispatch_interval_ms,
                 "request": request_payload,
@@ -3935,6 +4809,7 @@ def command_child_powans(node_id: str, request: CommandChildrenRequest) -> dict[
                 "continueAfterChildReplies": bool(request.continueAfterChildReplies),
                 "dispatchSessionId": dispatch_session_id,
                 "dispatchIntervalMs": dispatch_interval_ms,
+                "originDepth": len(request_origin_chain),
             },
         )
 
@@ -3996,6 +4871,18 @@ def command_child_powans(node_id: str, request: CommandChildrenRequest) -> dict[
                 int(user_message["id"]),
             )
             job["dispatchId"] = dispatch["id"]
+            job["originChain"] = append_origin_hop(
+                request_origin_chain,
+                origin_hop(
+                    from_id=node_id,
+                    from_name=parent_label,
+                    to_id=job["nodeId"],
+                    to_name=job["meaning"],
+                    dispatch_session_id=dispatch_session_id,
+                    dispatch_id=dispatch.get("id"),
+                    instruction=job["instruction"],
+                ),
+            )
             parent_log_message = emit_conversation_event(
                 project=request.project,
                 file=request.file,
@@ -4114,13 +5001,47 @@ def command_child_powans(node_id: str, request: CommandChildrenRequest) -> dict[
                 continue_after_child_replies=bool(request.continueAfterChildReplies),
                 dispatch_session_id=dispatch_session_id,
             )
+            downstream_reports = build_downstream_origin_reports(
+                base_chain=request_origin_chain,
+                parent_id=node_id,
+                parent_label=parent_label,
+                results=results,
+                dispatch_session_id=dispatch_session_id,
+            )
+            queue_source = "command-child-return"
+            if downstream_reports:
+                required_judgement = build_required_origin_judgement(
+                    judge_id=node_id,
+                    judge_label=parent_label,
+                    origin_chain=request_origin_chain,
+                    downstream_reports=downstream_reports,
+                    report_text=parent_text,
+                    dispatch_session_id=dispatch_session_id,
+                )
+                attach_origin_judgement(incoming_message, required_judgement=required_judgement)
+                queue_source = "origin-report-judgement"
+                log_server_event(
+                    "info",
+                    "origin-report-created-from-child-return",
+                    {
+                        "console": True,
+                        "project": STORE.safe_project_name(request.project),
+                        "file": STORE.safe_powan_name(request.file),
+                        "parentId": node_id,
+                        "parentLabel": parent_label,
+                        "dispatchSessionId": dispatch_session_id,
+                        "originDepth": len(request_origin_chain),
+                        "downstreamCount": len(downstream_reports),
+                        "parentMessageId": parent_message.get("id"),
+                    },
+                )
             STORE.queue_pending_codex_message(
                 request.project,
                 request.file,
                 node_id,
                 int(parent_conversation_id),
                 int(parent_message["id"]),
-                source="command-child-return",
+                source=queue_source,
                 sender_id=sender_id,
                 sender_label="子ポワン一括返答",
                 payload=incoming_message,
@@ -4175,8 +5096,30 @@ def command_child_powans(node_id: str, request: CommandChildrenRequest) -> dict[
                         "dispatchSessionId": dispatch_session_id,
                         "dispatchId": job.get("dispatchId"),
                         "dispatchIntervalMs": dispatch_interval_ms,
+                        "originDepth": len(normalize_origin_chain(job.get("originChain"))),
                     },
                 )
+                child_origin_chain = normalize_origin_chain(job.get("originChain"))
+                child_incoming_message = build_incoming_message_payload(
+                    source="command-children",
+                    text=job["text"],
+                    sender_node_id=node_id,
+                    sender_label=parent_label,
+                    receiver_node_id=job["nodeId"],
+                    receiver_label=job["meaning"],
+                    conversation_id=int(job.get("conversationId") or 0),
+                    user_message_id=int((job.get("userMessage") or {}).get("id")) if isinstance(job.get("userMessage"), dict) and (job.get("userMessage") or {}).get("id") is not None else None,
+                    command_children_context={
+                        "dispatchSessionId": dispatch_session_id,
+                        "dispatchId": job.get("dispatchId"),
+                    },
+                )
+                child_incoming_message["originChain"] = child_origin_chain
+                child_incoming_message["originRoute"] = {
+                    "kind": "parent_command",
+                    "originChain": child_origin_chain,
+                    "reportBackOnComplete": False,
+                }
                 result = run_powan_codex_message(
                     job["nodeId"],
                     project=request.project,
@@ -4187,6 +5130,7 @@ def command_child_powans(node_id: str, request: CommandChildrenRequest) -> dict[
                     source="command-children",
                     sender_node_id=node_id,
                     pre_appended_user_message=job.get("userMessage") if isinstance(job.get("userMessage"), dict) else None,
+                    incoming_message=child_incoming_message,
                 )
                 run_status = "cancelled" if result.get("cancelled") else "completed"
                 item = {

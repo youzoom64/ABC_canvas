@@ -166,6 +166,7 @@ def dispatch(args: argparse.Namespace, payload: dict[str, Any]) -> dict[str, Any
             "instructions": payload.get("instructions", []),
             "includeMeaningTree": payload_flag(payload, "includeMeaningTree", "include_meaning_tree"),
             "continueAfterChildReplies": payload_flag(payload, "continueAfterChildReplies", "continue_after_child_replies"),
+            "originChain": payload.get("originChain") if isinstance(payload.get("originChain"), list) else [],
         }
         response = request_json(args.api_base, "POST", f"/api/ai/powans/{node_id}/actions/command-children", body)
         return summarize_command_children_response(response)
@@ -182,6 +183,7 @@ def dispatch(args: argparse.Namespace, payload: dict[str, Any]) -> dict[str, Any
             ],
             "includeMeaningTree": payload_flag(payload, "includeMeaningTree", "include_meaning_tree"),
             "continueAfterChildReplies": payload_flag(payload, "continueAfterChildReplies", "continue_after_child_replies"),
+            "originChain": payload.get("originChain") if isinstance(payload.get("originChain"), list) else [],
         }
         response = request_json(args.api_base, "POST", f"/api/ai/powans/{node_id}/actions/command-children", body)
         return summarize_command_children_response(response)

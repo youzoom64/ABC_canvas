@@ -277,7 +277,7 @@ def ensure_project_scaffold(project_root: Path) -> list[Path]:
     skill_root = project_root / ".agents" / "skills" / "abc-powan"
     created.extend(write_once(skill_root / "SKILL.md", SKILL_MD))
     created.extend(write_once(skill_root / "TOOL.md", TOOL_MD))
-    created.extend(copy_once(skill_root / "scripts" / "abc_powan_tool.py", Path(__file__).with_name("abc_powan_tool.py")))
+    created.extend(copy_if_changed(skill_root / "scripts" / "abc_powan_tool.py", Path(__file__).with_name("abc_powan_tool.py")))
     return created
 
 
@@ -294,4 +294,13 @@ def copy_once(path: Path, source: Path) -> list[Path]:
         return []
     path.parent.mkdir(parents=True, exist_ok=True)
     path.write_text(source.read_text(encoding="utf-8"), encoding="utf-8")
+    return [path]
+
+
+def copy_if_changed(path: Path, source: Path) -> list[Path]:
+    text = source.read_text(encoding="utf-8")
+    if path.exists() and path.read_text(encoding="utf-8") == text:
+        return []
+    path.parent.mkdir(parents=True, exist_ok=True)
+    path.write_text(text, encoding="utf-8")
     return [path]
