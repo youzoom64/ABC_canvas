@@ -1783,6 +1783,44 @@ def codex_workspace_root(project: str) -> Path:
     return (CODEX_WORKSPACE_ROOT / f"{safe_project}-{digest}").resolve()
 
 
+def toml_string(value: str) -> str:
+    return json.dumps(value, ensure_ascii=False)
+
+
+def write_codex_workspace_config(project: str, workspace_root: Path, source_root: Path) -> None:
+    config_root = workspace_root / ".codex"
+    config_root.mkdir(parents=True, exist_ok=True)
+    workspace_path = str(workspace_root.resolve())
+    source_path = str(source_root.resolve())
+    powan_work_path = str(POWAN_WORK_ROOT.resolve())
+    config_text = f"""
+default_permissions = "abc-powan"
+
+[windows]
+sandbox = "elevated"
+
+[permissions.abc-powan]
+extends = ":workspace"
+
+[permissions.abc-powan.filesystem]
+":root" = "deny"
+":minimal" = "read"
+{toml_string(powan_work_path)} = "deny"
+{toml_string(source_path)} = "deny"
+
+[permissions.abc-powan.filesystem.":workspace_roots"]
+{toml_string(workspace_path)} = "write"
+
+[permissions.abc-powan.network]
+enabled = true
+
+[permissions.abc-powan.network.domains]
+"127.0.0.1" = "allow"
+"localhost" = "allow"
+""".lstrip()
+    (config_root / "config.toml").write_text(config_text, encoding="utf-8")
+
+
 def sync_codex_workspace(project: str) -> Path:
     source_root = STORE.project_root(project)
     workspace_root = codex_workspace_root(project)
@@ -1791,6 +1829,7 @@ def sync_codex_workspace(project: str) -> Path:
         raise HTTPException(status_code=400, detail="Invalid Codex workspace path")
     workspace_root.mkdir(parents=True, exist_ok=True)
     ensure_project_scaffold(workspace_root)
+    write_codex_workspace_config(project, workspace_root, source_root)
 
     for forbidden_name in (DEFAULT_FILE, "powan.db"):
         forbidden_path = workspace_root / forbidden_name

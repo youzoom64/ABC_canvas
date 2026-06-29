@@ -496,6 +496,8 @@ class CodexPowanBridge:
             ]
             if sandbox == "danger-full-access":
                 command.insert(3, "--dangerously-bypass-approvals-and-sandbox")
+            else:
+                command[4:4] = ["--sandbox", sandbox]
         else:
             command = [
                 codex_command,
