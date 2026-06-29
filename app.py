@@ -2740,6 +2740,16 @@ def run_powan_codex_message(
         mark_codex_disconnected_safe(project, file, node_id, int(conversation["id"]), "codex-exec-failed")
         raise HTTPException(status_code=502, detail="Codex exec failed")
     assistant_message = STORE.append_conversation_message(project, file, node_id, "assistant", result.text)
+    fanout_powan_assistant_reply_to_discord(
+        project=project,
+        file=file,
+        node_id=node_id,
+        receiver_label=receiver_label,
+        text=result.text,
+        source=source,
+        conversation_id=int(conversation["id"]),
+        message_id=int(assistant_message["id"]) if assistant_message.get("id") is not None else None,
+    )
     agent_run = STORE.finish_agent_run(
         project,
         agent_run["id"],
@@ -2835,6 +2845,68 @@ def resolve_discord_target_powan(payload: dict[str, Any]) -> tuple[str, str, str
     if not target_node_id:
         raise RuntimeError("Discord target powan id is missing")
     return project, file, target_node_id, powan_label(target_node)
+
+
+def fanout_powan_assistant_reply_to_discord(
+    *,
+    project: str,
+    file: str,
+    node_id: str,
+    receiver_label: str,
+    text: str,
+    source: str,
+    conversation_id: int,
+    message_id: int | None,
+) -> None:
+    if source == "discord":
+        return
+    clean = str(text or "").strip()
+    if not clean:
+        return
+    if ABC_DISCORD_BRIDGE is None:
+        return
+    settings = load_app_settings()
+    discord_settings = dict(settings.get("discord") or {})
+    if not bool(discord_settings.get("enabled")):
+        return
+    try:
+        target_project, target_file, target_node_id, _target_label = resolve_discord_target_powan(discord_settings)
+    except Exception as exc:
+        log_server_event(
+            "warn",
+            "discord-fanout-target-unresolved",
+            {
+                "project": STORE.safe_project_name(project),
+                "file": STORE.safe_powan_name(file),
+                "nodeId": node_id,
+                "source": source,
+                "error": repr(exc),
+            },
+        )
+        return
+    if (
+        STORE.safe_project_name(project) != target_project
+        or STORE.safe_powan_name(file) != target_file
+        or str(node_id) != str(target_node_id)
+    ):
+        return
+    result = ABC_DISCORD_BRIDGE.send_configured_message(
+        f"**{receiver_label}**\n{clean}".strip(),
+        reason=f"powan-reply:{source}",
+    )
+    log_server_event(
+        "info" if result.get("sent") else "warn",
+        "discord-fanout-assistant-reply",
+        {
+            "project": STORE.safe_project_name(project),
+            "file": STORE.safe_powan_name(file),
+            "nodeId": node_id,
+            "conversationId": conversation_id,
+            "messageId": message_id,
+            "source": source,
+            **result,
+        },
+    )
 
 
 def handle_discord_powan_message(payload: dict[str, Any]) -> dict[str, Any]:

@@ -352,6 +352,56 @@ class AbcDiscordBridge:
         display_name = str(result.get("displayName") or "ABC Canvas").strip()
         await self._send_chunks(channel, f"**{display_name}**\n{reply}".strip(), int(config.get("messageLimit") or 1900))
 
+    def send_configured_message(self, content: str, *, reason: str = "app-fanout") -> dict[str, Any]:
+        clean = str(content or "").strip()
+        if not clean:
+            return {"sent": False, "reason": "empty"}
+        with self.lock:
+            client = self.client
+            status = dict(self.status_payload)
+            running = bool(self.thread and self.thread.is_alive())
+        channel_id = normalize_discord_channel_id(status.get("channelId"))
+        if not running or client is None:
+            return {"sent": False, "reason": "not-running", "channelId": channel_id}
+        if not channel_id:
+            return {"sent": False, "reason": "missing-channel"}
+        loop = getattr(client, "loop", None)
+        if loop is None or not loop.is_running():
+            return {"sent": False, "reason": "loop-not-running", "channelId": channel_id}
+        limit = int(status.get("messageLimit") or 1900)
+        try:
+            future = asyncio.run_coroutine_threadsafe(
+                self._send_configured_message(client, channel_id, clean, limit),
+                loop,
+            )
+            chunk_count = int(future.result(timeout=30))
+        except Exception as exc:
+            self.log_event(
+                "error",
+                "discord-bridge-outbound-failed",
+                {"channelId": channel_id, "reason": reason, "error": repr(exc)},
+            )
+            return {"sent": False, "reason": "send-failed", "channelId": channel_id, "error": repr(exc)}
+        self.log_event(
+            "info",
+            "discord-bridge-outbound-sent",
+            {"channelId": channel_id, "reason": reason, "chunks": chunk_count, "messageLength": len(clean)},
+        )
+        return {"sent": True, "channelId": channel_id, "chunks": chunk_count}
+
+    async def _send_configured_message(self, client: Any, channel_id: str, content: str, limit: int) -> int:
+        channel = None
+        try:
+            channel = client.get_channel(int(channel_id))
+        except Exception:
+            channel = None
+        if channel is None:
+            channel = await client.fetch_channel(int(channel_id))
+        chunks = split_discord_message(content, limit)
+        for chunk in chunks:
+            await channel.send(chunk)
+        return len(chunks)
+
     async def _send_chunks(self, channel: Any, content: str, limit: int) -> None:
         for chunk in split_discord_message(content, limit):
             await channel.send(chunk)
