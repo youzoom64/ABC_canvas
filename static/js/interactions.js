@@ -4619,6 +4619,18 @@ if (conversationResizeHandle) {
     conversationResizeHandle.setPointerCapture(event.pointerId);
   });
 }
+if (conversationInputResizeHandle) {
+  conversationInputResizeHandle.addEventListener("pointerdown", (event) => {
+    event.preventDefault();
+    const height = currentConversationInputHeight();
+    conversationInputResize = {
+      startY: event.clientY,
+      startHeight: height,
+    };
+    document.body.classList.add("resizing-conversation-input");
+    conversationInputResizeHandle.setPointerCapture(event.pointerId);
+  });
+}
 canvas.addEventListener("dragenter", (event) => {
   if (!dataTransferHasAttachmentDrop(event)) {
     return;

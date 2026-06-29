@@ -688,13 +688,17 @@ window.addEventListener("pointermove", (event) => {
     return;
   }
   if (conversationResize) {
-    const nextHeight = setLayoutHeight(
-      "--conversation-panel-height",
+    setConversationPanelHeight(
       conversationResize.startHeight + conversationResize.startY - event.clientY,
-      190,
-      window.innerHeight - 92,
+      "resize-conversation-panel",
     );
-    saveStoredLayoutValue("conversationPanelHeight", nextHeight);
+    return;
+  }
+  if (conversationInputResize) {
+    setConversationInputHeight(
+      conversationInputResize.startHeight + conversationInputResize.startY - event.clientY,
+      "resize-conversation-input",
+    );
     return;
   }
   if (pan) {
@@ -805,6 +809,14 @@ window.addEventListener("pointerup", (event) => {
     });
     return;
   }
+  if (conversationInputResize) {
+    conversationInputResize = null;
+    document.body.classList.remove("resizing-conversation-input");
+    logEvent("debug", "resize-conversation-input-complete", {
+      height: currentConversationInputHeight(),
+    });
+    return;
+  }
   if (pan) {
     const finishedPan = finishPan();
     if (!finishedPan?.moved && isCanvasSpace(event.target)) {
@@ -885,6 +897,10 @@ window.addEventListener("pointerup", (event) => {
 });
 
 window.addEventListener("pointercancel", () => {
+  if (conversationInputResize) {
+    conversationInputResize = null;
+    document.body.classList.remove("resizing-conversation-input");
+  }
   clearPanIntent();
   finishPan();
 });

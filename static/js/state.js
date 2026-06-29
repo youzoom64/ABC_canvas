@@ -67,6 +67,7 @@ var conversationTabBar = document.querySelector("#conversationTabBar");
 var conversationNodeName = document.querySelector("#conversationNodeName");
 var conversationLog = document.querySelector("#conversationLog");
 var conversationForm = document.querySelector("#conversationForm");
+var conversationInputResizeHandle = document.querySelector("#conversationInputResizeHandle");
 var conversationAttachmentTray = document.querySelector("#conversationAttachmentTray");
 var conversationInput = document.querySelector("#conversationInput");
 var sendConversationButton = document.querySelector("#sendConversationButton");
@@ -221,6 +222,7 @@ var viewportMotion = null;
 var treeResize = null;
 var panelResize = null;
 var conversationResize = null;
+var conversationInputResize = null;
 var treeDragSourceId = null;
 var subtreeImportTargetNodeId = null;
 var worldTransition = null;
@@ -550,7 +552,10 @@ function loadStoredLayout() {
       setLayoutWidth("--panel-width", stored.panelWidth, 260, 760);
     }
     if (Number.isFinite(stored.conversationPanelHeight)) {
-      setLayoutHeight("--conversation-panel-height", stored.conversationPanelHeight, 190, window.innerHeight - 92);
+      setConversationPanelHeight(stored.conversationPanelHeight, "load-conversation-panel-height", { persist: false });
+    }
+    if (Number.isFinite(stored.conversationInputHeight)) {
+      setConversationInputHeight(stored.conversationInputHeight, "load-conversation-input-height", { persist: false });
     }
     setTreePanelCollapsed(Boolean(stored.treePanelCollapsed), "load-tree-panel-collapsed", { persist: false });
     setPanelCollapsed(Boolean(stored.panelCollapsed), "load-panel-collapsed", { persist: false });
@@ -581,6 +586,42 @@ function setLayoutHeight(property, value, min, max) {
   const safeMax = Math.max(min, max);
   const height = Math.round(Math.min(safeMax, Math.max(min, value)));
   document.documentElement.style.setProperty(property, `${height}px`);
+  return height;
+}
+
+function conversationPanelMaxHeight() {
+  return Math.max(190, window.innerHeight - 28);
+}
+
+function currentConversationPanelHeight() {
+  return Number.parseFloat(getComputedStyle(document.documentElement).getPropertyValue("--conversation-panel-height")) || 280;
+}
+
+function currentConversationInputHeight() {
+  return Number.parseFloat(getComputedStyle(document.documentElement).getPropertyValue("--conversation-input-height")) || 56;
+}
+
+function conversationInputMaxHeight() {
+  const panelHeight = currentConversationPanelHeight();
+  return Math.max(40, Math.min(window.innerHeight - 140, panelHeight - 150));
+}
+
+function setConversationPanelHeight(value, reason = "set-conversation-panel-height", options = {}) {
+  const height = setLayoutHeight("--conversation-panel-height", value, 190, conversationPanelMaxHeight());
+  if (options.persist !== false) {
+    saveStoredLayoutValue("conversationPanelHeight", height);
+  }
+  setConversationInputHeight(currentConversationInputHeight(), `${reason}-input-clamp`, options);
+  logEvent("debug", reason, { height });
+  return height;
+}
+
+function setConversationInputHeight(value, reason = "set-conversation-input-height", options = {}) {
+  const height = setLayoutHeight("--conversation-input-height", value, 40, conversationInputMaxHeight());
+  if (options.persist !== false) {
+    saveStoredLayoutValue("conversationInputHeight", height);
+  }
+  logEvent("debug", reason, { height });
   return height;
 }
 

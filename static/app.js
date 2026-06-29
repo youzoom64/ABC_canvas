@@ -1,4 +1,4 @@
-const ABC_CANVAS_SCRIPT_VERSION = "wake-child-faces-173";
+const ABC_CANVAS_SCRIPT_VERSION = "conversation-resize-174";
 const ABC_CANVAS_SCRIPTS = [
   "/static/js/workspace.js",
   "/static/js/state.js",

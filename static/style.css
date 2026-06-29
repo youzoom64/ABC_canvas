@@ -8,6 +8,7 @@
   --panel-width: 300px;
   --panel-active-width: var(--panel-width);
   --conversation-panel-height: 280px;
+  --conversation-input-height: 56px;
   --conversation-font-size: 13px;
 }
 
@@ -814,7 +815,7 @@ body.resizing-tree {
   min-width: 320px;
   height: var(--conversation-panel-height);
   min-height: 190px;
-  max-height: calc(100vh - 92px);
+  max-height: calc(100vh - 28px);
   border: 1px solid rgba(68, 127, 153, 0.28);
   border-radius: 8px;
   background: rgba(251, 254, 255, 0.96);
@@ -839,6 +840,7 @@ body.resizing-tree {
 }
 
 .conversation-panel.collapsed .conversation-resize-handle,
+.conversation-panel.collapsed .conversation-input-resize-handle,
 .conversation-panel.collapsed .conversation-tab-bar,
 .conversation-panel.collapsed .conversation-actions,
 .conversation-panel.collapsed .conversation-log,
@@ -883,6 +885,11 @@ body.resizing-conversation .conversation-resize-handle {
 }
 
 body.resizing-conversation {
+  cursor: ns-resize;
+  user-select: none;
+}
+
+body.resizing-conversation-input {
   cursor: ns-resize;
   user-select: none;
 }
@@ -1336,12 +1343,28 @@ body.resizing-conversation {
 }
 
 .conversation-form {
+  position: relative;
   display: grid;
   grid-template-columns: minmax(0, 1fr) auto auto auto;
   gap: 8px;
   padding: 10px 12px 12px;
   border-top: 1px solid rgba(95, 157, 185, 0.16);
   background: rgba(255, 255, 255, 0.86);
+}
+
+.conversation-input-resize-handle {
+  position: absolute;
+  top: -5px;
+  left: 0;
+  right: 0;
+  height: 10px;
+  cursor: ns-resize;
+  z-index: 2;
+}
+
+.conversation-input-resize-handle:hover,
+body.resizing-conversation-input .conversation-input-resize-handle {
+  background: rgba(44, 119, 151, 0.16);
 }
 
 .conversation-composer-main {
@@ -1357,8 +1380,9 @@ body.resizing-conversation {
 .conversation-form textarea {
   min-width: 0;
   min-height: 40px;
-  max-height: 96px;
+  height: var(--conversation-input-height);
   resize: none;
+  overflow: auto;
   padding: 0;
   border: 0;
   border-radius: 0;
