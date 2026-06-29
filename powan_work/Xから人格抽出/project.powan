@@ -12,9 +12,9 @@
       }
     },
     "viewport": {
-      "x": -8967,
-      "y": -9107,
-      "scale": 1.9259,
+      "x": -5992,
+      "y": -6700,
+      "scale": 1.3747,
       "openParentId": null
     }
   },
@@ -42,15 +42,15 @@
         "motion": "soft"
       },
       "layout": {
-        "x": 4762,
-        "y": 4857,
-        "width": 477,
-        "height": 286
+        "x": 4440,
+        "y": 4775,
+        "width": 720,
+        "height": 620
       },
       "powanKind": "organ",
       "userSized": true,
       "codeLanguage": "python",
-      "holdingCount": 4
+      "holdingCount": 6
     },
     {
       "id": "node-191ead6b82",
@@ -315,17 +315,17 @@
       },
       "codeLanguage": "python",
       "layout": {
-        "x": 4724,
-        "y": 4763,
-        "width": 286,
-        "height": 178
+        "x": 4711,
+        "y": 4744,
+        "width": 265,
+        "height": 164
       },
       "nestedLayoutByParent": {
         "node-12d93ab587": {
-          "x": 70,
-          "y": 3,
-          "width": 96,
-          "height": 40
+          "x": 117,
+          "y": 0,
+          "width": 72,
+          "height": 30
         }
       },
       "userSized": true,
@@ -349,17 +349,17 @@
       },
       "codeLanguage": "python",
       "layout": {
-        "x": 4990,
-        "y": 4763,
-        "width": 286,
-        "height": 178
+        "x": 5026,
+        "y": 4744,
+        "width": 265,
+        "height": 164
       },
       "nestedLayoutByParent": {
         "node-12d93ab587": {
-          "x": 283,
-          "y": 3,
-          "width": 96,
-          "height": 40
+          "x": 506,
+          "y": 0,
+          "width": 72,
+          "height": 30
         }
       },
       "userSized": true
@@ -382,17 +382,17 @@
       },
       "codeLanguage": "python",
       "layout": {
-        "x": 5123,
-        "y": 4911,
-        "width": 286,
-        "height": 178
+        "x": 5184,
+        "y": 4919,
+        "width": 265,
+        "height": 164
       },
       "nestedLayoutByParent": {
         "node-12d93ab587": {
-          "x": 390,
-          "y": 109,
-          "width": 96,
-          "height": 40
+          "x": 620,
+          "y": 283,
+          "width": 72,
+          "height": 30
         }
       },
       "userSized": true
@@ -415,10 +415,10 @@
       },
       "codeLanguage": "python",
       "layout": {
-        "x": 4657,
-        "y": 4787,
-        "width": 350,
-        "height": 210
+        "x": 4729,
+        "y": 4826,
+        "width": 180,
+        "height": 104
       },
       "nestedLayoutByParent": {
         "node-0c5efc20ca": {
@@ -434,8 +434,8 @@
           "height": 40
         },
         "node-f36698d922": {
-          "x": -13,
-          "y": 4,
+          "x": 0,
+          "y": 0,
           "width": 128,
           "height": 51
         }
@@ -464,17 +464,17 @@
         "motion": "soft"
       },
       "layout": {
-        "x": 4990,
-        "y": 5059,
-        "width": 286,
-        "height": 178
+        "x": 5026,
+        "y": 5094,
+        "width": 265,
+        "height": 164
       },
       "nestedLayoutByParent": {
         "node-12d93ab587": {
-          "x": 283,
-          "y": 215,
-          "width": 96,
-          "height": 40
+          "x": 506,
+          "y": 562,
+          "width": 72,
+          "height": 30
         }
       },
       "userSized": true,
@@ -499,15 +499,15 @@
         "motion": "soft"
       },
       "layout": {
-        "x": 4993,
-        "y": 4787,
-        "width": 350,
-        "height": 210
+        "x": 5105,
+        "y": 4826,
+        "width": 180,
+        "height": 104
       },
       "nestedLayoutByParent": {
         "node-f36698d922": {
-          "x": 143,
-          "y": 4,
+          "x": 109,
+          "y": 0,
           "width": 128,
           "height": 51
         }
@@ -539,10 +539,10 @@
         "motion": "soft"
       },
       "layout": {
-        "x": 4762,
-        "y": 4857,
-        "width": 477,
-        "height": 286
+        "x": 4839,
+        "y": 4901,
+        "width": 327,
+        "height": 194
       },
       "nestedLayoutByParent": {
         "node-7d6e031c71": {
@@ -1229,17 +1229,17 @@
       },
       "codeLanguage": "python",
       "layout": {
-        "x": 4724,
-        "y": 5059,
-        "width": 286,
-        "height": 178
+        "x": 4711,
+        "y": 5094,
+        "width": 265,
+        "height": 164
       },
       "nestedLayoutByParent": {
         "node-12d93ab587": {
-          "x": 70,
-          "y": 215,
-          "width": 96,
-          "height": 40
+          "x": 117,
+          "y": 562,
+          "width": 72,
+          "height": 30
         }
       },
       "userSized": true
@@ -1262,15 +1262,15 @@
       },
       "codeLanguage": "python",
       "layout": {
-        "x": 4993,
-        "y": 5003,
-        "width": 350,
-        "height": 210
+        "x": 5105,
+        "y": 5080,
+        "width": 180,
+        "height": 104
       },
       "nestedLayoutByParent": {
         "node-f36698d922": {
-          "x": 143,
-          "y": 95,
+          "x": 109,
+          "y": 85,
           "width": 128,
           "height": 51
         }
@@ -1297,15 +1297,15 @@
       },
       "codeLanguage": "python",
       "layout": {
-        "x": 4657,
-        "y": 5003,
-        "width": 350,
-        "height": 210
+        "x": 4729,
+        "y": 5080,
+        "width": 180,
+        "height": 104
       },
       "nestedLayoutByParent": {
         "node-f36698d922": {
-          "x": -13,
-          "y": 95,
+          "x": 0,
+          "y": 85,
           "width": 128,
           "height": 51
         }
@@ -1330,10 +1330,10 @@
       },
       "codeLanguage": "python",
       "layout": {
-        "x": 4762,
-        "y": 4857,
-        "width": 477,
-        "height": 286
+        "x": 4839,
+        "y": 4901,
+        "width": 327,
+        "height": 194
       },
       "nestedLayoutByParent": {
         "node-658f20c608": {
@@ -2504,12 +2504,11 @@
       "title": "X投稿収集テストポワン",
       "body": "X投稿収集ポワン全体が正しく収集・保存・判定・追跡・分類できているかを、ユーザーがGUIで確認しながら育てるための神経ポワン。終端判定だけに狭めず、既存DB投稿、単発投稿URL、収集疎通、投稿読み取り、返信・引用・リポスト追跡、投稿出どころ判定、終端内容分類、画像・動画・YouTube・ニュース素材確認、正解ラベル管理、バッチ再テストまでを束ねる。既存のX構造整理ポワン配下をコピーせず、リンクポワン経由で参照して使う。",
       "powanKind": "nerve",
-      "code": "",
+      "code": "from __future__ import annotations\n\nimport argparse\nimport json\nimport subprocess\nimport sys\nfrom pathlib import Path\nfrom typing import Any\n\n\nDEFAULT_STATE_DIR = \".powan_test_gui\"\nDEFAULT_RESULTS_NAME = \"x_post_test_results.json\"\nDEFAULT_LABELS_NAME = \"x_post_test_expected_labels.json\"\nDEFAULT_PROJECT_FILE = \"project.powan\"\nDEFAULT_GUI_FILE = \".codex_tmp_test_gui_powan_code.py\"\nGUI_TITLE = \"テストGUIポワン\"\n\n\ndef project_root_from(start: Path | None = None) -> Path:\n    base = (start or Path.cwd()).resolve()\n    if base.is_file():\n        base = base.parent\n    for candidate in (base, *base.parents):\n        if (candidate / DEFAULT_PROJECT_FILE).exists():\n            return candidate\n    return Path.cwd().resolve()\n\n\ndef resolve_path(value: str, root: Path) -> Path | None:\n    if not value:\n        return None\n    path = Path(value).expanduser()\n    return path if path.is_absolute() else root / path\n\n\ndef default_json_path(root: Path, state_dir: Path, name: str) -> Path:\n    return state_dir / name if state_dir.is_absolute() else root / state_dir / name\n\n\ndef load_gui_code_from_project(project_file: Path) -> str:\n    data = json.loads(project_file.read_text(encoding=\"utf-8\"))\n    for node in data.get(\"nodes\", []):\n        if node.get(\"title\") == GUI_TITLE:\n            code = node.get(\"code\") or \"\"\n            if code.strip():\n                return code\n            raise RuntimeError(f\"{GUI_TITLE} has no code in {project_file}\")\n    raise RuntimeError(f\"{GUI_TITLE} was not found in {project_file}\")\n\n\ndef resolve_gui_file(root: Path, project_file: Path, gui_code: str, state_dir: Path, dry_run: bool) -> tuple[Path, bool, str]:\n    explicit = resolve_path(gui_code, root)\n    if explicit:\n        return explicit, explicit.exists(), \"explicit\"\n    default_gui = root / DEFAULT_GUI_FILE\n    if default_gui.exists():\n        return default_gui, True, \"default-temp-file\"\n    if dry_run:\n        try:\n            load_gui_code_from_project(project_file)\n            return root / DEFAULT_GUI_FILE, False, \"project-powan-extractable\"\n        except Exception:\n            return root / DEFAULT_GUI_FILE, False, \"missing\"\n    code = load_gui_code_from_project(project_file)\n    target_dir = state_dir if state_dir.is_absolute() else root / state_dir\n    target_dir.mkdir(parents=True, exist_ok=True)\n    extracted = target_dir / \"extracted_test_gui_powan_code.py\"\n    extracted.write_text(code, encoding=\"utf-8\")\n    return extracted, True, \"extracted-from-project-powan\"\n\n\ndef build_parser() -> argparse.ArgumentParser:\n    parser = argparse.ArgumentParser(\n        prog=\"x-post-collection-test\",\n        description=\"Thin launcher for the first-stage X post collection test GUI.\",\n        epilog=(\n            \"The launcher does not run Selenium, deep relation tracing, external material fetching, \"\n            \"or production DB writes. x_archive.db is passed to the GUI as read-only input; \"\n            \"test results and labels are JSON files.\"\n        ),\n    )\n    parser.add_argument(\"--db\", default=\"\", help=\"Optional path to an existing x_archive.db. The GUI treats it as read-only.\")\n    parser.add_argument(\"--results\", default=\"\", help=\"Path to x_post_test_results.json. Defaults to .powan_test_gui/x_post_test_results.json.\")\n    parser.add_argument(\"--labels\", default=\"\", help=\"Path to x_post_test_expected_labels.json. Defaults to .powan_test_gui/x_post_test_expected_labels.json.\")\n    parser.add_argument(\"--state-dir\", default=DEFAULT_STATE_DIR, help=\"Directory for GUI temp state and default JSON stores.\")\n    parser.add_argument(\"--project-file\", default=DEFAULT_PROJECT_FILE, help=\"Path to project.powan used to find saved child GUI code.\")\n    parser.add_argument(\"--gui-code\", default=\"\", help=\"Optional explicit path to extracted test GUI Python code.\")\n    parser.add_argument(\"--url\", default=\"\", help=\"Optional post URL to prefill in the GUI.\")\n    parser.add_argument(\"--run-id\", default=\"\", help=\"Optional run_id to pass through to the GUI.\")\n    parser.add_argument(\"--test-type\", default=\"\", help=\"Optional initial test type supported by the GUI.\")\n    parser.add_argument(\"--no-gui\", action=\"store_true\", help=\"Ask the child GUI code to run one CLI stub test instead of opening Tk.\")\n    parser.add_argument(\"--dry-run\", action=\"store_true\", help=\"Print resolved paths and GUI availability without opening the GUI.\")\n    return parser\n\n\ndef resolved_config(args: argparse.Namespace) -> dict[str, Any]:\n    root = project_root_from(Path(__file__).resolve() if \"__file__\" in globals() else Path.cwd())\n    state_dir = resolve_path(args.state_dir, root) or (root / DEFAULT_STATE_DIR)\n    project_file = resolve_path(args.project_file, root) or (root / DEFAULT_PROJECT_FILE)\n    results = resolve_path(args.results, root) or default_json_path(root, state_dir, DEFAULT_RESULTS_NAME)\n    labels = resolve_path(args.labels, root) or default_json_path(root, state_dir, DEFAULT_LABELS_NAME)\n    db_path = resolve_path(args.db, root)\n    gui_path, gui_exists, gui_source = resolve_gui_file(root, project_file, args.gui_code, state_dir, args.dry_run)\n    return {\n        \"project_root\": root,\n        \"state_dir\": state_dir,\n        \"project_file\": project_file,\n        \"db_path\": db_path,\n        \"results_path\": results,\n        \"labels_path\": labels,\n        \"gui_code_path\": gui_path,\n        \"gui_code_exists\": gui_exists,\n        \"gui_code_source\": gui_source,\n        \"production_db_write\": False,\n        \"selenium_enabled\": False,\n        \"external_fetch_enabled\": False,\n    }\n\n\ndef print_dry_run(config: dict[str, Any]) -> None:\n    display = {key: (str(value) if isinstance(value, Path) else value) for key, value in config.items()}\n    print(json.dumps(display, ensure_ascii=False, indent=2, sort_keys=True))\n\n\ndef launch_gui(args: argparse.Namespace, config: dict[str, Any]) -> int:\n    gui = Path(config[\"gui_code_path\"])\n    if not gui.exists():\n        raise FileNotFoundError(f\"GUI code was not found: {gui}\")\n    Path(config[\"state_dir\"]).mkdir(parents=True, exist_ok=True)\n    command = [\n        sys.executable,\n        str(gui),\n        \"--project-file\",\n        str(config[\"project_file\"]),\n        \"--result-store\",\n        str(config[\"results_path\"]),\n        \"--label-store\",\n        str(config[\"labels_path\"]),\n        \"--state-dir\",\n        str(config[\"state_dir\"]),\n    ]\n    if config[\"db_path\"]:\n        command.extend([\"--db\", str(config[\"db_path\"])])\n    if args.url:\n        command.extend([\"--url\", args.url])\n    if args.run_id:\n        command.extend([\"--run-id\", args.run_id])\n    if args.test_type:\n        command.extend([\"--test-type\", args.test_type])\n    if args.no_gui:\n        command.append(\"--no-gui\")\n    return subprocess.run(command, cwd=str(config[\"project_root\"]), check=False).returncode\n\n\ndef main(argv: list[str] | None = None) -> int:\n    parser = build_parser()\n    args = parser.parse_args(argv)\n    try:\n        config = resolved_config(args)\n        if args.dry_run:\n            print_dry_run(config)\n            return 0\n        return launch_gui(args, config)\n    except Exception as exc:\n        print(f\"x-post-collection-test launcher error: {exc}\", file=sys.stderr)\n        return 2\n\n\nif __name__ == \"__main__\":\n    raise SystemExit(main())\n",
       "parent": "node-12d93ab587",
       "children": [
         "node-e6277e3b72",
         "node-27fb9b066d",
-        "node-487e707822",
         "node-d599557beb",
         "node-76c162930a",
         "node-18684239d1",
@@ -2518,7 +2517,8 @@
         "node-dfbbde7655",
         "node-8fb94b5def",
         "node-dbf9799f66",
-        "node-0483a467f1"
+        "node-0483a467f1",
+        "node-487e707822"
       ],
       "style": {
         "shape": "cloud",
@@ -2529,27 +2529,29 @@
         "motion": "soft"
       },
       "layout": {
-        "x": 4591,
-        "y": 4911,
-        "width": 286,
-        "height": 178
+        "x": 4553,
+        "y": 4919,
+        "width": 265,
+        "height": 164
       },
       "nestedLayoutByParent": {
         "node-12d93ab587": {
-          "x": -37,
-          "y": 109,
-          "width": 96,
-          "height": 40
+          "x": 0,
+          "y": 283,
+          "width": 72,
+          "height": 30
         }
       },
-      "userSized": true
+      "userSized": true,
+      "holdingCount": 12,
+      "codeLanguage": "python"
     },
     {
       "id": "node-e6277e3b72",
       "title": "テストGUIポワン",
       "body": "X投稿収集テストをユーザーが操作するための臓器ポワン。投稿URL入力、既存DB投稿選択、テスト種別選択、実行ボタン、判定結果、証拠、ログ、正解ラベル修正、再テスト実行を画面として提供する。最初は単発投稿と既存DB投稿を選んで結果を見られることを重視する。",
       "powanKind": "organ",
-      "code": "",
+      "code": "from __future__ import annotations\n\nimport argparse, json, re, sqlite3, uuid\nfrom datetime import datetime, timezone\nfrom pathlib import Path\nfrom typing import Any\n\ntry:\n    import tkinter as tk\n    from tkinter import filedialog, ttk\nexcept Exception:  # pragma: no cover\n    tk = None\n    ttk = None\n    filedialog = None\n\nSCHEMA_INPUT = \"x-post-test-input/v1\"\nSCHEMA_RESULT = \"x-post-test-result/v1\"\nDEFAULT_PROJECT_FILE = \"project.powan\"\nDEFAULT_STATE_DIR = \".powan_test_gui\"\nRESULT_STORE_PATH = \"x_post_test_results.json\"\nLABEL_STORE_PATH = \"x_post_test_expected_labels.json\"\nTEST_TYPES = [\"post_reading\", \"origin_judgement\", \"terminal_judgement\", \"content_classification\", \"collection_connectivity\", \"material_check\"]\nFORBIDDEN_ACTIONS = [\"selenium_execution\", \"deep_reply_quote_repost_trace\", \"external_material_fetch\", \"image_or_video_reading\", \"youtube_or_news_download\", \"production_x_archive_write\"]\nSTATUS_RE = re.compile(r\"/(?:i/web/)?status/(\\d+)\")\nURL_RE = re.compile(r\"https?://[^\\s)\\]}>\\\"']+\")\nYOUTUBE_RE = re.compile(r\"(?:youtube\\.com|youtu\\.be)\", re.IGNORECASE)\nNEWS_RE = re.compile(r\"/(?:news|article|articles|story|press|world|business|politics|economy|tech)(?:/|$)\", re.IGNORECASE)\n\ndef now_iso() -> str:\n    return datetime.now(timezone.utc).replace(microsecond=0).isoformat()\n\ndef pretty(data: Any) -> str:\n    return json.dumps(data, ensure_ascii=False, indent=2, sort_keys=True)\n\ndef safe_json_loads(value: str) -> Any:\n    try:\n        return json.loads(value) if value else None\n    except json.JSONDecodeError:\n        return {\"_rawText\": value, \"_parseError\": \"invalid_json\"}\n\ndef post_id_from_url(url: str) -> str:\n    match = STATUS_RE.search(url or \"\")\n    return match.group(1) if match else \"\"\n\ndef compact_text(text: str, limit: int = 90) -> str:\n    cleaned = \" \".join(str(text or \"\").split())\n    return cleaned if len(cleaned) <= limit else cleaned[: limit - 1] + \"...\"\n\ndef post_to_target(post: dict[str, str], db_path: str) -> dict[str, Any]:\n    return {\n        \"postId\": post.get(\"id\", \"\"), \"postUrl\": post.get(\"url\", \"\"), \"account\": post.get(\"account\", \"\"),\n        \"type\": post.get(\"type\", \"\"), \"authorHandle\": post.get(\"author_handle\", \"\"), \"authorName\": post.get(\"author_name\", \"\"),\n        \"createdAt\": post.get(\"created_at\", \"\"), \"text\": post.get(\"text\", \"\"),\n        \"rawJson\": safe_json_loads(post.get(\"raw_json\", \"\")), \"dbPath\": db_path,\n    }\n\n\nclass JsonContractStore:\n    def __init__(self, project_file: Path = Path(DEFAULT_PROJECT_FILE), result_store: str = RESULT_STORE_PATH, label_store: str = LABEL_STORE_PATH) -> None:\n        self.project_file = project_file\n        self.result_store = result_store\n        self.label_store = label_store\n        self.result_run = self._load_powan_run(\"テスト結果保存・比較ポワン\")\n        self.label_run = self._load_powan_run(\"正解ラベル管理ポワン\")\n\n    def _load_powan_run(self, title: str):\n        data = json.loads(self.project_file.read_text(encoding=\"utf-8\"))\n        node = next((item for item in data.get(\"nodes\", []) if item.get(\"title\") == title), None)\n        code = (node or {}).get(\"code\") or \"\"\n        if not code:\n            raise RuntimeError(f\"{title} has no code\")\n        namespace = {\"__name__\": f\"powan_contract_{title}\", \"__file__\": str(self.project_file)}\n        exec(compile(code, f\"<{title}>\", \"exec\"), namespace)\n        if not callable(namespace.get(\"run\")):\n            raise RuntimeError(f\"{title} has no run(payload) contract\")\n        return namespace[\"run\"]\n\n    def common_input(self, test_input: dict[str, Any]) -> dict[str, Any]:\n        target = test_input.get(\"target\") or {}\n        return {\n            \"source_type\": \"x_post\",\n            \"target_kind\": test_input.get(\"testType\", \"\"),\n            \"canonical_url\": target.get(\"postUrl\", \"\"),\n            \"post_id\": target.get(\"postId\") or post_id_from_url(str(target.get(\"postUrl\") or \"\")),\n            \"run_id\": test_input.get(\"runId\", \"\"),\n            \"needs_browser\": False,\n            \"warnings\": [],\n        }\n\n    def input_identity(self, test_input: dict[str, Any]) -> dict[str, Any]:\n        common = self.common_input(test_input)\n        normalized = self.result_run({\"action\": \"normalize-input\", \"test_input\": common, \"store_path\": self.result_store})\n        if not normalized.get(\"ok\"):\n            raise RuntimeError(f\"normalize-input failed: {normalized}\")\n        return {\"common_input\": normalized[\"input\"], \"input_key\": normalized[\"input_key\"], \"input_hash\": normalized[\"input_hash\"]}\n\n    def save_result(self, test_input: dict[str, Any], result: dict[str, Any]) -> dict[str, Any]:\n        identity = self.input_identity(test_input)\n        saved = self.result_run({\n            \"action\": \"save\",\n            \"store_path\": self.result_store,\n            \"test_id\": identity[\"input_key\"],\n            \"test_type\": test_input.get(\"testType\", \"\"),\n            \"test_input\": identity[\"common_input\"],\n            \"result\": result,\n            \"evidence\": result.get(\"evidence\", []),\n            \"logs\": result.get(\"logs\", []),\n            \"success\": result.get(\"status\") == \"pass\",\n        })\n        return {\"identity\": identity, \"saved\": saved}\n\n    def load_label(self, test_input: dict[str, Any]) -> dict[str, str]:\n        identity = self.input_identity(test_input)\n        loaded = self.label_run({\"action\": \"get\", \"store_path\": self.label_store, \"test_id\": identity[\"input_key\"], \"test_input\": identity[\"common_input\"]})\n        record = loaded.get(\"label\") or {}\n        expected = record.get(\"expected\") if isinstance(record, dict) else {}\n        decision = expected.get(\"decision\") if isinstance(expected, dict) else {}\n        return {\n            \"expectedStatus\": str((expected or {}).get(\"status\") or \"\"),\n            \"expectedOriginType\": str((decision or {}).get(\"originType\") or \"\"),\n            \"expectedTerminalState\": str((decision or {}).get(\"terminalState\") or \"\"),\n            \"expectedContentType\": str((decision or {}).get(\"contentType\") or \"\"),\n            \"note\": str(record.get(\"memo\") or \"\"),\n        }\n\n    def save_label(self, test_input: dict[str, Any], fields: dict[str, str], auto_result: dict[str, Any] | None = None) -> dict[str, Any]:\n        identity = self.input_identity(test_input)\n        expected: dict[str, Any] = {}\n        if fields.get(\"expectedStatus\"):\n            expected[\"status\"] = fields[\"expectedStatus\"]\n        decision = {dst: fields[src] for src, dst in [(\"expectedOriginType\", \"originType\"), (\"expectedTerminalState\", \"terminalState\"), (\"expectedContentType\", \"contentType\")] if fields.get(src)}\n        if decision:\n            expected[\"decision\"] = decision\n        return self.label_run({\n            \"action\": \"upsert\",\n            \"store_path\": self.label_store,\n            \"test_id\": identity[\"input_key\"],\n            \"test_input\": identity[\"common_input\"],\n            \"expected\": expected,\n            \"auto_result_snapshot\": auto_result or {},\n            \"judge\": \"human\",\n            \"memo\": fields.get(\"note\", \"\"),\n            \"reason\": \"saved from test GUI\",\n        })\n\n    def compare_label(self, test_input: dict[str, Any], result: dict[str, Any]) -> dict[str, Any]:\n        identity = self.input_identity(test_input)\n        return self.label_run({\n            \"action\": \"compare\",\n            \"store_path\": self.label_store,\n            \"test_id\": identity[\"input_key\"],\n            \"test_input\": identity[\"common_input\"],\n            \"auto_result\": result,\n        })\n\n    def latest_results(self, limit: int = 20) -> list[dict[str, Any]]:\n        listed = self.result_run({\"action\": \"list\", \"store_path\": self.result_store, \"limit\": limit})\n        return listed.get(\"results\", []) if listed.get(\"ok\") else [listed]\n\n\nclass XArchiveReader:\n    def __init__(self, db_path: Path) -> None:\n        self.db_path = db_path\n\n    def _connect_ro(self) -> sqlite3.Connection:\n        if not self.db_path.exists():\n            raise FileNotFoundError(str(self.db_path))\n        return sqlite3.connect(self.db_path.resolve().as_uri() + \"?mode=ro\", uri=True)\n\n    def list_posts(self, limit: int = 200) -> list[dict[str, str]]:\n        wanted = [\"id\", \"account\", \"type\", \"author_handle\", \"author_name\", \"url\", \"created_at\", \"text\", \"raw_json\"]\n        with self._connect_ro() as con:\n            columns = {row[1] for row in con.execute(\"PRAGMA table_info(posts)\").fetchall()}\n            if not columns:\n                raise RuntimeError(\"posts table was not found\")\n            select = \", \".join(col if col in columns else \"'' AS \" + col for col in wanted)\n            order = \"collected_at DESC\" if \"collected_at\" in columns else \"id DESC\"\n            rows = con.execute(f\"SELECT {select} FROM posts ORDER BY {order} LIMIT ?\", (limit,)).fetchall()\n        return [{key: str(value or \"\") for key, value in zip(wanted, row)} for row in rows]\n\n\nclass FirstStageRunner:\n    def run(self, test_input: dict[str, Any]) -> dict[str, Any]:\n        logs = [\"first-stage runner: Selenium and external fetches are disabled\"]\n        evidence: list[dict[str, Any]] = []\n        target = test_input.get(\"target\") or {}\n        test_type = test_input.get(\"testType\") or \"post_reading\"\n        text = str(target.get(\"text\") or \"\")\n        url = str(target.get(\"postUrl\") or \"\")\n        post_id = str(target.get(\"postId\") or post_id_from_url(url) or \"\")\n        raw_json = target.get(\"rawJson\")\n        raw_text = pretty(raw_json) if raw_json not in (None, \"\") else \"\"\n        post_type = str(target.get(\"type\") or \"unknown\").lower()\n        links = URL_RE.findall(\"\\n\".join([text, url, raw_text]))\n        has_media = any(token in raw_text.lower() for token in [\"photo\", \"image\", \"media_url\", \"video\", \"thumbnail\"])\n        if not url and not post_id:\n            return self._result(test_input, \"fail\", False, {\"error\": \"missing_target\"}, evidence, logs + [\"No URL or DB post id was provided.\"])\n        evidence.append({\"kind\": \"target\", \"postId\": post_id, \"url\": url, \"type\": post_type})\n        if text:\n            evidence.append({\"kind\": \"text\", \"preview\": compact_text(text, 180), \"length\": len(text)})\n        if links:\n            evidence.append({\"kind\": \"links\", \"count\": len(links), \"items\": links[:8]})\n        if test_type == \"collection_connectivity\":\n            decision = {\"connectivity\": \"not_executed\", \"reason\": \"browser access is disabled in first stage\"}\n            return self._result(test_input, \"needs_browser\", True, decision, evidence, logs)\n        if test_type == \"material_check\":\n            decision = {\"materialCheck\": \"stub\", \"reason\": \"external material acquisition is outside first stage\"}\n            return self._result(test_input, \"needs_browser\", True, decision, evidence, logs)\n        if test_type == \"post_reading\":\n            decision = {\"readable\": bool(url or text or raw_json), \"postId\": post_id, \"hasText\": bool(text), \"hasRawJson\": raw_json not in (None, \"\"), \"hasLinks\": bool(links)}\n            return self._result(test_input, \"pass\" if decision[\"readable\"] else \"fail\", False, decision, evidence, logs)\n        if test_type == \"origin_judgement\":\n            origin = self._origin_from_local(post_type, raw_text, text)\n            needs_browser = origin in {\"reply\", \"quote\", \"repost\", \"unknown\"}\n            decision = {\"originType\": origin, \"confidence\": 0.65 if origin != \"unknown\" else 0.2, \"phase\": \"local_hint_only\", \"reason\": \"deep relation tracing is disabled\"}\n            return self._result(test_input, \"needs_browser\" if needs_browser else \"pass\", needs_browser, decision, evidence, logs)\n        if test_type == \"terminal_judgement\":\n            terminal = \"unknown\" if post_type in {\"reply\", \"quote\", \"repost\"} else \"terminal_candidate\"\n            return self._result(test_input, \"needs_browser\" if terminal == \"unknown\" else \"pass\", terminal == \"unknown\", {\"terminalState\": terminal, \"phase\": \"local_hint_only\"}, evidence, logs)\n        if test_type == \"content_classification\":\n            return self._result(test_input, \"pass\", False, {\"contentType\": self._content_from_local(text, raw_text, links, has_media), \"phase\": \"local_metadata_only\"}, evidence, logs)\n        return self._result(test_input, \"fail\", False, {\"error\": \"unknown_test_type\", \"testType\": test_type}, evidence, logs)\n\n    def _result(self, test_input: dict[str, Any], status: str, needs_browser: bool, decision: dict[str, Any], evidence: list[dict[str, Any]], logs: list[str]) -> dict[str, Any]:\n        summary = \"第一段階では実行禁止のブラウザ/外部取得が必要なのでneeds_browserとして表示しました。\"\n        if not needs_browser:\n            summary = \"第一段階のローカル情報だけで判定しました。\" if status == \"pass\" else \"入力またはローカル判定で失敗しました。\"\n        return {\n            \"schema\": SCHEMA_RESULT,\n            \"runId\": str(uuid.uuid4()),\n            \"createdAt\": now_iso(),\n            \"status\": status,\n            \"needs_browser\": bool(needs_browser),\n            \"testType\": test_input.get(\"testType\", \"\"),\n            \"summary\": summary,\n            \"decision\": decision,\n            \"evidence\": evidence,\n            \"logs\": logs,\n            \"forbiddenActionsSkipped\": FORBIDDEN_ACTIONS,\n            \"input\": test_input,\n        }\n\n    @staticmethod\n    def _origin_from_local(post_type: str, raw_text: str, text: str) -> str:\n        if post_type in {\"reply\", \"quote\", \"repost\", \"post\"}:\n            return \"standalone\" if post_type == \"post\" else post_type\n        haystack = \"\\n\".join([raw_text.lower(), text.lower()])\n        if \"reply\" in haystack or \"in_reply\" in haystack:\n            return \"reply\"\n        if \"quote\" in haystack or \"quoted\" in haystack:\n            return \"quote\"\n        if \"repost\" in haystack or \"retweeted\" in haystack:\n            return \"repost\"\n        return \"unknown\"\n\n    @staticmethod\n    def _content_from_local(text: str, raw_text: str, links: list[str], has_media: bool) -> str:\n        if YOUTUBE_RE.search(\"\\n\".join(links)):\n            return \"youtube\"\n        if any(NEWS_RE.search(link) for link in links):\n            return \"news_article\"\n        if \"video\" in raw_text.lower():\n            return \"video\"\n        if has_media:\n            return \"image\"\n        if links:\n            return \"external_link\"\n        return \"text_only\" if text else \"unavailable\"\n\n\ndef build_input_from_url(url: str, test_type: str, run_id: str = \"\") -> dict[str, Any]:\n    clean_url = url.strip()\n    return {\n        \"schema\": SCHEMA_INPUT, \"source\": \"url\", \"testType\": test_type, \"runId\": run_id.strip(),\n        \"target\": {\"postUrl\": clean_url, \"postId\": post_id_from_url(clean_url)},\n        \"options\": {\"allowSelenium\": False, \"allowExternalFetch\": False, \"phase\": \"first_stage\"},\n    }\n\n\ndef build_input_from_post(post: dict[str, str], db_path: str, test_type: str, run_id: str = \"\") -> dict[str, Any]:\n    return {\n        \"schema\": SCHEMA_INPUT, \"source\": \"db_post\", \"testType\": test_type, \"runId\": run_id.strip(),\n        \"target\": post_to_target(post, db_path),\n        \"options\": {\"allowSelenium\": False, \"allowExternalFetch\": False, \"phase\": \"first_stage\"},\n    }\n\n\nclass TestGuiApp:\n    def __init__(self, root: tk.Tk, store: JsonContractStore, db_path: str = \"\") -> None:\n        self.root, self.store, self.runner = root, store, FirstStageRunner()\n        self.posts: list[dict[str, str]] = []\n        self.last_input: dict[str, Any] | None = None\n        self.last_result: dict[str, Any] | None = None\n        self.db_path_var = tk.StringVar(value=db_path)\n        self.url_var = tk.StringVar()\n        self.run_id_var = tk.StringVar()\n        self.test_type_var = tk.StringVar(value=TEST_TYPES[0])\n        self.status_var = tk.StringVar(value=\"準備できています\")\n        self.label_vars = {key: tk.StringVar() for key in [\"expectedStatus\", \"expectedOriginType\", \"expectedTerminalState\", \"expectedContentType\", \"note\"]}\n        self._build()\n        if db_path:\n            self.load_db_posts()\n\n    def _build(self) -> None:\n        self.root.title(\"X投稿収集テストGUIポワン\")\n        self.root.geometry(\"1120x760\")\n        main = ttk.Frame(self.root, padding=10)\n        main.pack(fill=\"both\", expand=True)\n        for col, weight in [(0, 1), (1, 2)]:\n            main.columnconfigure(col, weight=weight)\n        main.rowconfigure(3, weight=1)\n        db_row = ttk.Frame(main)\n        db_row.grid(row=0, column=0, columnspan=2, sticky=\"ew\", pady=(0, 8))\n        db_row.columnconfigure(1, weight=1)\n        ttk.Label(db_row, text=\"x_archive.db 読取\").grid(row=0, column=0, padx=(0, 6))\n        ttk.Entry(db_row, textvariable=self.db_path_var).grid(row=0, column=1, sticky=\"ew\")\n        ttk.Button(db_row, text=\"選択\", command=self.choose_db).grid(row=0, column=2, padx=4)\n        ttk.Button(db_row, text=\"読込\", command=self.load_db_posts).grid(row=0, column=3)\n        self._build_input_row(main)\n        self._build_post_tree(main)\n        self._build_label_box(main)\n        notebook = ttk.Notebook(main)\n        notebook.grid(row=3, column=0, columnspan=2, sticky=\"nsew\", pady=(8, 0))\n        self.result_text = self._add_text_tab(notebook, \"判定結果\")\n        self.evidence_text = self._add_text_tab(notebook, \"証拠\")\n        self.log_text = self._add_text_tab(notebook, \"ログ\")\n        self.history_text = self._add_text_tab(notebook, \"保存履歴\")\n        ttk.Label(main, textvariable=self.status_var).grid(row=4, column=0, columnspan=2, sticky=\"ew\", pady=(6, 0))\n        self.refresh_history()\n\n    def _build_input_row(self, main: ttk.Frame) -> None:\n        row = ttk.Frame(main)\n        row.grid(row=1, column=0, columnspan=2, sticky=\"ew\", pady=(0, 8))\n        row.columnconfigure(1, weight=1)\n        ttk.Label(row, text=\"投稿URL\").grid(row=0, column=0, padx=(0, 6))\n        ttk.Entry(row, textvariable=self.url_var).grid(row=0, column=1, sticky=\"ew\")\n        ttk.Label(row, text=\"run_id\").grid(row=0, column=2, padx=(8, 6))\n        ttk.Entry(row, width=18, textvariable=self.run_id_var).grid(row=0, column=3)\n        ttk.Label(row, text=\"種別\").grid(row=0, column=4, padx=(8, 6))\n        ttk.Combobox(row, width=24, values=TEST_TYPES, textvariable=self.test_type_var, state=\"readonly\").grid(row=0, column=5)\n        for col, (text, command) in enumerate([(\"実行\", self.run_test), (\"再テスト\", self.retest), (\"保存\", self.save_current_result)], start=6):\n            ttk.Button(row, text=text, command=command).grid(row=0, column=col, padx=(8 if col == 6 else 4, 0))\n\n    def _build_post_tree(self, main: ttk.Frame) -> None:\n        self.tree = ttk.Treeview(main, columns=(\"id\", \"account\", \"type\", \"text\"), show=\"headings\", height=10)\n        for col, width in [(\"id\", 150), (\"account\", 110), (\"type\", 70), (\"text\", 420)]:\n            self.tree.heading(col, text=col)\n            self.tree.column(col, width=width, anchor=\"w\")\n        self.tree.grid(row=2, column=0, sticky=\"nsew\", padx=(0, 8))\n        self.tree.bind(\"<<TreeviewSelect>>\", lambda _event: self.on_target_changed())\n\n    def _build_label_box(self, main: ttk.Frame) -> None:\n        box = ttk.LabelFrame(main, text=\"正解ラベル\")\n        box.grid(row=2, column=1, sticky=\"nsew\")\n        fields = [(\"expectedStatus\", \"期待status\"), (\"expectedOriginType\", \"期待出どころ\"), (\"expectedTerminalState\", \"期待終端\"), (\"expectedContentType\", \"期待内容\"), (\"note\", \"メモ\")]\n        for idx, (key, caption) in enumerate(fields):\n            ttk.Label(box, text=caption).grid(row=idx, column=0, sticky=\"w\", padx=6, pady=3)\n            ttk.Entry(box, textvariable=self.label_vars[key]).grid(row=idx, column=1, sticky=\"ew\", padx=6, pady=3)\n        box.columnconfigure(1, weight=1)\n        ttk.Button(box, text=\"正解ラベル保存\", command=self.save_label).grid(row=5, column=0, columnspan=2, sticky=\"ew\", padx=6, pady=6)\n\n    def _add_text_tab(self, notebook: ttk.Notebook, title: str) -> tk.Text:\n        frame = ttk.Frame(notebook)\n        frame.rowconfigure(0, weight=1)\n        frame.columnconfigure(0, weight=1)\n        text = tk.Text(frame, wrap=\"word\", height=14)\n        scroll = ttk.Scrollbar(frame, orient=\"vertical\", command=text.yview)\n        text.configure(yscrollcommand=scroll.set)\n        text.grid(row=0, column=0, sticky=\"nsew\")\n        scroll.grid(row=0, column=1, sticky=\"ns\")\n        notebook.add(frame, text=title)\n        return text\n\n    def choose_db(self) -> None:\n        path = filedialog.askopenfilename(title=\"x_archive.dbを選択\", filetypes=[(\"SQLite DB\", \"*.db\"), (\"All files\", \"*.*\")])\n        if path:\n            self.db_path_var.set(path)\n\n    def load_db_posts(self) -> None:\n        try:\n            self.posts = XArchiveReader(Path(self.db_path_var.get())).list_posts()\n        except Exception as exc:\n            self.status_var.set(f\"DB読込失敗: {exc}\")\n            return\n        self.tree.delete(*self.tree.get_children())\n        for index, post in enumerate(self.posts):\n            self.tree.insert(\"\", \"end\", iid=str(index), values=(post[\"id\"], post[\"account\"], post[\"type\"], compact_text(post[\"text\"])))\n        self.status_var.set(f\"DB候補を{len(self.posts)}件読みました（読み取り専用）\")\n        self.on_target_changed()\n\n    def selected_post(self) -> dict[str, str] | None:\n        selected = self.tree.selection()\n        return self.posts[int(selected[0])] if selected else None\n\n    def current_input(self) -> dict[str, Any]:\n        post = self.selected_post()\n        if post:\n            return build_input_from_post(post, self.db_path_var.get(), self.test_type_var.get(), self.run_id_var.get())\n        return build_input_from_url(self.url_var.get(), self.test_type_var.get(), self.run_id_var.get())\n\n    def on_target_changed(self) -> None:\n        test_input = self.current_input()\n        label = self.store.load_label(test_input)\n        for key, var in self.label_vars.items():\n            var.set(str(label.get(key) or \"\"))\n\n    def current_label(self) -> dict[str, Any]:\n        return {key: var.get().strip() for key, var in self.label_vars.items() if var.get().strip()}\n\n    def _run_and_show(self, test_input: dict[str, Any], label_prefix: str) -> None:\n        self.last_input = test_input\n        result = self.runner.run(test_input)\n        saved = self.store.save_result(test_input, result)\n        comparison = self.store.compare_label(test_input, result)\n        result[\"labelComparison\"] = comparison.get(\"comparison\", comparison)\n        result[\"targetKey\"] = saved[\"identity\"][\"input_key\"]\n        result[\"inputHash\"] = saved[\"identity\"][\"input_hash\"]\n        result[\"recordId\"] = ((saved.get(\"saved\") or {}).get(\"result_record\") or {}).get(\"record_id\", \"\")\n        self.last_result = result\n        self._show_json(self.result_text, result)\n        self._show_json(self.evidence_text, result.get(\"evidence\", []))\n        self._show_json(self.log_text, {\"logs\": result.get(\"logs\", []), \"labelComparison\": result[\"labelComparison\"], \"saveResult\": saved.get(\"saved\")})\n        self.status_var.set(f\"{label_prefix}: {result['status']} / runId={result['runId']}\")\n        self.refresh_history()\n\n    def run_test(self) -> None:\n        self._run_and_show(self.current_input(), \"実行完了\")\n\n    def retest(self) -> None:\n        self._run_and_show(self.last_input or self.current_input(), \"再テスト完了\")\n\n    def save_current_result(self) -> None:\n        if not self.last_input or not self.last_result:\n            self.status_var.set(\"まだ保存できる結果がありません\")\n            return\n        self.store.save_result(self.last_input, self.last_result)\n        self.status_var.set(f\"結果を保存しました: {self.last_result['runId']}\")\n        self.refresh_history()\n\n    def save_label(self) -> None:\n        test_input = self.current_input()\n        saved = self.store.save_label(test_input, self.current_label(), self.last_result)\n        key = saved.get(\"target_key\", \"\")\n        self.status_var.set(f\"正解ラベルを保存しました: {key}\")\n        if self.last_result:\n            comparison = self.store.compare_label(test_input, self.last_result)\n            self.last_result[\"labelComparison\"] = comparison.get(\"comparison\", comparison)\n            self._show_json(self.log_text, {\"labelComparison\": self.last_result[\"labelComparison\"], \"labelSave\": saved})\n\n    def refresh_history(self) -> None:\n        self._show_json(self.history_text, self.store.latest_results())\n\n    @staticmethod\n    def _show_json(widget: tk.Text, data: Any) -> None:\n        widget.delete(\"1.0\", \"end\")\n        widget.insert(\"1.0\", pretty(data))\n\n\ndef run_cli(args: argparse.Namespace, store: JsonContractStore) -> int:\n    payload = safe_json_loads(args.input_json) if args.input_json else build_input_from_url(args.url, args.test_type, args.run_id)\n    result = FirstStageRunner().run(payload)\n    saved = store.save_result(payload, result)\n    comparison = store.compare_label(payload, result)\n    result[\"labelComparison\"] = comparison.get(\"comparison\", comparison)\n    result[\"targetKey\"] = saved[\"identity\"][\"input_key\"]\n    result[\"inputHash\"] = saved[\"identity\"][\"input_hash\"]\n    result[\"recordId\"] = ((saved.get(\"saved\") or {}).get(\"result_record\") or {}).get(\"record_id\", \"\")\n    print(pretty(result))\n    return 0 if result.get(\"status\") in {\"pass\", \"needs_browser\"} else 1\n\n\ndef main(argv: list[str] | None = None) -> int:\n    parser = argparse.ArgumentParser(description=\"First-stage GUI for X post collection tests.\")\n    parser.add_argument(\"--db\", default=\"\", help=\"read-only x_archive.db path\")\n    parser.add_argument(\"--state-dir\", default=DEFAULT_STATE_DIR, help=\"accepted for GUI temp state only; results and labels use JSON contract stores\")\n    parser.add_argument(\"--project-file\", default=DEFAULT_PROJECT_FILE, help=\"project.powan path used to load JSON contract powan code\")\n    parser.add_argument(\"--result-store\", default=RESULT_STORE_PATH, help=\"x_post_test_results.json path\")\n    parser.add_argument(\"--label-store\", default=LABEL_STORE_PATH, help=\"x_post_test_expected_labels.json path\")\n    parser.add_argument(\"--url\", default=\"\", help=\"single post URL for CLI or GUI prefill\")\n    parser.add_argument(\"--run-id\", default=\"\", help=\"optional external run id\")\n    parser.add_argument(\"--test-type\", default=\"post_reading\", choices=TEST_TYPES)\n    parser.add_argument(\"--input-json\", default=\"\", help=\"common input JSON for CLI execution\")\n    parser.add_argument(\"--no-gui\", action=\"store_true\", help=\"run one stub test and print JSON\")\n    args = parser.parse_args(argv)\n    store = JsonContractStore(Path(args.project_file), args.result_store, args.label_store)\n    if args.no_gui:\n        return run_cli(args, store)\n    if tk is None:\n        raise SystemExit(\"tkinter is not available; use --no-gui for CLI mode\")\n    root = tk.Tk()\n    app = TestGuiApp(root, store, db_path=args.db)\n    if args.url:\n        app.url_var.set(args.url)\n    root.mainloop()\n    return 0\n\n\nif __name__ == \"__main__\":\n    raise SystemExit(main())\n",
       "parent": "node-2b1485633c",
       "children": [],
       "style": {
@@ -2562,15 +2564,15 @@
       },
       "codeLanguage": "python",
       "layout": {
-        "x": 4812,
-        "y": 4758,
-        "width": 239,
-        "height": 153
+        "x": 4828,
+        "y": 4741,
+        "width": 180,
+        "height": 104
       },
       "nestedLayoutByParent": {
         "node-2b1485633c": {
-          "x": 59,
-          "y": -10,
+          "x": 45,
+          "y": 0,
           "width": 77,
           "height": 32
         }
@@ -2582,7 +2584,7 @@
       "title": "テスト対象選択ポワン",
       "body": "テスト対象を選ぶ臓器ポワン。既存のx_archive.dbからアカウント、投稿ID、投稿URL、type、raw_jsonの概要を一覧し、単発URL入力やrun_id指定にも対応する。テストGUIポワンへ対象候補を渡し、選ばれた投稿を共通のテスト入力形式に整える。",
       "powanKind": "organ",
-      "code": "",
+      "code": "from __future__ import annotations\n\nimport argparse\nimport json\nimport os\nimport re\nimport sqlite3\nimport sys\nfrom collections.abc import Mapping, Sequence\nfrom pathlib import Path\nfrom typing import Any\nfrom urllib.parse import urlparse, urlunparse\n\nDEFAULT_LIMIT = 50\nDEFAULT_TEXT_PREVIEW_CHARS = 220\n\nPOST_ID_KEYS = {\n    \"id\",\n    \"postid\",\n    \"tweetid\",\n    \"tweetidstr\",\n    \"statusid\",\n    \"statusidstr\",\n    \"restid\",\n}\nACCOUNT_KEYS = {\n    \"account\",\n    \"handle\",\n    \"username\",\n    \"screenname\",\n    \"authorhandle\",\n    \"userhandle\",\n}\nURL_KEYS = {\n    \"url\",\n    \"posturl\",\n    \"tweeturl\",\n    \"statusurl\",\n    \"canonicalurl\",\n    \"expandedurl\",\n    \"permalink\",\n}\nTYPE_KEYS = {\"type\", \"posttype\", \"tweettype\", \"kind\", \"relationtype\"}\nRUN_ID_KEYS = {\"runid\", \"run\"}\nTEXT_KEYS = {\"text\", \"fulltext\", \"body\", \"content\", \"description\", \"note\"}\nRAW_JSON_KEYS = {\"rawjson\", \"raw\", \"sourcejson\", \"payload\"}\nNESTED_MAP_KEYS = {\n    \"rawjson\",\n    \"raw\",\n    \"tweet\",\n    \"post\",\n    \"legacy\",\n    \"data\",\n    \"result\",\n    \"item\",\n    \"content\",\n    \"metadata\",\n    \"author\",\n    \"user\",\n}\nX_HOSTS = {\"x.com\", \"twitter.com\", \"mobile.twitter.com\", \"www.x.com\", \"www.twitter.com\"}\nAPI_HISTORY_ROOT = Path(r\"C:\\project_root\\app_workspaces\\API\\ai_agent_team_runtime\\artifacts\\x\\account_history\")\n\n\ndef normalize_test_input(input_value: Any = None, **kwargs: Any) -> dict[str, Any]:\n    \"\"\"Return one common test input, or a selector result when only account/run_id is given.\"\"\"\n    warnings: list[str] = []\n    record = _record_from_input(input_value, warnings)\n    record.update({key: value for key, value in kwargs.items() if value not in (None, \"\")})\n\n    raw_json_value = record.get(\"raw_json\", None)\n    if raw_json_value is None:\n        raw_json_value = _first_value(_candidate_maps(record), RAW_JSON_KEYS)\n    raw_json = _coerce_raw_json(raw_json_value, warnings)\n\n    maps = _candidate_maps(record)\n    raw_maps = _candidate_maps(raw_json) if isinstance(raw_json, Mapping) else []\n    all_maps = [*maps, *raw_maps]\n\n    url = _first_text(all_maps, URL_KEYS)\n    post_id = _clean_id(record.get(\"post_id\") or _first_text(all_maps, POST_ID_KEYS))\n    account = _clean_account(record.get(\"account\") or _first_text(all_maps, ACCOUNT_KEYS))\n    run_id = _clean_text(record.get(\"run_id\") or _first_text(all_maps, RUN_ID_KEYS))\n    source_type = _clean_text(record.get(\"source_type\")) or _detect_source_type(record, raw_json, url, post_id, account, run_id)\n\n    canonical_url, parsed_account, parsed_post_id, url_warnings = canonicalize_post_url(\n        url,\n        account=account,\n        post_id=post_id,\n    )\n    warnings.extend(url_warnings)\n    account = account or parsed_account\n    post_id = post_id or parsed_post_id\n\n    db_path: Path | None = None\n    if _should_try_db(record, source_type, raw_json, canonical_url, post_id, account, run_id):\n        db_path, db_path_warnings = resolve_db_path(record.get(\"db_path\") or record.get(\"db\"), account=account)\n        warnings.extend(db_path_warnings)\n\n    if db_path and post_id:\n        db_post = fetch_db_post(db_path, post_id=post_id, account=account)\n        warnings.extend(db_post.get(\"warnings\", []))\n        row = db_post.get(\"row\")\n        if row:\n            return common_from_db_row(\n                row,\n                db_path=db_path,\n                run_id=run_id,\n                include_raw_json=True,\n                selector_note=\"existing x_archive.db posts row selected by post_id\",\n                warnings=warnings,\n            )\n\n    if db_path and run_id and not post_id:\n        return selector_from_db(\n            db_path,\n            source_type=\"run_id\",\n            target_kind=\"run_posts_selector\",\n            account=account,\n            run_id=run_id,\n            limit=int(record.get(\"limit\") or DEFAULT_LIMIT),\n            offset=int(record.get(\"offset\") or 0),\n            warnings=warnings,\n        )\n\n    has_selector_only_account = account and not post_id and not canonical_url and raw_json is None\n    if db_path and has_selector_only_account:\n        return selector_from_db(\n            db_path,\n            source_type=\"account\",\n            target_kind=\"account_posts_selector\",\n            account=account,\n            run_id=run_id,\n            limit=int(record.get(\"limit\") or DEFAULT_LIMIT),\n            offset=int(record.get(\"offset\") or 0),\n            warnings=warnings,\n        )\n\n    return common_from_known_values(\n        source_type=source_type,\n        target_kind=_target_kind_for_partial(source_type, raw_json, canonical_url, post_id),\n        canonical_url=canonical_url,\n        post_id=post_id,\n        account=account,\n        run_id=run_id,\n        db_ref=_normalize_db_ref(record.get(\"db_ref\"), db_path=db_path),\n        raw_json=raw_json,\n        text_preview=_preview_text(_first_text(all_maps, TEXT_KEYS)),\n        selector_note=_selector_note_for_partial(source_type, raw_json, canonical_url, post_id),\n        warnings=warnings,\n    )\n\n\ndef list_db_candidates(\n    db_path: str | Path | None = None,\n    *,\n    account: str = \"\",\n    post_id: str = \"\",\n    run_id: str = \"\",\n    limit: int = DEFAULT_LIMIT,\n    offset: int = 0,\n    include_raw_json: bool = False,\n) -> dict[str, Any]:\n    warnings: list[str] = []\n    resolved, db_warnings = resolve_db_path(db_path, account=account)\n    warnings.extend(db_warnings)\n    if not resolved:\n        return {\n            \"ok\": False,\n            \"candidates\": [],\n            \"warnings\": warnings or [\"x_archive.db was not found; pass db_path explicitly\"],\n            \"db_read_scope\": {\"mode\": \"read_only\", \"tables\": [], \"filters\": _filters(account, post_id, run_id)},\n        }\n\n    rows_result = _query_post_rows(\n        resolved,\n        account=account,\n        post_id=post_id,\n        run_id=run_id,\n        limit=limit,\n        offset=offset,\n    )\n    warnings.extend(rows_result.get(\"warnings\", []))\n    candidates = [\n        common_from_db_row(\n            row,\n            db_path=resolved,\n            run_id=run_id,\n            include_raw_json=include_raw_json,\n            selector_note=\"candidate listed from x_archive.db posts\",\n            warnings=[],\n        )\n        for row in rows_result.get(\"rows\", [])\n    ]\n    return {\n        \"ok\": True,\n        \"candidates\": candidates,\n        \"warnings\": warnings,\n        \"db_read_scope\": rows_result.get(\"db_read_scope\", {}),\n    }\n\n\ndef selector_from_db(\n    db_path: Path,\n    *,\n    source_type: str,\n    target_kind: str,\n    account: str = \"\",\n    run_id: str = \"\",\n    limit: int = DEFAULT_LIMIT,\n    offset: int = 0,\n    warnings: list[str] | None = None,\n) -> dict[str, Any]:\n    own_warnings = list(warnings or [])\n    listed = list_db_candidates(\n        db_path,\n        account=account,\n        run_id=run_id,\n        limit=limit,\n        offset=offset,\n        include_raw_json=False,\n    )\n    own_warnings.extend(listed.get(\"warnings\", []))\n    candidates = listed.get(\"candidates\", [])\n    return {\n        \"source_type\": source_type,\n        \"target_kind\": target_kind,\n        \"canonical_url\": \"\",\n        \"post_id\": \"\",\n        \"account\": account,\n        \"run_id\": run_id,\n        \"db_ref\": {\"db_path\": str(db_path), \"table\": \"posts\", \"mode\": \"read_only\"},\n        \"raw_json\": None,\n        \"text_preview\": f\"{len(candidates)} candidate posts\",\n        \"selector_note\": \"select one candidate, then pass its post_id/db_ref back for a common test input\",\n        \"needs_browser\": False,\n        \"warnings\": _dedupe(own_warnings),\n        \"candidates\": candidates,\n        \"db_read_scope\": listed.get(\"db_read_scope\", {}),\n    }\n\n\ndef common_from_db_row(\n    row: Mapping[str, Any],\n    *,\n    db_path: str | Path,\n    run_id: str = \"\",\n    include_raw_json: bool = True,\n    selector_note: str = \"selected from x_archive.db\",\n    warnings: list[str] | None = None,\n) -> dict[str, Any]:\n    own_warnings = list(warnings or [])\n    raw_json = _coerce_raw_json(row.get(\"raw_json\"), own_warnings)\n    post_id = _clean_id(row.get(\"id\") or row.get(\"post_id\"))\n    account = _clean_account(row.get(\"account\") or row.get(\"author_handle\"))\n    canonical_url, parsed_account, parsed_post_id, url_warnings = canonicalize_post_url(\n        _clean_text(row.get(\"url\")),\n        account=account,\n        post_id=post_id,\n    )\n    own_warnings.extend(url_warnings)\n    account = account or parsed_account\n    post_id = post_id or parsed_post_id\n    text_preview = _preview_text(_clean_text(row.get(\"text\")) or _first_text(_candidate_maps(raw_json), TEXT_KEYS))\n    result = {\n        \"source_type\": \"db\",\n        \"target_kind\": \"existing_db_post\",\n        \"canonical_url\": canonical_url,\n        \"post_id\": post_id,\n        \"account\": account,\n        \"run_id\": run_id,\n        \"db_ref\": {\n            \"db_path\": str(Path(db_path)),\n            \"table\": \"posts\",\n            \"primary_key\": post_id,\n            \"account\": account,\n            \"mode\": \"read_only\",\n        },\n        \"raw_json\": raw_json if include_raw_json else None,\n        \"text_preview\": text_preview,\n        \"selector_note\": selector_note,\n        \"needs_browser\": False,\n        \"warnings\": _dedupe(own_warnings),\n        \"type\": _clean_text(row.get(\"type\")),\n        \"created_at\": _clean_text(row.get(\"created_at\")),\n        \"collected_at\": _clean_text(row.get(\"collected_at\")),\n        \"raw_json_summary\": summarize_raw_json(raw_json),\n    }\n    if not canonical_url:\n        result[\"needs_browser\"] = True\n        result[\"warnings\"].append(\"canonical_url could not be built from DB row\")\n    return result\n\n\ndef common_from_known_values(\n    *,\n    source_type: str,\n    target_kind: str,\n    canonical_url: str,\n    post_id: str,\n    account: str,\n    run_id: str,\n    db_ref: dict[str, Any] | None,\n    raw_json: Any,\n    text_preview: str,\n    selector_note: str,\n    warnings: list[str],\n) -> dict[str, Any]:\n    needs_browser = not bool(raw_json) or not bool(post_id and canonical_url)\n    if not canonical_url:\n        warnings.append(\"canonical_url is missing; pass a post URL or DB row when possible\")\n    if not post_id:\n        warnings.append(\"post_id is missing; browser or DB confirmation may be required\")\n    if raw_json is None:\n        warnings.append(\"raw_json is missing; downstream readers may need browser confirmation\")\n    return {\n        \"source_type\": source_type,\n        \"target_kind\": target_kind,\n        \"canonical_url\": canonical_url,\n        \"post_id\": post_id,\n        \"account\": account,\n        \"run_id\": run_id,\n        \"db_ref\": db_ref,\n        \"raw_json\": raw_json,\n        \"text_preview\": text_preview,\n        \"selector_note\": selector_note,\n        \"needs_browser\": needs_browser,\n        \"warnings\": _dedupe(warnings),\n        \"raw_json_summary\": summarize_raw_json(raw_json),\n    }\n\n\ndef fetch_db_post(db_path: str | Path, *, post_id: str, account: str = \"\") -> dict[str, Any]:\n    rows = _query_post_rows(db_path, post_id=post_id, account=account, limit=1, offset=0)\n    row_list = rows.get(\"rows\", [])\n    warnings = list(rows.get(\"warnings\", []))\n    if not row_list:\n        warnings.append(\"no posts row matched post_id/account in x_archive.db\")\n    return {\"row\": row_list[0] if row_list else None, \"warnings\": warnings, \"db_read_scope\": rows.get(\"db_read_scope\", {})}\n\n\ndef _query_post_rows(\n    db_path: str | Path,\n    *,\n    account: str = \"\",\n    post_id: str = \"\",\n    run_id: str = \"\",\n    limit: int = DEFAULT_LIMIT,\n    offset: int = 0,\n) -> dict[str, Any]:\n    warnings: list[str] = []\n    limit = max(1, min(int(limit or DEFAULT_LIMIT), 500))\n    offset = max(0, int(offset or 0))\n    path = Path(db_path)\n    with _connect_read_only(path) as conn:\n        tables = _table_names(conn)\n        if \"posts\" not in tables:\n            return {\"rows\": [], \"warnings\": [\"posts table was not found\"], \"db_read_scope\": _scope(path, tables, account, post_id, run_id, limit, offset)}\n        post_columns = _table_columns(conn, \"posts\")\n        select_cols = [col for col in (\"id\", \"account\", \"type\", \"author_handle\", \"author_name\", \"url\", \"created_at\", \"text\", \"raw_json\", \"collected_at\") if col in post_columns]\n        where: list[str] = []\n        params: list[Any] = []\n        if post_id and \"id\" in post_columns:\n            where.append(\"id = ?\")\n            params.append(post_id)\n        if account and \"account\" in post_columns:\n            where.append(\"account = ?\")\n            params.append(account)\n\n        if run_id:\n            run_filter = _run_post_filter(conn, run_id, post_columns, warnings)\n            if run_filter:\n                where.extend(run_filter[0])\n                params.extend(run_filter[1])\n\n        order_parts = [col + \" DESC\" for col in (\"collected_at\", \"created_at\", \"id\") if col in post_columns]\n        sql = \"SELECT \" + \", \".join(select_cols or [\"*\"]) + \" FROM posts\"\n        if where:\n            sql += \" WHERE \" + \" AND \".join(where)\n        if order_parts:\n            sql += \" ORDER BY \" + \", \".join(order_parts)\n        sql += \" LIMIT ? OFFSET ?\"\n        params.extend([limit, offset])\n        rows = [dict(row) for row in conn.execute(sql, params).fetchall()]\n        return {\"rows\": rows, \"warnings\": warnings, \"db_read_scope\": _scope(path, tables, account, post_id, run_id, limit, offset, select_cols)}\n\n\ndef _run_post_filter(conn: sqlite3.Connection, run_id: str, post_columns: set[str], warnings: list[str]) -> tuple[list[str], list[Any]] | None:\n    if \"runs\" not in _table_names(conn):\n        warnings.append(\"run_id was given, but runs table was not found\")\n        return None\n    run = conn.execute(\"SELECT * FROM runs WHERE id = ?\", (run_id,)).fetchone()\n    if run is None:\n        warnings.append(\"run_id was not found in runs table\")\n        return None\n    run_dict = dict(run)\n    filters: list[str] = []\n    params: list[Any] = []\n    if run_dict.get(\"account\") and \"account\" in post_columns:\n        filters.append(\"account = ?\")\n        params.append(run_dict[\"account\"])\n    if \"collected_at\" in post_columns and run_dict.get(\"started_at\"):\n        filters.append(\"collected_at >= ?\")\n        params.append(run_dict[\"started_at\"])\n    if \"collected_at\" in post_columns and run_dict.get(\"finished_at\"):\n        filters.append(\"collected_at <= ?\")\n        params.append(run_dict[\"finished_at\"])\n    warnings.append(\"posts table has no direct run_id column; run_id selection is approximated by account and collected_at window\")\n    return filters, params\n\n\ndef resolve_db_path(db_path: Any = None, *, account: str = \"\") -> tuple[Path | None, list[str]]:\n    warnings: list[str] = []\n    explicit = _clean_text(db_path) or os.environ.get(\"X_ARCHIVE_DB\", \"\")\n    if explicit:\n        path = Path(explicit).expanduser()\n        if not path.is_absolute():\n            path = (Path.cwd() / path).resolve()\n        if path.exists():\n            return path, warnings\n        return None, [f\"x_archive.db was not found: {path}\"]\n\n    clean_account = _clean_account(account)\n    if clean_account:\n        exact = API_HISTORY_ROOT / clean_account / \"x_archive.db\"\n        if exact.exists():\n            return exact, warnings\n\n    candidates = _default_db_candidates(clean_account)\n    existing = [path for path in candidates if path.exists()]\n    unique = []\n    seen = set()\n    for path in existing:\n        key = str(path.resolve()).lower()\n        if key not in seen:\n            seen.add(key)\n            unique.append(path)\n    if len(unique) == 1:\n        return unique[0], warnings\n    if len(unique) > 1:\n        warnings.append(\"multiple x_archive.db files were found; pass db_path explicitly\")\n        warnings.extend(str(path) for path in unique[:8])\n    return None, warnings\n\n\ndef _default_db_candidates(account: str = \"\") -> list[Path]:\n    roots = [Path.cwd(), Path.cwd().parent]\n    if account:\n        roots.append(API_HISTORY_ROOT / account)\n    roots.append(API_HISTORY_ROOT)\n    candidates: list[Path] = []\n    for root in roots:\n        candidates.append(root / \"x_archive.db\")\n        if root.exists() and root.name == \"account_history\" and not account:\n            candidates.extend(sorted(root.glob(\"*/x_archive.db\")))\n    return candidates\n\n\ndef _should_try_db(record: Mapping[str, Any], source_type: str, raw_json: Any, canonical_url: str, post_id: str, account: str, run_id: str) -> bool:\n    if record.get(\"db_path\") or record.get(\"db\") or record.get(\"db_ref\") or source_type == \"db\":\n        return True\n    if run_id:\n        return True\n    if post_id and not canonical_url and raw_json is None:\n        return True\n    if account and not post_id and not canonical_url and raw_json is None:\n        return True\n    return False\n\n\ndef canonicalize_post_url(url: Any, *, account: str = \"\", post_id: str = \"\") -> tuple[str, str, str, list[str]]:\n    warnings: list[str] = []\n    text = _clean_text(url)\n    if text and \"://\" not in text and (\"x.com\" in text or \"twitter.com\" in text):\n        text = \"https://\" + text\n    parsed_account = \"\"\n    parsed_post_id = \"\"\n    canonical = \"\"\n    if text:\n        parsed = urlparse(text)\n        host = parsed.netloc.lower()\n        if host in X_HOSTS:\n            parts = [part for part in parsed.path.split(\"/\") if part]\n            for index, part in enumerate(parts):\n                if part.lower() == \"status\" and index + 1 < len(parts):\n                    parsed_post_id = _clean_id(parts[index + 1])\n                    if index > 0 and parts[index - 1].lower() not in {\"i\", \"web\"}:\n                        parsed_account = _clean_account(parts[index - 1])\n                    break\n            account = account or parsed_account\n            post_id = post_id or parsed_post_id\n            if post_id:\n                canonical = _canonical_url_from_parts(account, post_id, fallback=text)\n            else:\n                warnings.append(\"X/Twitter URL did not contain /status/{post_id}\")\n        elif parsed.scheme in {\"http\", \"https\"}:\n            canonical = urlunparse((parsed.scheme, parsed.netloc, parsed.path.rstrip(\"/\"), \"\", \"\", \"\"))\n            warnings.append(\"URL is not an X/Twitter status URL\")\n    elif post_id:\n        canonical = _canonical_url_from_parts(account, post_id, fallback=\"\")\n    return canonical, account or parsed_account, post_id or parsed_post_id, warnings\n\n\ndef summarize_raw_json(value: Any) -> dict[str, Any] | None:\n    if value is None:\n        return None\n    if isinstance(value, Mapping):\n        maps = _candidate_maps(value)\n        return {\n            \"kind\": \"object\",\n            \"top_keys\": list(value.keys())[:20],\n            \"post_id\": _clean_id(_first_text(maps, POST_ID_KEYS)),\n            \"account\": _clean_account(_first_text(maps, ACCOUNT_KEYS)),\n            \"url\": _first_text(maps, URL_KEYS),\n            \"type\": _first_text(maps, TYPE_KEYS),\n            \"text_preview\": _preview_text(_first_text(maps, TEXT_KEYS)),\n        }\n    if isinstance(value, list):\n        return {\"kind\": \"array\", \"length\": len(value)}\n    text = str(value)\n    return {\"kind\": type(value).__name__, \"preview\": _preview_text(text)}\n\n\ndef _connect_read_only(path: Path) -> sqlite3.Connection:\n    uri = \"file:\" + path.resolve().as_posix() + \"?mode=ro\"\n    conn = sqlite3.connect(uri, uri=True)\n    conn.row_factory = sqlite3.Row\n    conn.execute(\"PRAGMA query_only = ON\")\n    return conn\n\n\ndef _table_names(conn: sqlite3.Connection) -> set[str]:\n    return {str(row[0]) for row in conn.execute(\"SELECT name FROM sqlite_master WHERE type IN ('table','view')\")}\n\n\ndef _table_columns(conn: sqlite3.Connection, table: str) -> set[str]:\n    return {str(row[1]) for row in conn.execute(f\"PRAGMA table_info({table})\")}\n\n\ndef _scope(path: Path, tables: set[str], account: str, post_id: str, run_id: str, limit: int, offset: int, columns: Sequence[str] | None = None) -> dict[str, Any]:\n    return {\n        \"db_path\": str(path),\n        \"mode\": \"read_only\",\n        \"tables\": sorted(tables.intersection({\"accounts\", \"posts\", \"runs\"})),\n        \"filters\": _filters(account, post_id, run_id),\n        \"limit\": limit,\n        \"offset\": offset,\n        \"selected_columns\": list(columns or []),\n    }\n\n\ndef _filters(account: str, post_id: str, run_id: str) -> dict[str, str]:\n    return {\"account\": account or \"\", \"post_id\": post_id or \"\", \"run_id\": run_id or \"\"}\n\n\ndef _record_from_input(value: Any, warnings: list[str]) -> dict[str, Any]:\n    if value is None:\n        return {}\n    if isinstance(value, Mapping):\n        return dict(value)\n    if isinstance(value, str):\n        text = value.strip()\n        if not text:\n            return {}\n        if _looks_like_json(text):\n            loaded = json.loads(text)\n            if isinstance(loaded, Mapping):\n                return dict(loaded)\n            return {\"raw_json\": loaded, \"source_type\": \"raw_json\"}\n        return {\"url\": text, \"source_type\": \"url\"}\n    warnings.append(\"input_value was not a mapping/string; keeping it as raw_json\")\n    return {\"raw_json\": value, \"source_type\": \"raw_json\"}\n\n\ndef _candidate_maps(value: Any, *, max_depth: int = 4) -> list[Mapping[str, Any]]:\n    maps: list[Mapping[str, Any]] = []\n    seen: set[int] = set()\n\n    def visit(current: Any, depth: int) -> None:\n        if depth > max_depth or not isinstance(current, Mapping):\n            return\n        marker = id(current)\n        if marker in seen:\n            return\n        seen.add(marker)\n        maps.append(current)\n        for key, child in current.items():\n            token = _key_token(key)\n            if token in NESTED_MAP_KEYS:\n                if isinstance(child, Mapping):\n                    visit(child, depth + 1)\n                elif isinstance(child, str) and _looks_like_json(child):\n                    try:\n                        loaded = json.loads(child)\n                    except json.JSONDecodeError:\n                        continue\n                    if isinstance(loaded, Mapping):\n                        visit(loaded, depth + 1)\n    visit(value, 0)\n    return maps\n\n\ndef _first_value(maps: Sequence[Mapping[str, Any]], key_tokens: set[str]) -> Any:\n    for item in maps:\n        for key, value in item.items():\n            if _key_token(key) in key_tokens and value not in (None, \"\"):\n                return value\n    return None\n\n\ndef _first_text(maps: Sequence[Mapping[str, Any]], key_tokens: set[str]) -> str:\n    value = _first_value(maps, key_tokens)\n    if value is None or isinstance(value, (Mapping, list, tuple, set)):\n        return \"\"\n    return _clean_text(value)\n\n\ndef _coerce_raw_json(value: Any, warnings: list[str]) -> Any:\n    if value in (None, \"\"):\n        return None\n    if isinstance(value, str):\n        text = value.strip()\n        if _looks_like_json(text):\n            try:\n                return json.loads(text)\n            except json.JSONDecodeError as exc:\n                warnings.append(f\"raw_json could not be parsed: {exc}\")\n        return text\n    return value\n\n\ndef _normalize_db_ref(value: Any, *, db_path: Path | None) -> dict[str, Any] | None:\n    if isinstance(value, Mapping):\n        ref = dict(value)\n    else:\n        ref = {}\n    if db_path:\n        ref.setdefault(\"db_path\", str(db_path))\n        ref.setdefault(\"mode\", \"read_only\")\n    return ref or None\n\n\ndef _detect_source_type(record: Mapping[str, Any], raw_json: Any, url: str, post_id: str, account: str, run_id: str) -> str:\n    if record.get(\"db_ref\") or record.get(\"db_path\"):\n        return \"db\"\n    if run_id:\n        return \"run_id\"\n    if url:\n        return \"url\"\n    if raw_json is not None:\n        return \"raw_json\"\n    if post_id:\n        return \"post_id\"\n    if account:\n        return \"account\"\n    return \"unknown\"\n\n\ndef _target_kind_for_partial(source_type: str, raw_json: Any, canonical_url: str, post_id: str) -> str:\n    if source_type == \"url\":\n        return \"single_post_url\"\n    if source_type == \"raw_json\":\n        return \"raw_json_post\"\n    if post_id and canonical_url:\n        return \"single_post\"\n    if post_id:\n        return \"post_id_lookup\"\n    return \"unresolved_target\"\n\n\ndef _selector_note_for_partial(source_type: str, raw_json: Any, canonical_url: str, post_id: str) -> str:\n    if source_type == \"url\":\n        return \"single URL normalized without browser access\"\n    if source_type == \"raw_json\":\n        return \"raw_json normalized without DB or browser access\"\n    if post_id and not canonical_url:\n        return \"post_id received, but account/url is missing\"\n    return \"partial target normalized from provided values\"\n\n\ndef _canonical_url_from_parts(account: str, post_id: str, *, fallback: str = \"\") -> str:\n    clean_post_id = _clean_id(post_id)\n    clean_account = _clean_account(account)\n    if clean_account and clean_post_id:\n        return f\"https://x.com/{clean_account}/status/{clean_post_id}\"\n    if clean_post_id:\n        return f\"https://x.com/i/web/status/{clean_post_id}\"\n    return fallback\n\n\ndef _preview_text(value: Any, limit: int = DEFAULT_TEXT_PREVIEW_CHARS) -> str:\n    text = re.sub(r\"\\s+\", \" \", _clean_text(value)).strip()\n    if len(text) <= limit:\n        return text\n    return text[: max(0, limit - 1)].rstrip() + \"...\"\n\n\ndef _clean_text(value: Any) -> str:\n    if value is None:\n        return \"\"\n    return str(value).strip()\n\n\ndef _clean_id(value: Any) -> str:\n    text = _clean_text(value)\n    match = re.search(r\"\\d{5,}\", text)\n    return match.group(0) if match else text\n\n\ndef _clean_account(value: Any) -> str:\n    text = _clean_text(value)\n    if text.startswith(\"@\"):\n        text = text[1:]\n    return re.sub(r\"[^A-Za-z0-9_]\", \"\", text)\n\n\ndef _key_token(key: Any) -> str:\n    return \"\".join(ch for ch in str(key or \"\").lower() if ch.isalnum())\n\n\ndef _looks_like_json(text: str) -> bool:\n    stripped = (text or \"\").strip()\n    return (stripped.startswith(\"{\") and stripped.endswith(\"}\")) or (stripped.startswith(\"[\") and stripped.endswith(\"]\"))\n\n\ndef _dedupe(items: Sequence[str]) -> list[str]:\n    output: list[str] = []\n    seen: set[str] = set()\n    for item in items:\n        text = _clean_text(item)\n        if text and text not in seen:\n            seen.add(text)\n            output.append(text)\n    return output\n\n\ndef load_input_payload(input_json: str) -> Any:\n    if not input_json or input_json == \"-\":\n        raw = sys.stdin.read().strip()\n        return json.loads(raw) if raw else {}\n    path = Path(input_json)\n    if path.exists():\n        return json.loads(path.read_text(encoding=\"utf-8\"))\n    return json.loads(input_json)\n\n\ndef run(payload: Any = None, **kwargs: Any) -> dict[str, Any]:\n    return normalize_test_input(payload, **kwargs)\n\n\ndef select(payload: Any = None, **kwargs: Any) -> dict[str, Any]:\n    return normalize_test_input(payload, **kwargs)\n\n\ndef main(argv: list[str] | None = None) -> int:\n    parser = argparse.ArgumentParser(description=\"Normalize X collection test targets without browser or DB writes.\")\n    parser.add_argument(\"--input-json\", default=\"\", help=\"JSON string, JSON file path, or '-' for stdin\")\n    parser.add_argument(\"--url\", default=\"\")\n    parser.add_argument(\"--post-id\", default=\"\")\n    parser.add_argument(\"--account\", default=\"\")\n    parser.add_argument(\"--run-id\", default=\"\")\n    parser.add_argument(\"--db-path\", default=\"\")\n    parser.add_argument(\"--list-candidates\", action=\"store_true\")\n    parser.add_argument(\"--limit\", type=int, default=DEFAULT_LIMIT)\n    parser.add_argument(\"--offset\", type=int, default=0)\n    parser.add_argument(\"--include-raw-json\", action=\"store_true\")\n    parser.add_argument(\"--pretty\", action=\"store_true\")\n    args = parser.parse_args(argv)\n\n    payload = load_input_payload(args.input_json) if args.input_json else {}\n    if args.list_candidates:\n        result = list_db_candidates(\n            args.db_path or None,\n            account=args.account,\n            post_id=args.post_id,\n            run_id=args.run_id,\n            limit=args.limit,\n            offset=args.offset,\n            include_raw_json=args.include_raw_json,\n        )\n    else:\n        result = normalize_test_input(\n            payload,\n            url=args.url,\n            post_id=args.post_id,\n            account=args.account,\n            run_id=args.run_id,\n            db_path=args.db_path,\n            limit=args.limit,\n            offset=args.offset,\n        )\n    print(json.dumps(result, ensure_ascii=False, indent=2 if args.pretty else None, default=str))\n    return 0\n\n\nif __name__ == \"__main__\":\n    raise SystemExit(main())",
       "parent": "node-2b1485633c",
       "children": [],
       "style": {
@@ -2595,15 +2597,15 @@
       },
       "codeLanguage": "python",
       "layout": {
-        "x": 4949,
-        "y": 4758,
-        "width": 239,
-        "height": 153
+        "x": 4985,
+        "y": 4741,
+        "width": 180,
+        "height": 104
       },
       "nestedLayoutByParent": {
         "node-2b1485633c": {
-          "x": 122,
-          "y": -10,
+          "x": 112,
+          "y": 0,
           "width": 77,
           "height": 32
         }
@@ -2627,17 +2629,23 @@
         "motion": "soft"
       },
       "layout": {
-        "x": 5069,
-        "y": 4803,
-        "width": 239,
-        "height": 153
+        "x": 4704,
+        "y": 4805,
+        "width": 180,
+        "height": 104
       },
       "nestedLayoutByParent": {
         "node-2b1485633c": {
-          "x": 177,
-          "y": 9,
+          "x": 0,
+          "y": 0,
           "width": 77,
           "height": 32
+        },
+        "node-0c5efc20ca": {
+          "x": 29,
+          "y": 37,
+          "width": 200,
+          "height": 77
         }
       },
       "userSized": true
@@ -2660,15 +2668,15 @@
       },
       "codeLanguage": "python",
       "layout": {
-        "x": 5137,
-        "y": 4879,
-        "width": 239,
-        "height": 153
+        "x": 5120,
+        "y": 4805,
+        "width": 180,
+        "height": 104
       },
       "nestedLayoutByParent": {
         "node-2b1485633c": {
-          "x": 209,
-          "y": 41,
+          "x": 160,
+          "y": 0,
           "width": 77,
           "height": 32
         }
@@ -2693,15 +2701,15 @@
       },
       "codeLanguage": "python",
       "layout": {
-        "x": 5137,
-        "y": 4968,
-        "width": 239,
-        "height": 153
+        "x": 5188,
+        "y": 4898,
+        "width": 180,
+        "height": 104
       },
       "nestedLayoutByParent": {
         "node-2b1485633c": {
-          "x": 209,
-          "y": 77,
+          "x": 160,
+          "y": 33,
           "width": 77,
           "height": 32
         }
@@ -2730,15 +2738,15 @@
         "motion": "soft"
       },
       "layout": {
-        "x": 5069,
-        "y": 5044,
-        "width": 239,
-        "height": 153
+        "x": 5188,
+        "y": 4998,
+        "width": 180,
+        "height": 104
       },
       "nestedLayoutByParent": {
         "node-2b1485633c": {
-          "x": 177,
-          "y": 109,
+          "x": 160,
+          "y": 71,
           "width": 77,
           "height": 32
         }
@@ -2763,15 +2771,15 @@
       },
       "codeLanguage": "python",
       "layout": {
-        "x": 4657,
-        "y": 4787,
-        "width": 350,
-        "height": 210
+        "x": 4668,
+        "y": 4839,
+        "width": 180,
+        "height": 133
       },
       "nestedLayoutByParent": {
         "node-18684239d1": {
-          "x": -22,
-          "y": -1,
+          "x": 0,
+          "y": 0,
           "width": 128,
           "height": 51
         }
@@ -2796,15 +2804,15 @@
       },
       "codeLanguage": "python",
       "layout": {
-        "x": 4993,
-        "y": 4787,
-        "width": 350,
-        "height": 210
+        "x": 5152,
+        "y": 4839,
+        "width": 180,
+        "height": 133
       },
       "nestedLayoutByParent": {
         "node-18684239d1": {
-          "x": 105,
-          "y": -1,
+          "x": 24,
+          "y": 0,
           "width": 128,
           "height": 51
         }
@@ -2829,15 +2837,15 @@
       },
       "codeLanguage": "python",
       "layout": {
-        "x": 4993,
-        "y": 5003,
-        "width": 350,
-        "height": 210
+        "x": 5152,
+        "y": 5033,
+        "width": 180,
+        "height": 133
       },
       "nestedLayoutByParent": {
         "node-18684239d1": {
-          "x": 105,
-          "y": 75,
+          "x": 24,
+          "y": 31,
           "width": 128,
           "height": 51
         }
@@ -2862,15 +2870,15 @@
       },
       "codeLanguage": "python",
       "layout": {
-        "x": 4657,
-        "y": 5003,
-        "width": 350,
-        "height": 210
+        "x": 4668,
+        "y": 5033,
+        "width": 180,
+        "height": 133
       },
       "nestedLayoutByParent": {
         "node-18684239d1": {
-          "x": -22,
-          "y": 75,
+          "x": 0,
+          "y": 31,
           "width": 128,
           "height": 51
         }
@@ -2897,15 +2905,15 @@
         "motion": "soft"
       },
       "layout": {
-        "x": 4949,
-        "y": 5089,
-        "width": 239,
-        "height": 153
+        "x": 5120,
+        "y": 5091,
+        "width": 180,
+        "height": 104
       },
       "nestedLayoutByParent": {
         "node-2b1485633c": {
-          "x": 122,
-          "y": 128,
+          "x": 160,
+          "y": 104,
           "width": 77,
           "height": 32
         }
@@ -2930,15 +2938,15 @@
       },
       "codeLanguage": "python",
       "layout": {
-        "x": 4587,
-        "y": 4895,
-        "width": 350,
-        "height": 210
+        "x": 4564,
+        "y": 4943,
+        "width": 180,
+        "height": 133
       },
       "nestedLayoutByParent": {
         "node-dbe60b7d41": {
-          "x": -48,
-          "y": 37,
+          "x": 0,
+          "y": 16,
           "width": 128,
           "height": 51
         }
@@ -2963,15 +2971,15 @@
       },
       "codeLanguage": "python",
       "layout": {
-        "x": 5063,
-        "y": 4895,
-        "width": 350,
-        "height": 210
+        "x": 5261,
+        "y": 4943,
+        "width": 180,
+        "height": 133
       },
       "nestedLayoutByParent": {
         "node-dbe60b7d41": {
-          "x": 131,
-          "y": 37,
+          "x": 24,
+          "y": 16,
           "width": 128,
           "height": 51
         }
@@ -3000,15 +3008,15 @@
         "motion": "soft"
       },
       "layout": {
-        "x": 4812,
-        "y": 5089,
-        "width": 239,
-        "height": 153
+        "x": 4985,
+        "y": 5157,
+        "width": 180,
+        "height": 104
       },
       "nestedLayoutByParent": {
         "node-2b1485633c": {
-          "x": 59,
-          "y": 128,
+          "x": 112,
+          "y": 104,
           "width": 77,
           "height": 32
         }
@@ -3033,15 +3041,15 @@
       },
       "codeLanguage": "python",
       "layout": {
-        "x": 4657,
-        "y": 4787,
-        "width": 350,
-        "height": 210
+        "x": 4668,
+        "y": 4839,
+        "width": 180,
+        "height": 133
       },
       "nestedLayoutByParent": {
         "node-e885e496ab": {
-          "x": -22,
-          "y": -1,
+          "x": 0,
+          "y": 0,
           "width": 128,
           "height": 51
         }
@@ -3066,15 +3074,15 @@
       },
       "codeLanguage": "python",
       "layout": {
-        "x": 4993,
-        "y": 4787,
-        "width": 350,
-        "height": 210
+        "x": 5152,
+        "y": 4839,
+        "width": 180,
+        "height": 133
       },
       "nestedLayoutByParent": {
         "node-e885e496ab": {
-          "x": 105,
-          "y": -1,
+          "x": 24,
+          "y": 0,
           "width": 128,
           "height": 51
         }
@@ -3099,15 +3107,15 @@
       },
       "codeLanguage": "python",
       "layout": {
-        "x": 4993,
-        "y": 5003,
-        "width": 350,
-        "height": 210
+        "x": 5152,
+        "y": 5033,
+        "width": 180,
+        "height": 133
       },
       "nestedLayoutByParent": {
         "node-e885e496ab": {
-          "x": 105,
-          "y": 75,
+          "x": 24,
+          "y": 31,
           "width": 128,
           "height": 51
         }
@@ -3132,15 +3140,15 @@
       },
       "codeLanguage": "python",
       "layout": {
-        "x": 4657,
-        "y": 5003,
-        "width": 350,
-        "height": 210
+        "x": 4668,
+        "y": 5033,
+        "width": 180,
+        "height": 133
       },
       "nestedLayoutByParent": {
         "node-e885e496ab": {
-          "x": -22,
-          "y": 75,
+          "x": 0,
+          "y": 31,
           "width": 128,
           "height": 51
         }
@@ -3165,15 +3173,15 @@
       },
       "codeLanguage": "python",
       "layout": {
-        "x": 4692,
-        "y": 5044,
-        "width": 239,
-        "height": 153
+        "x": 4828,
+        "y": 5157,
+        "width": 180,
+        "height": 104
       },
       "nestedLayoutByParent": {
         "node-2b1485633c": {
-          "x": 4,
-          "y": 109,
+          "x": 45,
+          "y": 104,
           "width": 77,
           "height": 32
         }
@@ -3185,7 +3193,7 @@
       "title": "正解ラベル管理ポワン",
       "body": "ユーザーがGUI上で付けた正解ラベル、修正ラベル、期待する終端判定、期待する内容分類、期待する関係追跡結果を保存・読み出しする臓器ポワン。自動判定と人間の正解を分けて扱う。",
       "powanKind": "organ",
-      "code": "",
+      "code": "from __future__ import annotations\n\nimport argparse\nimport copy\nimport hashlib\nimport json\nimport os\nimport sys\nimport tempfile\nfrom datetime import datetime, timezone\nfrom pathlib import Path\nfrom typing import Any, Mapping\n\n\nSCHEMA_VERSION = 1\nDEFAULT_STORE_PATH = \"x_post_test_expected_labels.json\"\nFORBIDDEN_WRITE_NAMES = {\"x_archive.db\"}\nTRACKED_LABEL_FIELDS = (\"expected\", \"auto_result_snapshot\", \"judge\", \"memo\")\nMISSING = object()\n\n\nclass LabelStoreError(ValueError):\n    pass\n\n\ndef run(payload: Mapping[str, Any] | None = None, **kwargs: Any) -> dict[str, Any]:\n    data = _merge_payload(payload, kwargs)\n    action = _clean_text(data.get(\"action\")) or \"upsert\"\n    store_path = data.get(\"store_path\") or data.get(\"storePath\") or DEFAULT_STORE_PATH\n\n    try:\n        if action in {\"upsert\", \"save\", \"update\", \"save-label\"}:\n            return upsert_label(\n                store_path=store_path,\n                test_id=_first_value(data, \"test_id\", \"testId\"),\n                test_input=_first_value(data, \"test_input\", \"testInput\", \"input\"),\n                expected=_optional_value(data, \"expected\"),\n                auto_result_snapshot=_optional_value(data, \"auto_result_snapshot\", \"autoResultSnapshot\"),\n                judge=_clean_text(data.get(\"judge\")),\n                memo=_optional_value(data, \"memo\"),\n                reason=_clean_text(data.get(\"reason\")),\n            )\n        if action in {\"get\", \"read\", \"load\"}:\n            return read_label(\n                store_path=store_path,\n                test_id=_first_value(data, \"test_id\", \"testId\"),\n                test_input=_first_value(data, \"test_input\", \"testInput\", \"input\"),\n                include_history=bool(data.get(\"include_history\", data.get(\"includeHistory\", True))),\n            )\n        if action in {\"list\", \"list-labels\"}:\n            return list_labels(\n                store_path=store_path,\n                include_history=bool(data.get(\"include_history\", data.get(\"includeHistory\", False))),\n            )\n        if action in {\"update-expected\", \"set-expected\"}:\n            expected = _optional_value(data, \"expected\")\n            if expected is MISSING:\n                raise LabelStoreError(\"expected is required\")\n            return update_expected(\n                expected,\n                store_path=store_path,\n                test_id=_first_value(data, \"test_id\", \"testId\"),\n                test_input=_first_value(data, \"test_input\", \"testInput\", \"input\"),\n                judge=_clean_text(data.get(\"judge\")),\n                memo=_optional_value(data, \"memo\"),\n                reason=_clean_text(data.get(\"reason\")) or \"update expected label\",\n            )\n        if action in {\"snapshot-auto\", \"update-auto\", \"set-auto-result-snapshot\"}:\n            snapshot = _optional_value(data, \"auto_result_snapshot\", \"autoResultSnapshot\")\n            if snapshot is MISSING:\n                snapshot = _optional_value(data, \"auto_result\", \"autoResult\", \"result\")\n            if snapshot is MISSING:\n                raise LabelStoreError(\"auto_result_snapshot is required\")\n            return update_auto_result_snapshot(\n                snapshot,\n                store_path=store_path,\n                test_id=_first_value(data, \"test_id\", \"testId\"),\n                test_input=_first_value(data, \"test_input\", \"testInput\", \"input\"),\n                judge=_clean_text(data.get(\"judge\")) or \"auto\",\n                reason=_clean_text(data.get(\"reason\")) or \"update auto result snapshot\",\n            )\n        if action in {\"compare\", \"judge\"}:\n            auto_result = _optional_value(data, \"auto_result\", \"autoResult\", \"result\")\n            if auto_result is MISSING:\n                auto_result = _optional_value(data, \"auto_result_snapshot\", \"autoResultSnapshot\")\n            return compare_label(\n                store_path=store_path,\n                test_id=_first_value(data, \"test_id\", \"testId\"),\n                test_input=_first_value(data, \"test_input\", \"testInput\", \"input\"),\n                auto_result=auto_result,\n                include_label=bool(data.get(\"include_label\", data.get(\"includeLabel\", True))),\n            )\n        raise LabelStoreError(f\"unknown action: {action}\")\n    except Exception as exc:\n        return {\n            \"ok\": False,\n            \"status\": \"error\",\n            \"error\": {\"type\": exc.__class__.__name__, \"message\": str(exc)},\n        }\n\n\ndef upsert_label(\n    *,\n    store_path: str | Path = DEFAULT_STORE_PATH,\n    test_id: Any = None,\n    test_input: Any = None,\n    expected: Any = MISSING,\n    auto_result_snapshot: Any = MISSING,\n    judge: str = \"\",\n    memo: Any = MISSING,\n    reason: str = \"\",\n) -> dict[str, Any]:\n    target = make_target(test_id=test_id, test_input=test_input)\n    store = load_label_store(store_path)\n    records = store[\"records\"]\n    old_record = records.get(target[\"key\"])\n    now = _now()\n\n    if old_record:\n        record = _json_clone(old_record)\n        record[\"target\"] = _merge_target(record.get(\"target\"), target)\n        record.setdefault(\"history\", [])\n        record.setdefault(\"created_at\", now)\n    else:\n        record = {\n            \"target\": target,\n            \"expected\": None,\n            \"auto_result_snapshot\": None,\n            \"history\": [],\n            \"judge\": \"\",\n            \"memo\": \"\",\n            \"created_at\": now,\n            \"updated_at\": now,\n        }\n\n    before = _tracked_state(record) if old_record else None\n\n    if expected is not MISSING:\n        record[\"expected\"] = _json_safe(expected)\n    if auto_result_snapshot is not MISSING:\n        record[\"auto_result_snapshot\"] = _json_safe(auto_result_snapshot)\n    if memo is not MISSING:\n        record[\"memo\"] = _clean_text(memo)\n    if judge:\n        record[\"judge\"] = judge\n\n    if not record.get(\"judge\"):\n        record[\"judge\"] = \"unknown\"\n\n    after = _tracked_state(record)\n    changed = before != after\n    if changed:\n        record[\"updated_at\"] = now\n        record[\"history\"].append(\n            {\n                \"changed_at\": now,\n                \"judge\": judge or record.get(\"judge\") or \"unknown\",\n                \"reason\": reason or (\"create label\" if before is None else \"update label\"),\n                \"before\": before,\n                \"after\": after,\n            }\n        )\n\n    records[target[\"key\"]] = record\n    if changed or old_record is None:\n        save_label_store(store, store_path)\n\n    return {\n        \"ok\": True,\n        \"status\": \"saved\" if changed else \"unchanged\",\n        \"target_key\": target[\"key\"],\n        \"label\": _public_record(record),\n    }\n\n\ndef update_expected(\n    expected: Any,\n    *,\n    store_path: str | Path = DEFAULT_STORE_PATH,\n    test_id: Any = None,\n    test_input: Any = None,\n    judge: str = \"\",\n    memo: Any = MISSING,\n    reason: str = \"update expected label\",\n) -> dict[str, Any]:\n    return upsert_label(\n        store_path=store_path,\n        test_id=test_id,\n        test_input=test_input,\n        expected=expected,\n        memo=memo,\n        judge=judge,\n        reason=reason,\n    )\n\n\ndef update_auto_result_snapshot(\n    snapshot: Any,\n    *,\n    store_path: str | Path = DEFAULT_STORE_PATH,\n    test_id: Any = None,\n    test_input: Any = None,\n    judge: str = \"auto\",\n    reason: str = \"update auto result snapshot\",\n) -> dict[str, Any]:\n    return upsert_label(\n        store_path=store_path,\n        test_id=test_id,\n        test_input=test_input,\n        auto_result_snapshot=snapshot,\n        judge=judge or \"auto\",\n        reason=reason,\n    )\n\n\ndef read_label(\n    *,\n    store_path: str | Path = DEFAULT_STORE_PATH,\n    test_id: Any = None,\n    test_input: Any = None,\n    include_history: bool = True,\n) -> dict[str, Any]:\n    target = make_target(test_id=test_id, test_input=test_input)\n    store = load_label_store(store_path)\n    record = store[\"records\"].get(target[\"key\"])\n    if not record:\n        return {\"ok\": True, \"status\": \"missing\", \"target_key\": target[\"key\"], \"label\": None}\n    return {\n        \"ok\": True,\n        \"status\": \"found\",\n        \"target_key\": target[\"key\"],\n        \"label\": _public_record(record, include_history=include_history),\n    }\n\n\ndef list_labels(\n    *,\n    store_path: str | Path = DEFAULT_STORE_PATH,\n    include_history: bool = False,\n) -> dict[str, Any]:\n    store = load_label_store(store_path)\n    labels = [\n        _public_record(record, include_history=include_history)\n        for _, record in sorted(store[\"records\"].items())\n    ]\n    return {\"ok\": True, \"status\": \"listed\", \"count\": len(labels), \"labels\": labels}\n\n\ndef compare_label(\n    *,\n    store_path: str | Path = DEFAULT_STORE_PATH,\n    test_id: Any = None,\n    test_input: Any = None,\n    auto_result: Any = MISSING,\n    include_label: bool = True,\n) -> dict[str, Any]:\n    target = make_target(test_id=test_id, test_input=test_input)\n    store = load_label_store(store_path)\n    record = store[\"records\"].get(target[\"key\"])\n    if not record:\n        return {\n            \"ok\": True,\n            \"status\": \"missing_label\",\n            \"target_key\": target[\"key\"],\n            \"comparison\": {\"status\": \"missing_label\", \"matches\": False, \"differences\": []},\n        }\n\n    actual = _json_safe(auto_result) if auto_result is not MISSING else record.get(\"auto_result_snapshot\")\n    comparison = compare_expected_to_actual(record.get(\"expected\"), actual)\n    result = {\n        \"ok\": True,\n        \"status\": \"compared\",\n        \"target_key\": target[\"key\"],\n        \"comparison\": comparison,\n    }\n    if include_label:\n        result[\"label\"] = _public_record(record)\n    return result\n\n\ndef compare_expected_to_actual(expected: Any, actual: Any) -> dict[str, Any]:\n    if expected is None:\n        return {\"status\": \"unlabeled\", \"matches\": False, \"differences\": []}\n    if actual is None:\n        return {\n            \"status\": \"missing_auto_result\",\n            \"matches\": False,\n            \"differences\": [{\"path\": \"$\", \"expected\": expected, \"actual\": None}],\n        }\n    differences: list[dict[str, Any]] = []\n    _collect_differences(expected, actual, \"$\", differences)\n    return {\n        \"status\": \"matched\" if not differences else \"different\",\n        \"matches\": not differences,\n        \"differences\": differences,\n    }\n\n\ndef make_target(*, test_id: Any = None, test_input: Any = None) -> dict[str, Any]:\n    clean_test_id = _clean_text(test_id)\n    normalized_input = _json_safe(test_input) if test_input is not None else None\n\n    if not clean_test_id and isinstance(normalized_input, Mapping):\n        clean_test_id = _clean_text(\n            normalized_input.get(\"test_id\")\n            or normalized_input.get(\"testId\")\n            or normalized_input.get(\"id\")\n        )\n\n    input_hash = _hash_json(normalized_input) if normalized_input is not None else \"\"\n    if clean_test_id:\n        key = f\"test_id:{clean_test_id}\"\n    elif normalized_input is not None:\n        key = f\"input_sha256:{input_hash}\"\n    else:\n        raise LabelStoreError(\"test_id or test_input is required\")\n\n    return {\n        \"key\": key,\n        \"test_id\": clean_test_id,\n        \"input_hash\": input_hash,\n        \"test_input\": normalized_input,\n    }\n\n\ndef load_label_store(store_path: str | Path = DEFAULT_STORE_PATH) -> dict[str, Any]:\n    path = _resolve_store_path(store_path)\n    if not path.exists():\n        return {\"schema_version\": SCHEMA_VERSION, \"records\": {}}\n\n    try:\n        loaded = json.loads(path.read_text(encoding=\"utf-8\"))\n    except json.JSONDecodeError as exc:\n        raise LabelStoreError(f\"label store is not valid JSON: {path}\") from exc\n\n    if not isinstance(loaded, Mapping):\n        raise LabelStoreError(\"label store root must be an object\")\n\n    records = loaded.get(\"records\", {})\n    if not isinstance(records, Mapping):\n        raise LabelStoreError(\"label store records must be an object\")\n\n    return {\n        \"schema_version\": int(loaded.get(\"schema_version\") or SCHEMA_VERSION),\n        \"records\": {str(key): _normalize_record(value, str(key)) for key, value in records.items()},\n    }\n\n\ndef save_label_store(store: Mapping[str, Any], store_path: str | Path = DEFAULT_STORE_PATH) -> None:\n    path = _resolve_store_path(store_path)\n    path.parent.mkdir(parents=True, exist_ok=True)\n    normalized = {\n        \"schema_version\": SCHEMA_VERSION,\n        \"records\": {\n            str(key): _normalize_record(value, str(key))\n            for key, value in dict(store.get(\"records\", {})).items()\n        },\n    }\n\n    tmp_path: Path | None = None\n    try:\n        with tempfile.NamedTemporaryFile(\n            \"w\",\n            encoding=\"utf-8\",\n            dir=str(path.parent),\n            prefix=f\".{path.name}.\",\n            suffix=\".tmp\",\n            delete=False,\n        ) as handle:\n            tmp_path = Path(handle.name)\n            json.dump(normalized, handle, ensure_ascii=False, indent=2, sort_keys=True)\n            handle.write(\"\\n\")\n        os.replace(tmp_path, path)\n    finally:\n        if tmp_path and tmp_path.exists():\n            try:\n                tmp_path.unlink()\n            except OSError:\n                pass\n\n\ndef _collect_differences(expected: Any, actual: Any, path: str, differences: list[dict[str, Any]]) -> None:\n    if isinstance(expected, Mapping):\n        if not isinstance(actual, Mapping):\n            differences.append({\"path\": path, \"expected\": expected, \"actual\": actual})\n            return\n        for key, expected_value in expected.items():\n            child_path = f\"{path}.{key}\"\n            if key not in actual:\n                differences.append({\"path\": child_path, \"expected\": expected_value, \"actual\": None})\n            else:\n                _collect_differences(expected_value, actual[key], child_path, differences)\n        return\n\n    if isinstance(expected, list):\n        if not isinstance(actual, list) or len(expected) != len(actual):\n            differences.append({\"path\": path, \"expected\": expected, \"actual\": actual})\n            return\n        for index, expected_value in enumerate(expected):\n            _collect_differences(expected_value, actual[index], f\"{path}[{index}]\", differences)\n        return\n\n    if expected != actual:\n        differences.append({\"path\": path, \"expected\": expected, \"actual\": actual})\n\n\ndef _normalize_record(value: Any, key: str) -> dict[str, Any]:\n    if not isinstance(value, Mapping):\n        raise LabelStoreError(f\"label record must be an object: {key}\")\n    target = value.get(\"target\") if isinstance(value.get(\"target\"), Mapping) else {\"key\": key}\n    history = value.get(\"history\") if isinstance(value.get(\"history\"), list) else []\n    return {\n        \"target\": _merge_target(target, {\"key\": key}),\n        \"expected\": _json_safe(value.get(\"expected\")),\n        \"auto_result_snapshot\": _json_safe(value.get(\"auto_result_snapshot\")),\n        \"history\": _json_safe(history),\n        \"judge\": _clean_text(value.get(\"judge\")) or \"unknown\",\n        \"memo\": _clean_text(value.get(\"memo\")),\n        \"created_at\": _clean_text(value.get(\"created_at\")) or _now(),\n        \"updated_at\": _clean_text(value.get(\"updated_at\")) or _now(),\n    }\n\n\ndef _public_record(record: Mapping[str, Any], *, include_history: bool = True) -> dict[str, Any]:\n    result = _json_clone(record)\n    if not include_history:\n        result.pop(\"history\", None)\n    return result\n\n\ndef _tracked_state(record: Mapping[str, Any]) -> dict[str, Any]:\n    return {field: _json_clone(record.get(field)) for field in TRACKED_LABEL_FIELDS}\n\n\ndef _merge_target(old_target: Any, new_target: Mapping[str, Any]) -> dict[str, Any]:\n    merged: dict[str, Any] = {}\n    if isinstance(old_target, Mapping):\n        merged.update(_json_safe(old_target))\n    merged.update({key: value for key, value in _json_safe(new_target).items() if value not in (None, \"\")})\n    return merged\n\n\ndef _resolve_store_path(store_path: str | Path) -> Path:\n    raw = str(store_path or DEFAULT_STORE_PATH)\n    path = Path(raw).expanduser()\n    if not path.is_absolute():\n        path = Path.cwd() / path\n    lowered_parts = {part.lower() for part in path.parts}\n    if lowered_parts & FORBIDDEN_WRITE_NAMES or path.suffix.lower() == \".db\":\n        raise LabelStoreError(\"labels must be stored in a separate JSON file, not x_archive.db or any .db file\")\n    return path\n\n\ndef _merge_payload(payload: Mapping[str, Any] | None, kwargs: Mapping[str, Any]) -> dict[str, Any]:\n    data: dict[str, Any] = {}\n    if payload is not None:\n        if not isinstance(payload, Mapping):\n            raise LabelStoreError(\"payload must be a JSON object\")\n        data.update(dict(payload))\n    data.update({key: value for key, value in kwargs.items() if value is not None})\n    return data\n\n\ndef _optional_value(data: Mapping[str, Any], *keys: str) -> Any:\n    for key in keys:\n        if key in data:\n            return data[key]\n    return MISSING\n\n\ndef _first_value(data: Mapping[str, Any], *keys: str) -> Any:\n    for key in keys:\n        value = data.get(key)\n        if value not in (None, \"\"):\n            return value\n    return None\n\n\ndef _json_safe(value: Any) -> Any:\n    return json.loads(json.dumps(value, ensure_ascii=False, sort_keys=True, default=str))\n\n\ndef _json_clone(value: Any) -> Any:\n    return copy.deepcopy(_json_safe(value))\n\n\ndef _hash_json(value: Any) -> str:\n    encoded = json.dumps(value, ensure_ascii=False, sort_keys=True, separators=(\",\", \":\")).encode(\"utf-8\")\n    return hashlib.sha256(encoded).hexdigest()\n\n\ndef _clean_text(value: Any) -> str:\n    if value is None:\n        return \"\"\n    return str(value).strip()\n\n\ndef _now() -> str:\n    return datetime.now(timezone.utc).isoformat(timespec=\"seconds\")\n\n\ndef load_input_payload(input_json: str) -> Any:\n    if not input_json or input_json == \"-\":\n        raw = sys.stdin.read().strip()\n        return json.loads(raw) if raw else {}\n    path = Path(input_json)\n    if path.exists():\n        return json.loads(path.read_text(encoding=\"utf-8\"))\n    return json.loads(input_json)\n\n\ndef main(argv: list[str] | None = None) -> int:\n    parser = argparse.ArgumentParser(description=\"Manage human expected labels for first-stage X post tests.\")\n    parser.add_argument(\"--action\", default=\"\", help=\"upsert, get, list, update-expected, update-auto, compare\")\n    parser.add_argument(\"--input-json\", default=\"-\", help=\"JSON string, JSON file path, or '-' for stdin.\")\n    parser.add_argument(\"--store-path\", default=DEFAULT_STORE_PATH)\n    parser.add_argument(\"--pretty\", action=\"store_true\")\n    args = parser.parse_args(argv)\n\n    payload = load_input_payload(args.input_json)\n    if not isinstance(payload, Mapping):\n        payload = {\"input\": payload}\n    payload = dict(payload)\n    if args.action:\n        payload[\"action\"] = args.action\n    payload[\"store_path\"] = args.store_path\n\n    result = run(payload)\n    print(json.dumps(result, ensure_ascii=False, indent=2 if args.pretty else None))\n    return 0 if result.get(\"ok\") else 1\n\n\nif __name__ == \"__main__\":\n    raise SystemExit(main())\n",
       "parent": "node-2b1485633c",
       "children": [],
       "style": {
@@ -3198,15 +3206,15 @@
       },
       "codeLanguage": "python",
       "layout": {
-        "x": 4624,
-        "y": 4968,
-        "width": 239,
-        "height": 153
+        "x": 4704,
+        "y": 5091,
+        "width": 180,
+        "height": 104
       },
       "nestedLayoutByParent": {
         "node-2b1485633c": {
-          "x": -28,
-          "y": 77,
+          "x": 0,
+          "y": 104,
           "width": 77,
           "height": 32
         }
@@ -3218,7 +3226,7 @@
       "title": "テスト結果保存・比較ポワン",
       "body": "テスト実行結果、証拠、ログ、正解ラベルとの差分、成功/失敗、失敗理由、再現用入力を保存し、過去結果と比較する臓器ポワン。GUIには差分を見やすく返す。",
       "powanKind": "organ",
-      "code": "",
+      "code": "from __future__ import annotations\nimport hashlib\nimport json\nimport math\nimport os, tempfile\nfrom datetime import datetime, timezone\nfrom pathlib import Path\nfrom typing import Any, Mapping, Sequence\nfrom urllib.parse import urlsplit, urlunsplit\nSCHEMA_VERSION, DEFAULT_STORE_PATH = 1, \"x_post_test_results.json\"\nFORBIDDEN_WRITE_NAMES, MISSING = {\"x_archive.db\"}, object()\nCOMMON_INPUT_FIELDS = (\n    \"source_type\", \"target_kind\", \"canonical_url\", \"post_id\", \"account\", \"run_id\",\n    \"db_ref\", \"raw_json\", \"text_preview\", \"selector_note\", \"needs_browser\", \"warnings\",\n)\nINPUT_ALIASES = {\n    \"source_type\": (\"source_type\", \"sourceType\"),\n    \"target_kind\": (\"target_kind\", \"targetKind\"),\n    \"canonical_url\": (\"canonical_url\", \"canonicalUrl\", \"url\", \"post_url\", \"postUrl\"),\n    \"post_id\": (\"post_id\", \"postId\", \"tweet_id\", \"tweetId\", \"status_id\", \"statusId\"),\n    \"account\": (\"account\", \"screen_name\", \"screenName\", \"username\", \"author\"),\n    \"run_id\": (\"run_id\", \"runId\"),\n    \"db_ref\": (\"db_ref\", \"dbRef\"),\n    \"raw_json\": (\"raw_json\", \"rawJson\", \"raw\"),\n    \"text_preview\": (\"text_preview\", \"textPreview\", \"text\", \"body\"),\n    \"selector_note\": (\"selector_note\", \"selectorNote\"),\n    \"needs_browser\": (\"needs_browser\", \"needsBrowser\"),\n    \"warnings\": (\"warnings\", \"warning\"),\n}\nIDENTITY_FIELDS = (\"source_type\", \"target_kind\", \"canonical_url\", \"post_id\", \"account\", \"db_ref\")\nFALLBACK_IDENTITY_FIELDS = (\"source_type\", \"target_kind\", \"run_id\", \"selector_note\")\nSUCCESS_STATUSES = {\"ok\", \"success\", \"succeeded\", \"passed\", \"pass\", \"matched\", \"complete\", \"completed\"}\nFAILURE_STATUSES = {\"error\", \"failed\", \"fail\", \"failure\", \"mismatch\", \"different\", \"timeout\"}\nclass TestResultStoreError(ValueError):\n    pass\ndef run(payload: Mapping[str, Any] | None = None, **kwargs: Any) -> dict[str, Any]:\n    data = _merge_payload(payload, kwargs)\n    action = _clean_text(data.get(\"action\")) or \"save\"\n    store_path = data.get(\"store_path\") or data.get(\"storePath\") or DEFAULT_STORE_PATH\n    try:\n        if action in {\"save\", \"append\", \"record\", \"save-result\"}:\n            return save_result(\n                store_path=store_path,\n                test_id=_first_value(data, \"test_id\", \"testId\"),\n                test_type=_first_value(data, \"test_type\", \"testType\"),\n                test_input=_first_value(data, \"test_input\", \"testInput\", \"input\"),\n                result=_optional_value(data, \"result\"),\n                evidence=_optional_value(data, \"evidence\"),\n                logs=_optional_value(data, \"logs\", \"log\"),\n                confidence=_optional_value(data, \"confidence\"),\n                error=_optional_value(data, \"error\"),\n                artifact_paths=_optional_value(data, \"artifact_paths\", \"artifactPaths\"),\n                created_at=_first_value(data, \"created_at\", \"createdAt\"),\n                success=_optional_value(data, \"success\", \"ok\"),\n            )\n        if action in {\"get\", \"read\", \"load\"}:\n            return read_result(\n                store_path=store_path,\n                record_id=_first_value(data, \"record_id\", \"recordId\"),\n                test_id=_first_value(data, \"test_id\", \"testId\"),\n                test_input=_first_value(data, \"test_input\", \"testInput\", \"input\"),\n                include_revisions=bool(data.get(\"include_revisions\", data.get(\"includeRevisions\", True))),\n            )\n        if action in {\"list\", \"list-results\"}:\n            return list_results(\n                store_path=store_path,\n                test_type=_first_value(data, \"test_type\", \"testType\"),\n                test_id=_first_value(data, \"test_id\", \"testId\"),\n                test_input=_first_value(data, \"test_input\", \"testInput\", \"input\"),\n                input_key=_first_value(data, \"input_key\", \"inputKey\"),\n                success=_optional_value(data, \"success\", \"ok\"),\n                limit=_int_value(data.get(\"limit\"), 50),\n                offset=_int_value(data.get(\"offset\"), 0),\n                detail=bool(data.get(\"detail\", False)),\n            )\n        if action in {\"compare\", \"compare-input\", \"compare-past\", \"history-diff\"}:\n            return compare_same_input(\n                store_path=store_path,\n                data=data,\n                previous_limit=_int_value(data.get(\"previous_limit\", data.get(\"previousLimit\")), 5),\n                max_diffs=_int_value(data.get(\"max_diffs\", data.get(\"maxDiffs\")), 100),\n            )\n        if action in {\"normalize-input\", \"input-key\"}:\n            normalized = normalize_test_input(_first_value(data, \"test_input\", \"testInput\", \"input\"))\n            return {\"ok\": True, \"status\": \"normalized\", \"input\": normalized, **make_input_target(normalized)}\n        raise TestResultStoreError(f\"unknown action: {action}\")\n    except Exception as exc:\n        return {\"ok\": False, \"status\": \"error\", \"error\": {\"type\": exc.__class__.__name__, \"message\": str(exc)}}\ndef save_result(\n    *, store_path: str | Path = DEFAULT_STORE_PATH, test_id: Any = None, test_type: Any = None,\n    test_input: Any = None, result: Any = MISSING, evidence: Any = MISSING, logs: Any = MISSING,\n    confidence: Any = MISSING, error: Any = MISSING, artifact_paths: Any = MISSING,\n    created_at: Any = None, success: Any = MISSING,\n) -> dict[str, Any]:\n    record = make_result_record(\n        test_id=test_id, test_type=test_type, test_input=test_input, result=result, evidence=evidence,\n        logs=logs, confidence=confidence, error=error, artifact_paths=artifact_paths,\n        created_at=created_at, success=success,\n    )\n    store = load_result_store(store_path)\n    previous = _records_for_input(store[\"results\"], record[\"input_key\"])\n    store[\"results\"].append(record)\n    save_result_store(store, store_path)\n    comparison = compare_records(previous[0], record) if previous else {\"status\": \"no_previous\", \"matches\": None, \"differences\": []}\n    return {\n        \"ok\": True, \"status\": \"saved\", \"store_path\": str(_resolve_store_path(store_path)),\n        \"result_record\": public_record(record), \"same_input_history_count\": len(previous),\n        \"comparison_to_previous\": comparison,\n    }\ndef read_result(\n    *, store_path: str | Path = DEFAULT_STORE_PATH, record_id: Any = None, test_id: Any = None,\n    test_input: Any = None, include_revisions: bool = True,\n) -> dict[str, Any]:\n    matches = _filter_records(load_result_store(store_path)[\"results\"], record_id=record_id, test_id=test_id, test_input=test_input)\n    if not matches:\n        return {\"ok\": True, \"status\": \"missing\", \"result_record\": None, \"records\": []}\n    result = {\"ok\": True, \"status\": \"found\", \"result_record\": public_record(matches[0])}\n    if include_revisions:\n        result.update({\"records\": [public_record(record) for record in matches], \"count\": len(matches)})\n    return result\ndef list_results(\n    *, store_path: str | Path = DEFAULT_STORE_PATH, test_type: Any = None, test_id: Any = None,\n    test_input: Any = None, input_key: Any = None, success: Any = MISSING,\n    limit: int = 50, offset: int = 0, detail: bool = False,\n) -> dict[str, Any]:\n    records = _sorted_records(load_result_store(store_path)[\"results\"])\n    if test_type:\n        records = [item for item in records if item.get(\"test_type\") == _clean_text(test_type)]\n    if test_id:\n        records = [item for item in records if item.get(\"test_id\") == _clean_text(test_id)]\n    if input_key:\n        records = [item for item in records if item.get(\"input_key\") == _clean_text(input_key)]\n    elif test_input is not None:\n        key = make_input_target(normalize_test_input(test_input))[\"input_key\"]\n        records = [item for item in records if item.get(\"input_key\") == key]\n    if success is not MISSING:\n        wanted = _bool_value(success)\n        records = [item for item in records if bool(item.get(\"success\")) is wanted]\n    total = len(records)\n    limit, offset = max(0, min(int(limit), 500)), max(0, int(offset))\n    page = records[offset: offset + limit] if limit else records[offset:]\n    serialize = public_record if detail else record_summary\n    return {\n        \"ok\": True, \"status\": \"listed\", \"store_path\": str(_resolve_store_path(store_path)),\n        \"count\": len(page), \"total\": total, \"offset\": offset, \"limit\": limit,\n        \"results\": [serialize(record) for record in page],\n    }\ndef compare_same_input(\n    *, store_path: str | Path = DEFAULT_STORE_PATH, data: Mapping[str, Any],\n    previous_limit: int = 5, max_diffs: int = 100,\n) -> dict[str, Any]:\n    records = load_result_store(store_path)[\"results\"]\n    current, persisted = _current_record_for_compare(data, records)\n    if current is None:\n        return {\"ok\": True, \"status\": \"missing\", \"comparison\": {\"status\": \"missing_current\"}}\n    previous = _records_for_input(records, current[\"input_key\"])\n    if persisted:\n        previous = [item for item in previous if item.get(\"record_id\") != current.get(\"record_id\")]\n    previous = previous[: max(0, int(previous_limit))]\n    if not previous:\n        return {\n            \"ok\": True, \"status\": \"no_previous\", \"input_key\": current[\"input_key\"],\n            \"current\": record_summary(current), \"previous\": [],\n            \"comparison\": {\"status\": \"no_previous\", \"matches\": None, \"differences\": []},\n        }\n    return {\n        \"ok\": True, \"status\": \"compared\", \"input_key\": current[\"input_key\"],\n        \"current\": public_record(current), \"previous\": [record_summary(item) for item in previous],\n        \"comparison\": compare_records(previous[0], current, max_diffs=max_diffs),\n        \"comparisons\": [\n            {\"against\": record_summary(item), \"comparison\": compare_records(item, current, max_diffs=max_diffs)}\n            for item in previous\n        ],\n    }\ndef make_result_record(\n    *, test_id: Any = None, test_type: Any = None, test_input: Any = None, result: Any = MISSING,\n    evidence: Any = MISSING, logs: Any = MISSING, confidence: Any = MISSING, error: Any = MISSING,\n    artifact_paths: Any = MISSING, created_at: Any = None, success: Any = MISSING,\n) -> dict[str, Any]:\n    normalized_input = normalize_test_input(test_input)\n    target = make_input_target(normalized_input)\n    created = _clean_text(created_at) or _now()\n    result_value = {} if result is MISSING else _json_safe(result)\n    evidence_value = {} if evidence is MISSING else _json_safe(evidence)\n    logs_value = [] if logs is MISSING else _json_safe(logs)\n    error_value = normalize_error(None if error is MISSING else error)\n    success_value = derive_success(success, result_value, error_value)\n    test_type_value = _clean_text(test_type) or normalized_input.get(\"target_kind\") or normalized_input.get(\"source_type\") or \"unknown\"\n    test_id_value = _clean_text(test_id) or f\"test-{_hash_json([target['input_key'], created, test_type_value])[:16]}\"\n    record_id = f\"result-{_hash_json([test_id_value, target['input_hash'], created, result_value, error_value])[:20]}\"\n    return {\n        \"schema_version\": SCHEMA_VERSION, \"record_id\": record_id, \"test_id\": test_id_value,\n        \"test_type\": test_type_value, **target, \"input\": normalized_input, \"result\": result_value,\n        \"evidence\": evidence_value, \"logs\": logs_value,\n        \"confidence\": None if confidence is MISSING else normalize_confidence(confidence),\n        \"error\": error_value, \"artifact_paths\": normalize_artifact_paths([] if artifact_paths is MISSING else artifact_paths),\n        \"success\": success_value, \"failure_reason\": derive_failure_reason(success_value, result_value, error_value),\n        \"created_at\": created,\n    }\ndef normalize_test_input(value: Any) -> dict[str, Any]:\n    if value is None or value is MISSING:\n        value = {}\n    if not isinstance(value, Mapping):\n        value = {\"raw_json\": value, \"text_preview\": _clean_text(value)[:240]}\n    data = dict(value)\n    normalized: dict[str, Any] = {}\n    for field in COMMON_INPUT_FIELDS:\n        raw = _first_present(data, INPUT_ALIASES[field])\n        if field in {\"source_type\", \"target_kind\", \"post_id\", \"account\", \"run_id\", \"selector_note\"}:\n            normalized[field] = _clean_text(raw)\n        elif field == \"canonical_url\":\n            normalized[field] = canonicalize_url(raw)\n        elif field == \"needs_browser\":\n            normalized[field] = _bool_value(raw)\n        elif field == \"warnings\":\n            normalized[field] = normalize_artifact_paths(raw)\n        elif field == \"text_preview\":\n            normalized[field] = _clean_text(raw)[:500]\n        else:\n            normalized[field] = _json_safe(raw) if raw is not MISSING else None\n    known = {alias for aliases in INPUT_ALIASES.values() for alias in aliases}\n    extra = {key: _json_safe(val) for key, val in data.items() if key not in known}\n    if extra:\n        normalized[\"extra\"] = extra\n    return normalized\ndef make_input_target(normalized_input: Mapping[str, Any]) -> dict[str, Any]:\n    input_hash = _hash_json(normalized_input)\n    identity = {\n        field: _identity_value(normalized_input.get(field))\n        for field in IDENTITY_FIELDS if _has_value(normalized_input.get(field))\n    }\n    if not any(field in identity for field in (\"canonical_url\", \"post_id\", \"db_ref\")):\n        identity = {\n            field: _identity_value(normalized_input.get(field))\n            for field in FALLBACK_IDENTITY_FIELDS if _has_value(normalized_input.get(field))\n        }\n    if not identity:\n        identity = {\"input_hash\": input_hash}\n    return {\"input_key\": f\"input_sha256:{_hash_json(identity)}\", \"input_hash\": input_hash, \"input_identity\": identity}\ndef compare_records(previous: Mapping[str, Any], current: Mapping[str, Any], *, max_diffs: int = 100) -> dict[str, Any]:\n    differences: list[dict[str, Any]] = []\n    for field in (\"success\", \"failure_reason\", \"result\", \"evidence\", \"logs\", \"error\", \"artifact_paths\"):\n        _collect_differences(previous.get(field), current.get(field), f\"$.{field}\", differences, max_diffs)\n    prev_conf, cur_conf = previous.get(\"confidence\"), current.get(\"confidence\")\n    delta = cur_conf - prev_conf if isinstance(prev_conf, (int, float)) and isinstance(cur_conf, (int, float)) else None\n    return {\n        \"status\": \"same_as_previous\" if not differences else \"different_from_previous\",\n        \"matches\": not differences, \"previous_record_id\": previous.get(\"record_id\"),\n        \"current_record_id\": current.get(\"record_id\"), \"success_changed\": previous.get(\"success\") != current.get(\"success\"),\n        \"confidence_delta\": delta, \"difference_count\": len(differences), \"differences\": differences,\n    }\ndef load_result_store(store_path: str | Path = DEFAULT_STORE_PATH) -> dict[str, Any]:\n    path = _resolve_store_path(store_path)\n    if not path.exists():\n        return {\"schema_version\": SCHEMA_VERSION, \"results\": [], \"_passthrough\": {}}\n    try:\n        loaded = json.loads(path.read_text(encoding=\"utf-8\"))\n    except json.JSONDecodeError as exc:\n        raise TestResultStoreError(f\"result store is not valid JSON: {path}\") from exc\n    if not isinstance(loaded, Mapping):\n        raise TestResultStoreError(\"result store root must be an object\")\n    raw_results = loaded.get(\"results\", [])\n    if not isinstance(raw_results, list) and isinstance(loaded.get(\"records\"), Mapping):\n        raw_results = list(loaded[\"records\"].values())\n    if not isinstance(raw_results, list):\n        raise TestResultStoreError(\"result store results must be a list\")\n    passthrough = {key: value for key, value in loaded.items() if key not in {\"schema_version\", \"results\", \"records\"}}\n    return {\n        \"schema_version\": int(loaded.get(\"schema_version\") or SCHEMA_VERSION),\n        \"results\": [normalize_record(item) for item in raw_results if isinstance(item, Mapping)],\n        \"_passthrough\": passthrough,\n    }\ndef save_result_store(store: Mapping[str, Any], store_path: str | Path = DEFAULT_STORE_PATH) -> None:\n    path = _resolve_store_path(store_path)\n    path.parent.mkdir(parents=True, exist_ok=True)\n    output = {\n        **dict(store.get(\"_passthrough\", {})), \"schema_version\": SCHEMA_VERSION,\n        \"results\": [normalize_record(item) for item in store.get(\"results\", [])],\n    }\n    tmp_path: Path | None = None\n    try:\n        with tempfile.NamedTemporaryFile(\"w\", encoding=\"utf-8\", dir=str(path.parent), prefix=f\".{path.name}.\", suffix=\".tmp\", delete=False) as handle:\n            tmp_path = Path(handle.name)\n            json.dump(output, handle, ensure_ascii=False, indent=2, sort_keys=True)\n            handle.write(\"\\n\")\n        os.replace(tmp_path, path)\n    finally:\n        if tmp_path and tmp_path.exists():\n            try:\n                tmp_path.unlink()\n            except OSError:\n                pass\ndef normalize_record(value: Mapping[str, Any]) -> dict[str, Any]:\n    record = dict(_json_safe(value))\n    normalized_input = normalize_test_input(record.get(\"input\"))\n    target = make_input_target(normalized_input)\n    record.update(target)\n    record[\"schema_version\"] = int(record.get(\"schema_version\") or SCHEMA_VERSION)\n    record[\"input\"] = normalized_input\n    record[\"test_id\"] = _clean_text(record.get(\"test_id\")) or f\"test-{_hash_json([target['input_key'], record.get('created_at')])[:16]}\"\n    record[\"test_type\"] = _clean_text(record.get(\"test_type\")) or normalized_input.get(\"target_kind\") or \"unknown\"\n    record[\"result\"] = _json_safe(record.get(\"result\", {}))\n    record[\"evidence\"] = _json_safe(record.get(\"evidence\", {}))\n    record[\"logs\"] = _json_safe(record.get(\"logs\", []))\n    record[\"confidence\"] = normalize_confidence(record.get(\"confidence\"))\n    record[\"error\"] = normalize_error(record.get(\"error\"))\n    record[\"artifact_paths\"] = normalize_artifact_paths(record.get(\"artifact_paths\", []))\n    record[\"success\"] = derive_success(record.get(\"success\", MISSING), record[\"result\"], record[\"error\"])\n    record[\"failure_reason\"] = _clean_text(record.get(\"failure_reason\")) or derive_failure_reason(record[\"success\"], record[\"result\"], record[\"error\"])\n    record[\"created_at\"] = _clean_text(record.get(\"created_at\")) or _now()\n    record[\"record_id\"] = _clean_text(record.get(\"record_id\")) or f\"result-{_hash_json([record['test_id'], target['input_hash'], record['created_at'], record['result']])[:20]}\"\n    return record\ndef public_record(record: Mapping[str, Any]) -> dict[str, Any]:\n    return _json_safe(record)\ndef record_summary(record: Mapping[str, Any]) -> dict[str, Any]:\n    test_input = record.get(\"input\") if isinstance(record.get(\"input\"), Mapping) else {}\n    return {\n        \"record_id\": record.get(\"record_id\"), \"test_id\": record.get(\"test_id\"),\n        \"test_type\": record.get(\"test_type\"), \"input_key\": record.get(\"input_key\"),\n        \"source_type\": test_input.get(\"source_type\"), \"target_kind\": test_input.get(\"target_kind\"),\n        \"canonical_url\": test_input.get(\"canonical_url\"), \"post_id\": test_input.get(\"post_id\"),\n        \"account\": test_input.get(\"account\"), \"run_id\": test_input.get(\"run_id\"),\n        \"text_preview\": _clean_text(test_input.get(\"text_preview\"))[:160],\n        \"success\": record.get(\"success\"), \"failure_reason\": record.get(\"failure_reason\"),\n        \"confidence\": record.get(\"confidence\"), \"artifact_count\": len(record.get(\"artifact_paths\") or []),\n        \"created_at\": record.get(\"created_at\"),\n    }\ndef _current_record_for_compare(data: Mapping[str, Any], records: Sequence[Mapping[str, Any]]) -> tuple[dict[str, Any] | None, bool]:\n    record_id = _first_value(data, \"record_id\", \"recordId\")\n    test_id = _first_value(data, \"test_id\", \"testId\")\n    test_input = _first_value(data, \"test_input\", \"testInput\", \"input\")\n    has_unsaved = any(key in data for key in (\"result\", \"evidence\", \"logs\", \"error\", \"artifact_paths\", \"artifactPaths\", \"confidence\", \"success\", \"ok\"))\n    if has_unsaved:\n        return make_result_record(\n            test_id=test_id, test_type=_first_value(data, \"test_type\", \"testType\"), test_input=test_input,\n            result=_optional_value(data, \"result\"), evidence=_optional_value(data, \"evidence\"),\n            logs=_optional_value(data, \"logs\", \"log\"), confidence=_optional_value(data, \"confidence\"),\n            error=_optional_value(data, \"error\"), artifact_paths=_optional_value(data, \"artifact_paths\", \"artifactPaths\"),\n            created_at=_first_value(data, \"created_at\", \"createdAt\"), success=_optional_value(data, \"success\", \"ok\"),\n        ), False\n    matches = _filter_records(records, record_id=record_id, test_id=test_id, test_input=test_input)\n    return (matches[0], True) if matches else (None, False)\ndef _filter_records(records: Sequence[Mapping[str, Any]], *, record_id: Any = None, test_id: Any = None, test_input: Any = None) -> list[dict[str, Any]]:\n    normalized = [normalize_record(item) for item in records]\n    if record_id:\n        normalized = [item for item in normalized if item.get(\"record_id\") == _clean_text(record_id)]\n    if test_id:\n        normalized = [item for item in normalized if item.get(\"test_id\") == _clean_text(test_id)]\n    if test_input is not None:\n        key = make_input_target(normalize_test_input(test_input))[\"input_key\"]\n        normalized = [item for item in normalized if item.get(\"input_key\") == key]\n    return _sorted_records(normalized)\ndef _records_for_input(records: Sequence[Mapping[str, Any]], input_key: str) -> list[dict[str, Any]]:\n    return _sorted_records([normalize_record(item) for item in records if normalize_record(item).get(\"input_key\") == input_key])\ndef _sorted_records(records: Sequence[Mapping[str, Any]]) -> list[dict[str, Any]]:\n    return sorted([normalize_record(item) for item in records], key=lambda item: (item.get(\"created_at\") or \"\", item.get(\"record_id\") or \"\"), reverse=True)\ndef _collect_differences(previous: Any, current: Any, path: str, differences: list[dict[str, Any]], max_diffs: int) -> None:\n    if len(differences) >= max_diffs:\n        return\n    if isinstance(previous, Mapping) and isinstance(current, Mapping):\n        for key in sorted(set(previous) | set(current)):\n            if key not in previous:\n                differences.append({\"path\": f\"{path}.{key}\", \"previous\": None, \"current\": current[key], \"change\": \"added\"})\n            elif key not in current:\n                differences.append({\"path\": f\"{path}.{key}\", \"previous\": previous[key], \"current\": None, \"change\": \"removed\"})\n            else:\n                _collect_differences(previous[key], current[key], f\"{path}.{key}\", differences, max_diffs)\n            if len(differences) >= max_diffs:\n                return\n        return\n    if _is_sequence(previous) and _is_sequence(current):\n        if len(previous) != len(current):\n            differences.append({\"path\": path, \"previous\": previous, \"current\": current, \"change\": \"length_changed\"})\n            return\n        for index, previous_value in enumerate(previous):\n            _collect_differences(previous_value, current[index], f\"{path}[{index}]\", differences, max_diffs)\n        return\n    if previous != current:\n        differences.append({\"path\": path, \"previous\": previous, \"current\": current, \"change\": \"changed\"})\ndef derive_success(success: Any, result: Any, error: Any) -> bool:\n    if success is not MISSING and success is not None and success != \"\":\n        return _bool_value(success)\n    if error:\n        return False\n    if isinstance(result, Mapping):\n        for key in (\"success\", \"ok\", \"passed\"):\n            if key in result:\n                return _bool_value(result[key])\n        status = _clean_text(result.get(\"status\")).lower()\n        if status in SUCCESS_STATUSES:\n            return True\n        if status in FAILURE_STATUSES:\n            return False\n    return True\ndef derive_failure_reason(success: bool, result: Any, error: Any) -> str:\n    if success:\n        return \"\"\n    if isinstance(error, Mapping):\n        return _clean_text(error.get(\"message\") or error.get(\"type\"))\n    if isinstance(result, Mapping):\n        return _clean_text(result.get(\"failure_reason\") or result.get(\"reason\") or result.get(\"status\"))\n    return \"failed\"\ndef normalize_error(value: Any) -> dict[str, Any] | None:\n    if value in (None, \"\", MISSING, False):\n        return None\n    if isinstance(value, Mapping):\n        result = _json_safe(value)\n        result.setdefault(\"message\", _clean_text(result.get(\"error\") or result.get(\"detail\") or result))\n        result.setdefault(\"type\", _clean_text(result.get(\"name\")) or \"Error\")\n        return result\n    return {\"type\": \"Error\", \"message\": _clean_text(value)}\ndef normalize_confidence(value: Any) -> float | None:\n    if value in (None, \"\", MISSING):\n        return None\n    try:\n        number = float(value)\n    except (TypeError, ValueError):\n        return None\n    return number if math.isfinite(number) else None\ndef normalize_artifact_paths(value: Any) -> list[str]:\n    if value in (None, \"\", MISSING):\n        return []\n    if isinstance(value, (str, Path)):\n        return [_clean_text(value)] if _clean_text(value) else []\n    if isinstance(value, Sequence) and not isinstance(value, (bytes, bytearray)):\n        return [_clean_text(item) for item in value if _clean_text(item)]\n    return [_clean_text(value)] if _clean_text(value) else []\ndef canonicalize_url(value: Any) -> str:\n    text = _clean_text(value)\n    if not text:\n        return \"\"\n    try:\n        parts = urlsplit(text)\n    except ValueError:\n        return text\n    if not parts.scheme or not parts.netloc:\n        return text\n    return urlunsplit((parts.scheme.lower(), parts.netloc.lower(), parts.path.rstrip(\"/\") or \"/\", parts.query, \"\"))\ndef _resolve_store_path(store_path: str | Path) -> Path:\n    path = Path(str(store_path or DEFAULT_STORE_PATH)).expanduser()\n    if not path.is_absolute():\n        path = Path.cwd() / path\n    lowered_parts = {part.lower() for part in path.parts}\n    if lowered_parts & FORBIDDEN_WRITE_NAMES or path.suffix.lower() == \".db\":\n        raise TestResultStoreError(\"test results must be stored in a separate JSON file, not x_archive.db or any .db file\")\n    return path\ndef _merge_payload(payload: Mapping[str, Any] | None, kwargs: Mapping[str, Any]) -> dict[str, Any]:\n    if payload is not None and not isinstance(payload, Mapping):\n        raise TestResultStoreError(\"payload must be a JSON object\")\n    data = dict(payload or {})\n    data.update({key: value for key, value in kwargs.items() if value is not None})\n    return data\ndef _first_value(data: Mapping[str, Any], *keys: str) -> Any:\n    for key in keys:\n        value = data.get(key)\n        if value not in (None, \"\"):\n            return value\n    return None\ndef _optional_value(data: Mapping[str, Any], *keys: str) -> Any:\n    for key in keys:\n        if key in data:\n            return data[key]\n    return MISSING\ndef _first_present(data: Mapping[str, Any], keys: Sequence[str]) -> Any:\n    for key in keys:\n        if key in data:\n            return data[key]\n    return MISSING\ndef _identity_value(value: Any) -> Any:\n    return value.strip().lower() if isinstance(value, str) else _json_safe(value)\ndef _has_value(value: Any) -> bool:\n    return value not in (None, \"\", [], {}, MISSING)\ndef _bool_value(value: Any) -> bool:\n    if isinstance(value, bool):\n        return value\n    if isinstance(value, (int, float)):\n        return bool(value)\n    text = _clean_text(value).lower()\n    if text in {\"1\", \"true\", \"yes\", \"y\", \"on\", \"ok\", \"success\", \"passed\"}:\n        return True\n    if text in {\"0\", \"false\", \"no\", \"n\", \"off\", \"failed\", \"error\", \"none\", \"\"}:\n        return False\n    return bool(value)\ndef _int_value(value: Any, default: int) -> int:\n    try:\n        return int(value)\n    except (TypeError, ValueError):\n        return default\ndef _json_safe(value: Any) -> Any:\n    return json.loads(json.dumps(value, ensure_ascii=False, sort_keys=True, default=str))\ndef _hash_json(value: Any) -> str:\n    encoded = json.dumps(value, ensure_ascii=False, sort_keys=True, separators=(\",\", \":\"), default=str).encode(\"utf-8\")\n    return hashlib.sha256(encoded).hexdigest()\ndef _clean_text(value: Any) -> str:\n    return \"\" if value in (None, MISSING) else str(value).strip()\ndef _is_sequence(value: Any) -> bool:\n    return isinstance(value, Sequence) and not isinstance(value, (str, bytes, bytearray))\ndef _now() -> str:\n    return datetime.now(timezone.utc).isoformat(timespec=\"seconds\")\n",
       "parent": "node-2b1485633c",
       "children": [],
       "style": {
@@ -3231,15 +3239,15 @@
       },
       "codeLanguage": "python",
       "layout": {
-        "x": 4624,
-        "y": 4879,
-        "width": 239,
-        "height": 153
+        "x": 4635,
+        "y": 4998,
+        "width": 180,
+        "height": 104
       },
       "nestedLayoutByParent": {
         "node-2b1485633c": {
-          "x": -28,
-          "y": 41,
+          "x": 0,
+          "y": 71,
           "width": 77,
           "height": 32
         }
@@ -3264,20 +3272,53 @@
       },
       "codeLanguage": "python",
       "layout": {
-        "x": 4692,
-        "y": 4803,
-        "width": 239,
-        "height": 153
+        "x": 4635,
+        "y": 4898,
+        "width": 180,
+        "height": 104
       },
       "nestedLayoutByParent": {
         "node-2b1485633c": {
-          "x": 4,
-          "y": 9,
+          "x": 0,
+          "y": 33,
           "width": 77,
           "height": 32
         }
       },
       "userSized": true
+    },
+    {
+      "id": "node-a303d44c7d",
+      "title": "今だけの返事をする",
+      "body": "",
+      "powanKind": "nerve",
+      "code": "",
+      "parent": null,
+      "children": [],
+      "style": {
+        "shape": "cloud",
+        "color": "#ffffff",
+        "accent": "#8ddcff",
+        "glow": true,
+        "blur": true,
+        "motion": "soft"
+      },
+      "layout": {
+        "x": 3886,
+        "y": 4968,
+        "width": 194,
+        "height": 120
+      },
+      "nestedLayoutByParent": {
+        "node-12d93ab587": {
+          "x": 11,
+          "y": 195,
+          "width": 96,
+          "height": 40
+        }
+      },
+      "userSized": true,
+      "holdingCount": 0
     }
   ]
 }

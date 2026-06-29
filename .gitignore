@@ -1,4 +1,5 @@
 # Runtime state
+.env
 logs/
 *.log
 *.db

@@ -20,6 +20,13 @@ const saveCodexSandboxButton = document.querySelector("#saveCodexSandboxButton")
 const codexModelInput = document.querySelector("#codexModelInput");
 const codexReasoningEffortSelect = document.querySelector("#codexReasoningEffortSelect");
 const saveCodexModelButton = document.querySelector("#saveCodexModelButton");
+const discordStatusText = document.querySelector("#discordStatusText");
+const discordEnabledInput = document.querySelector("#discordEnabledInput");
+const discordChannelInput = document.querySelector("#discordChannelInput");
+const discordProjectInput = document.querySelector("#discordProjectInput");
+const discordFileInput = document.querySelector("#discordFileInput");
+const discordTargetNodeInput = document.querySelector("#discordTargetNodeInput");
+const saveDiscordButton = document.querySelector("#saveDiscordButton");
 const arrangeResizeParentsInput = document.querySelector("#arrangeResizeParentsInput");
 const arrangeRecursiveInput = document.querySelector("#arrangeRecursiveInput");
 const arrangeChildSpacingInput = document.querySelector("#arrangeChildSpacingInput");
@@ -157,6 +164,8 @@ function normalizeCodexReasoningEffort(value) {
 
 function renderSettings(data) {
   currentSettingsData = { ...(data || {}) };
+  const discord = data.discord || {};
+  const discordStatus = data.discordStatus || {};
   soundFolderInput.value = data.soundRoot || "";
   defaultSoundFolder.textContent = data.defaultSoundRoot ? `default: ${data.defaultSoundRoot}` : "";
   renderSoundOptions(settingsSoundSelect, data.sounds || [], data.conversationSound || "");
@@ -166,6 +175,14 @@ function renderSettings(data) {
   codexSandboxSelect.value = data.codexSandbox || "danger-full-access";
   codexModelInput.value = data.codexModel || "gpt-5.5";
   codexReasoningEffortSelect.value = normalizeCodexReasoningEffort(data.codexReasoningEffort);
+  discordEnabledInput.checked = Boolean(discord.enabled);
+  discordChannelInput.value = discord.channelId || "";
+  discordProjectInput.value = discord.project || settingsProject || "";
+  discordFileInput.value = discord.file || "project.powan";
+  discordTargetNodeInput.value = discord.targetNodeId || "";
+  discordStatusText.textContent = discordStatus.error
+    ? `${discordStatus.status || "error"}: ${discordStatus.error}`
+    : (discordStatus.running ? "running" : (discordStatus.status || "disabled"));
   renderArrange(data);
   restartVisibleConsoleInput.checked = Boolean(data.restartVisibleConsole);
   renderConsoleLogLevels(data);
@@ -350,6 +367,33 @@ async function saveCodexModelSettings() {
   }
 }
 
+async function saveDiscordSettings() {
+  saveDiscordButton.disabled = true;
+  setSettingsStatus("saving discord");
+  try {
+    const response = await fetch("/api/settings/discord", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        enabled: discordEnabledInput.checked,
+        channelId: discordChannelInput.value.trim(),
+        project: discordProjectInput.value.trim(),
+        file: discordFileInput.value.trim() || "project.powan",
+        targetNodeId: discordTargetNodeInput.value.trim(),
+        messageLimit: 1900,
+      }),
+    });
+    if (!response.ok) {
+      const error = await response.json().catch(() => ({ detail: "save failed" }));
+      throw new Error(error.detail || "save failed");
+    }
+    renderSettings(await response.json());
+    setSettingsStatus("discord saved");
+  } finally {
+    saveDiscordButton.disabled = false;
+  }
+}
+
 async function saveArrange() {
   saveArrangeButton.disabled = true;
   setSettingsStatus("saving arrange");
@@ -525,6 +569,29 @@ codexModelInput.addEventListener("keydown", (event) => {
 codexReasoningEffortSelect.addEventListener("change", () => {
   autoSave("codexModel", saveCodexModelSettings);
 });
+saveDiscordButton.addEventListener("click", () => {
+  saveDiscordSettings().catch((error) => {
+    setSettingsStatus(error.message);
+    console.error(error);
+  });
+});
+for (const input of [
+  discordEnabledInput,
+  discordChannelInput,
+  discordProjectInput,
+  discordFileInput,
+  discordTargetNodeInput,
+]) {
+  input.addEventListener("change", () => {
+    autoSave("discord", saveDiscordSettings);
+  });
+  input.addEventListener("keydown", (event) => {
+    if (event.key === "Enter") {
+      event.preventDefault();
+      autoSave("discord", saveDiscordSettings);
+    }
+  });
+}
 if (arrangeChildSpacingInput) {
   arrangeChildSpacingInput.addEventListener("input", () => {
     arrangeChildSpacingValue.textContent = normalizeRangeScale(arrangeChildSpacingInput.value, 1, 0.3, 3.0).toFixed(2);

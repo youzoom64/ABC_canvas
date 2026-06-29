@@ -430,6 +430,24 @@ textarea {
   grid-template-columns: minmax(0, 1fr) auto auto;
 }
 
+.settings-field-grid {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: 8px;
+}
+
+.settings-field-grid.three {
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+}
+
+.settings-field-grid label {
+  display: grid;
+  gap: 4px;
+  color: #426270;
+  font-size: 12px;
+  font-weight: 700;
+}
+
 .settings-sound-row,
 .settings-volume-row {
   grid-template-columns: minmax(0, 1fr);
@@ -456,6 +474,7 @@ textarea {
 }
 
 .settings-folder-row input,
+.settings-field-grid input,
 .settings-sound-row select,
 .settings-volume-row input,
 .settings-range-row input {

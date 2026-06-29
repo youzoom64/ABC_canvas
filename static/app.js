@@ -1,4 +1,4 @@
-const ABC_CANVAS_SCRIPT_VERSION = "ancestor-text-dim-170";
+const ABC_CANVAS_SCRIPT_VERSION = "copy-powan-path-171";
 const ABC_CANVAS_SCRIPTS = [
   "/static/js/workspace.js",
   "/static/js/state.js",

@@ -22,6 +22,7 @@ var panelArrangeWorldButton = document.querySelector("#panelArrangeWorldButton")
 var exportPowanMenuButton = document.querySelector("#exportPowanMenuButton");
 var importPowanMenuButton = document.querySelector("#importPowanMenuButton");
 var copyTitleMenuButton = document.querySelector("#copyTitleMenuButton");
+var copyPathMenuButton = document.querySelector("#copyPathMenuButton");
 var copySelectionMenuButton = document.querySelector("#copySelectionMenuButton");
 var deleteSelectionMenuButton = document.querySelector("#deleteSelectionMenuButton");
 var projectBadge = document.querySelector("#projectBadge");

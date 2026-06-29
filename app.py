@@ -23,6 +23,7 @@ from fastapi.responses import FileResponse, JSONResponse
 from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel, Field
 
+from abc_discord_bridge import AbcDiscordBridge, normalize_discord_channel_id
 from ai_api import create_ai_router
 from codex_bridge import CodexPowanBridge
 from powan_store import PowanStore
@@ -63,6 +64,8 @@ CODEX_REASONING_EFFORT_ALIASES = {
     "very_high": "xhigh",
     "very-high": "xhigh",
 }
+DEFAULT_DISCORD_TOKEN_ENV = "DISCORD_BOT_TOKEN"
+DEFAULT_DISCORD_MESSAGE_LIMIT = 1900
 DEFAULT_ARRANGE_SPACING = 1.0
 DEFAULT_ARRANGE_SIZE = 1.0
 MIN_ARRANGE_SPACING = 0.3
@@ -323,6 +326,16 @@ class CodexSandboxRequest(BaseModel):
 class CodexModelSettingsRequest(BaseModel):
     codexModel: str = ""
     codexReasoningEffort: str = ""
+
+
+class DiscordSettingsRequest(BaseModel):
+    enabled: bool = False
+    tokenEnv: str = DEFAULT_DISCORD_TOKEN_ENV
+    channelId: str = ""
+    project: str = ""
+    file: str = DEFAULT_FILE
+    targetNodeId: str = ""
+    messageLimit: int = DEFAULT_DISCORD_MESSAGE_LIMIT
 
 
 class ArrangeSettingsRequest(BaseModel):
@@ -979,6 +992,31 @@ def normalize_codex_reasoning_effort(value: Any) -> str:
     return effort if effort in CODEX_REASONING_EFFORTS else DEFAULT_CODEX_REASONING_EFFORT
 
 
+def normalize_discord_message_limit(value: Any) -> int:
+    try:
+        number = int(value)
+    except (TypeError, ValueError):
+        number = DEFAULT_DISCORD_MESSAGE_LIMIT
+    return min(2000, max(300, number))
+
+
+def normalize_discord_settings(value: Any) -> dict[str, Any]:
+    data = value if isinstance(value, dict) else {}
+    project = str(data.get("project") or "").strip()
+    file = str(data.get("file") or DEFAULT_FILE).strip() or DEFAULT_FILE
+    if not file.endswith(".powan"):
+        file = f"{file}.powan"
+    return {
+        "enabled": bool(data.get("enabled", False)),
+        "tokenEnv": DEFAULT_DISCORD_TOKEN_ENV,
+        "channelId": normalize_discord_channel_id(data.get("channelId") or ""),
+        "project": project,
+        "file": Path(file).name,
+        "targetNodeId": str(data.get("targetNodeId") or "").strip(),
+        "messageLimit": normalize_discord_message_limit(data.get("messageLimit")),
+    }
+
+
 def stable_for_signature(value: Any) -> Any:
     if isinstance(value, list):
         return [stable_for_signature(item) for item in value]
@@ -1161,6 +1199,7 @@ def load_app_settings() -> dict[str, Any]:
         "codexSandbox": normalize_codex_sandbox(data.get("codexSandbox", DEFAULT_CODEX_SANDBOX)),
         "codexModel": normalize_codex_model(data.get("codexModel", DEFAULT_CODEX_MODEL)),
         "codexReasoningEffort": normalize_codex_reasoning_effort(data.get("codexReasoningEffort", DEFAULT_CODEX_REASONING_EFFORT)),
+        "discord": normalize_discord_settings(data.get("discord")),
         "titleFontFamily": normalize_title_font_family(data.get("titleFontFamily", DEFAULT_TITLE_FONT_FAMILY)),
         "titleFontScale": clamp_title_font_scale(data.get("titleFontScale", DEFAULT_TITLE_FONT_SCALE)),
         "titleOutlineEnabled": bool(data.get("titleOutlineEnabled", False)),
@@ -1225,6 +1264,8 @@ def setting_payload() -> dict[str, Any]:
         "codexSandbox": settings["codexSandbox"],
         "codexModel": settings["codexModel"],
         "codexReasoningEffort": settings["codexReasoningEffort"],
+        "discord": settings["discord"],
+        "discordStatus": ABC_DISCORD_BRIDGE.status() if ABC_DISCORD_BRIDGE is not None else {},
         "titleFontFamily": settings["titleFontFamily"],
         "titleFontScale": settings["titleFontScale"],
         "titleOutlineEnabled": settings["titleOutlineEnabled"],
@@ -1316,6 +1357,7 @@ def ensure_project(project: str) -> Path:
 STORE = PowanStore(POWAN_WORK_ROOT, DEFAULT_FILE, blank_document, log_server_event)
 STORE.recover_interrupted_work(reason="server-startup")
 CODEX_BRIDGE = CodexPowanBridge(log_server_event)
+ABC_DISCORD_BRIDGE: AbcDiscordBridge | None = None
 
 
 app.include_router(create_ai_router(STORE, DEFAULT_FILE, log_server_event))
@@ -1513,6 +1555,32 @@ def save_codex_model_settings(request: CodexModelSettingsRequest) -> dict[str, A
         },
     )
     return setting_payload()
+
+
+@app.post("/api/settings/discord")
+def save_discord_settings(request: DiscordSettingsRequest) -> dict[str, Any]:
+    settings = load_app_settings()
+    settings["discord"] = normalize_discord_settings(base_model_payload(request))
+    save_app_settings(settings)
+    bridge_status = ABC_DISCORD_BRIDGE.apply_settings(settings) if ABC_DISCORD_BRIDGE is not None else {}
+    log_server_event(
+        "info",
+        "discord-settings-updated",
+        {
+            "enabled": settings["discord"]["enabled"],
+            "channelId": settings["discord"]["channelId"],
+            "project": settings["discord"]["project"],
+            "file": settings["discord"]["file"],
+            "targetNodeId": settings["discord"]["targetNodeId"],
+            "bridgeStatus": bridge_status,
+        },
+    )
+    return setting_payload()
+
+
+@app.get("/api/settings/discord/status")
+def get_discord_status() -> dict[str, Any]:
+    return ABC_DISCORD_BRIDGE.status() if ABC_DISCORD_BRIDGE is not None else {"running": False, "status": "unavailable"}
 
 
 @app.post("/api/settings/title-style")
@@ -2483,6 +2551,107 @@ def document_node(document: dict[str, Any], node_id: str) -> dict[str, Any]:
 
 def document_direct_children(document: dict[str, Any], parent_id: str) -> list[dict[str, Any]]:
     return [node for node in document_nodes(document) if str(node.get("parent") or "") == str(parent_id)]
+
+
+def resolve_discord_project(project: str) -> str:
+    clean = str(project or "").strip()
+    if clean:
+        return STORE.safe_project_name(clean)
+    raise RuntimeError("Discord project is required")
+
+
+def resolve_discord_target_powan(payload: dict[str, Any]) -> tuple[str, str, str, str]:
+    project = resolve_discord_project(str(payload.get("project") or ""))
+    file = STORE.safe_powan_name(str(payload.get("file") or DEFAULT_FILE))
+    document = STORE.load_document(project, file)
+    target_node_id = str(payload.get("targetNodeId") or "").strip()
+    if target_node_id:
+        target_node = document_node(document, target_node_id)
+    else:
+        roots = [node for node in document_nodes(document) if not node.get("parent")]
+        if not roots:
+            raise RuntimeError("Discord target powan is missing")
+        target_node = roots[0]
+        target_node_id = str(target_node.get("id") or "")
+    if not target_node_id:
+        raise RuntimeError("Discord target powan id is missing")
+    return project, file, target_node_id, powan_label(target_node)
+
+
+def handle_discord_powan_message(payload: dict[str, Any]) -> dict[str, Any]:
+    project, file, target_node_id, target_label = resolve_discord_target_powan(payload)
+    content = str(payload.get("content") or "").strip()
+    if not content:
+        return {"ok": True, "reply": "", "displayName": target_label}
+    author_name = str(payload.get("authorName") or "Discord user")
+    author_id = str(payload.get("authorId") or "")
+    channel_id = str(payload.get("channelId") or "")
+    message_id = str(payload.get("messageId") or "")
+    incoming_message = {
+        "kind": "operator_message",
+        "source": "discord",
+        "from": {
+            "kind": "discord_user",
+            "id": author_id,
+            "name": author_name,
+        },
+        "to": {
+            "kind": "powan",
+            "id": target_node_id,
+            "name": target_label,
+        },
+        "operatorMessage": content,
+        "parentCommand": "",
+        "childReplies": [],
+        "body": content,
+        "allowedAction": "may_command_children",
+        "systemInstruction": "これはDiscordからこのポワンへの入力です。from.kind と本文を見て返答してください。",
+        "discord": {
+            "channelId": channel_id,
+            "messageId": message_id,
+        },
+    }
+    result = run_powan_codex_message(
+        target_node_id,
+        project=project,
+        file=file,
+        text=content,
+        include_meaning_tree=False,
+        include_direct_child_code=False,
+        attachments=[],
+        source="discord",
+        sender_node_id=None,
+        sender_label_override=author_name,
+        incoming_message=incoming_message,
+    )
+    assistant_message = result.get("assistantMessage") if isinstance(result.get("assistantMessage"), dict) else None
+    return {
+        "ok": True,
+        "reply": str((assistant_message or {}).get("text") or ""),
+        "displayName": target_label,
+        "conversationId": result.get("conversationId"),
+        "agentRunId": (result.get("agentRun") or {}).get("id") if isinstance(result.get("agentRun"), dict) else None,
+    }
+
+
+ABC_DISCORD_BRIDGE = AbcDiscordBridge(
+    root_dir=APP_ROOT,
+    log_event=log_server_event,
+    message_handler=handle_discord_powan_message,
+)
+
+
+@app.on_event("startup")
+def start_discord_bridge() -> None:
+    if ABC_DISCORD_BRIDGE is None:
+        return
+    ABC_DISCORD_BRIDGE.apply_settings(load_app_settings())
+
+
+@app.on_event("shutdown")
+def stop_discord_bridge() -> None:
+    if ABC_DISCORD_BRIDGE is not None:
+        ABC_DISCORD_BRIDGE.stop("server-shutdown")
 
 
 def match_child_command_target(children: list[dict[str, Any]], item: ChildCommandRequest) -> dict[str, Any]:

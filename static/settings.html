@@ -128,6 +128,41 @@
 
         <section class="settings-section">
           <div class="settings-section-head">
+            <h2>Discord</h2>
+            <span id="discordStatusText" class="settings-muted">disabled</span>
+          </div>
+          <p class="settings-help">Discordの投稿をABC Canvas内の指定ポワンへ送ります。Botトークンは `.env` の `DISCORD_BOT_TOKEN` を使います。</p>
+          <div class="settings-check-row">
+            <label><input id="discordEnabledInput" type="checkbox" /> このチャンネルを入口にする</label>
+          </div>
+          <div class="settings-field-grid">
+            <label>
+              DiscordチャンネルURL/ID
+              <input id="discordChannelInput" type="text" autocomplete="off" spellcheck="false" placeholder="https://discord.com/channels/.../..." />
+            </label>
+          </div>
+          <p class="settings-help">送信先ポワン</p>
+          <div class="settings-field-grid three">
+            <label>
+              送信先プロジェクト
+              <input id="discordProjectInput" type="text" autocomplete="off" spellcheck="false" placeholder="例: Xから人格抽出" />
+            </label>
+            <label>
+              送信先ファイル
+              <input id="discordFileInput" type="text" autocomplete="off" spellcheck="false" placeholder="project.powan" />
+            </label>
+            <label>
+              送信先ポワンID
+              <input id="discordTargetNodeInput" type="text" autocomplete="off" spellcheck="false" placeholder="空なら最上位" />
+            </label>
+          </div>
+          <div class="settings-action-row">
+            <button id="saveDiscordButton" type="button">Save Discord</button>
+          </div>
+        </section>
+
+        <section class="settings-section">
+          <div class="settings-section-head">
             <h2>整列</h2>
             <span class="settings-muted">整列ボタンと右クリック整列で使う並べ方</span>
           </div>
@@ -176,6 +211,6 @@
       </section>
     </main>
 
-    <script src="/static/settings.js?v=settings-codex-model-2"></script>
+    <script src="/static/settings.js?v=discord-powan-1"></script>
   </body>
 </html>

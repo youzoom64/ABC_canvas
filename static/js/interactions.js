@@ -522,6 +522,14 @@ function nodeHistoryPath(nodeId) {
   return path.length ? path : ["外側"];
 }
 
+function nodeCopyPath(nodeId) {
+  const node = nodeById(nodeId);
+  if (!node) {
+    return "";
+  }
+  return nodeHistoryPath(node.id).join(" / ");
+}
+
 function nodeTreeSortKey(nodeId) {
   const nodes = Array.isArray(doc?.nodes) ? doc.nodes.filter((node) => node && !node.archived) : [];
   const orderById = new Map(nodes.map((node, index) => [node.id, index]));
@@ -3804,6 +3812,29 @@ if (copyTitleMenuButton) {
     }).catch((error) => {
       saveState.textContent = "copy title error";
       logEvent("error", "copy-title-error", { nodeId: node.id, message: error.message });
+      console.error(error);
+    });
+  });
+}
+if (copyPathMenuButton) {
+  copyPathMenuButton.addEventListener("click", () => {
+    const nodeId = nodeContextMenuNodeId;
+    const path = nodeCopyPath(nodeId);
+    powanExplorer.closeNodeMenu("copy-path-menu-close");
+    if (!path) {
+      saveState.textContent = "copy path missing";
+      logEvent("warn", "copy-path-missing-node", { nodeId });
+      return;
+    }
+    copyTextToClipboard(path).then((copied) => {
+      if (!copied) {
+        throw new Error("copy failed");
+      }
+      saveState.textContent = "path copied";
+      logEvent("info", "copy-path-complete", { nodeId, path });
+    }).catch((error) => {
+      saveState.textContent = "copy path error";
+      logEvent("error", "copy-path-error", { nodeId, message: error.message });
       console.error(error);
     });
   });
