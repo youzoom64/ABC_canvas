@@ -457,7 +457,7 @@ class CodexPowanBridge:
                 result.stderr = f"{result.stderr}\nsummary retry failed: {retry_result.stderr}".strip()
         if len(result.text) > max_chars:
             trimmed_chars = len(result.text) - max_chars
-            result.text = result.text[:max_chars].rstrip()
+            result.text = result.text[-max_chars:].lstrip()
         result.input_chars = source["input_chars"]
         result.turn_count = source["turn_count"]
         result.retry_count = retry_count
