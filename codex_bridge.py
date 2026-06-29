@@ -32,6 +32,8 @@ class CodexRunResult:
     trimmed_chars: int = 0
     turn_count: int = 0
     cancelled: bool = False
+    early_completed: bool = False
+    early_complete_reason: str = ""
 
 
 class CodexPowanBridge:
@@ -530,6 +532,7 @@ class CodexPowanBridge:
         output_lock = threading.RLock()
         returncode = 127
         cancelled = False
+        early_complete: dict[str, str] = {"text": "", "reason": ""}
         process: subprocess.Popen[str] | None = None
         if cancel_key:
             with self.process_lock:
@@ -599,6 +602,25 @@ class CodexPowanBridge:
                     with output_lock:
                         stdout_lines.append(line)
                     self.handle_codex_stdout_line(line, tool_env=tool_env, on_event=on_event)
+                    stop_text = self.command_children_stop_text_from_stdout_line(line)
+                    if stop_text:
+                        should_stop = False
+                        with output_lock:
+                            if not early_complete["text"]:
+                                early_complete["text"] = stop_text
+                                early_complete["reason"] = "command_children_accepted"
+                                should_stop = True
+                        if should_stop and process is not None and process.poll() is None:
+                            kill_info = self.terminate_process_tree(process)
+                            self.log_event(
+                                "info",
+                                "codex-exec-early-complete-after-command-children",
+                                {
+                                    **self.codex_event_context(tool_env),
+                                    **kill_info,
+                                    "reason": early_complete["reason"],
+                                },
+                            )
 
             def read_stderr() -> None:
                 if process is None or process.stderr is None:
@@ -654,8 +676,13 @@ class CodexPowanBridge:
                     self.cancelled_keys.discard(cancel_key)
         if cancelled:
             stderr = f"{stderr}\nCodex exec cancelled".strip()
+        with output_lock:
+            early_complete_text = early_complete["text"]
+            early_complete_reason = early_complete["reason"]
+        if early_complete_text:
+            returncode = 0
         duration_ms = round((time.monotonic() - start) * 1000)
-        text = self.read_last_message(output_path) or self.last_agent_message(stdout)
+        text = early_complete_text or self.read_last_message(output_path) or self.last_agent_message(stdout)
         detected_thread_id = self.thread_id_from_stdout(stdout) or thread_id
         try:
             output_path.unlink(missing_ok=True)
@@ -671,7 +698,69 @@ class CodexPowanBridge:
             resumed=bool(thread_id),
             command=command,
             cancelled=cancelled,
+            early_completed=bool(early_complete_text),
+            early_complete_reason=early_complete_reason,
         )
+
+    def command_children_stop_text_from_stdout_line(self, line: str) -> str:
+        clean_line = str(line or "").rstrip("\r\n")
+        if not clean_line:
+            return ""
+        try:
+            event = json.loads(clean_line)
+        except json.JSONDecodeError:
+            return ""
+        if not isinstance(event, dict):
+            return ""
+        if event.get("type") != "item.completed":
+            return ""
+        item = event.get("item")
+        if not isinstance(item, dict) or item.get("type") != "command_execution":
+            return ""
+        output = str(item.get("aggregated_output") or "").strip()
+        if not output.startswith("{"):
+            return ""
+        try:
+            payload = json.loads(output)
+        except json.JSONDecodeError:
+            return ""
+        result = payload.get("result") if isinstance(payload, dict) else None
+        if not isinstance(result, dict):
+            return ""
+        if result.get("nextAction") != "report_acceptance_and_stop":
+            return ""
+        status = str(result.get("status") or "").strip()
+        if status not in {"accepted", "completed"}:
+            return ""
+        message = str(result.get("message") or "").strip()
+        if message:
+            return message
+        return self.fallback_command_children_message(result)
+
+    def fallback_command_children_message(self, result: dict[str, Any]) -> str:
+        dispatch_session_id = str(result.get("dispatchSessionId") or "").strip()
+        sent = result.get("sent")
+        skipped = result.get("skipped")
+        failed = result.get("failed")
+        sent_children = result.get("sentChildren") if isinstance(result.get("sentChildren"), list) else []
+        lines = [
+            "子ポワンへの指示を受け付けました。",
+            "",
+            f"一括指示ID: {dispatch_session_id or '-'}",
+        ]
+        if sent is not None:
+            lines.append(f"送信: {sent}件")
+        if skipped is not None:
+            lines.append(f"対象外: {skipped}件")
+        if failed is not None:
+            lines.append(f"失敗: {failed}件")
+        if sent_children:
+            lines.extend(["", "送信先:"])
+            for child in sent_children:
+                if isinstance(child, dict):
+                    label = str(child.get("title") or child.get("childId") or "名前のないポワン").strip()
+                    lines.append(f"- {label or '名前のないポワン'}")
+        return "\n".join(lines).strip()
 
     def handle_codex_stdout_line(
         self,

@@ -2898,6 +2898,8 @@ def run_powan_codex_message(
         "resumed": result.resumed,
         "command": result.command,
         "durationMs": result.duration_ms,
+        "earlyCompleted": bool(result.early_completed),
+        "earlyCompleteReason": result.early_complete_reason,
     }
     if result.cancelled:
         agent_run = STORE.finish_agent_run(

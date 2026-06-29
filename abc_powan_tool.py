@@ -245,6 +245,7 @@ def summarize_command_children_response(response: dict[str, Any]) -> dict[str, A
             "childId": item.get("nodeId"),
             "title": item.get("meaning"),
             "status": item.get("status"),
+            "instruction": item.get("instruction") or "",
         }
         status = str(item.get("status") or "")
         if status in {"accepted", "completed"}:
@@ -254,6 +255,13 @@ def summarize_command_children_response(response: dict[str, Any]) -> dict[str, A
         else:
             failed_children.append({**child, "error": item.get("error") or ""})
     detached = bool(response.get("detached"))
+    message = format_command_children_acceptance_message(
+        status="accepted" if detached else "completed",
+        dispatch_session_id=response.get("dispatchSessionId") or "",
+        sent_children=sent_children,
+        skipped_children=skipped_children,
+        failed_children=failed_children,
+    )
     return {
         "status": "accepted" if detached else "completed",
         "detached": detached,
@@ -268,8 +276,61 @@ def summarize_command_children_response(response: dict[str, Any]) -> dict[str, A
         "skippedChildren": skipped_children,
         "failedChildren": failed_children,
         "nextAction": "report_acceptance_and_stop",
-        "message": "子ポワンへの一括指示を受け付けました。子の返答は後で親会話に戻ります。",
+        "message": message,
     }
+
+
+def format_command_children_acceptance_message(
+    *,
+    status: str,
+    dispatch_session_id: str,
+    sent_children: list[dict[str, Any]],
+    skipped_children: list[dict[str, Any]],
+    failed_children: list[dict[str, Any]],
+) -> str:
+    lines = ["子ポワンへの指示を受け付けました。" if status == "accepted" else "子ポワンへの指示が完了しました。"]
+    lines.extend(
+        [
+            "",
+            f"一括指示ID: {dispatch_session_id or '-'}",
+            f"送信: {len(sent_children)}件",
+            f"対象外: {len(skipped_children)}件",
+            f"失敗: {len(failed_children)}件",
+        ]
+    )
+    if sent_children:
+        lines.extend(["", "送信先:"])
+        for child in sent_children:
+            lines.append(f"- {child_label(child)}")
+        lines.extend(["", "送信した指示:"])
+        for child in sent_children:
+            instruction = shorten_instruction(str(child.get("instruction") or ""))
+            lines.append(f"- {child_label(child)}")
+            lines.append(f"  {instruction or '指示本文なし'}")
+    if skipped_children:
+        lines.extend(["", "対象外:"])
+        for child in skipped_children:
+            reason = str(child.get("skipReason") or "").strip()
+            suffix = f": {reason}" if reason else ""
+            lines.append(f"- {child_label(child)}{suffix}")
+    if failed_children:
+        lines.extend(["", "失敗:"])
+        for child in failed_children:
+            error = str(child.get("error") or "").strip()
+            suffix = f": {shorten_instruction(error, limit=300)}" if error else ""
+            lines.append(f"- {child_label(child)}{suffix}")
+    return "\n".join(lines).strip()
+
+
+def child_label(child: dict[str, Any]) -> str:
+    return str(child.get("title") or child.get("childId") or "名前のないポワン").strip() or "名前のないポワン"
+
+
+def shorten_instruction(text: str, *, limit: int = 1200) -> str:
+    clean = " ".join(str(text or "").strip().split())
+    if len(clean) <= limit:
+        return clean
+    return f"{clean[:limit].rstrip()} ...（{len(clean) - limit}文字省略）"
 
 
 def payload_flag(payload: dict[str, Any], *names: str) -> bool:
