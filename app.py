@@ -2508,6 +2508,7 @@ def origin_judgement_template() -> dict[str, str]:
         "status": "achieved",
         "reason": "判定理由",
         "returnInstruction": "",
+        "directionProposal": "この判定者として次にどう進めるべきかの方向性提案",
         "report": "人間にそのまま見せる自由文の報告本文",
     }
 
@@ -2533,10 +2534,11 @@ def origin_judgement_text(
             "",
             "status は achieved か unmet のどちらかです。",
             "unmet の時だけ returnInstruction に下流への具体的な差し戻し指示を書いてください。",
+            "directionProposal には、判定者自身として次にどう進めるべきかを書いてください。",
             "report には人間が読むための自由文報告を書いてください。",
             "達成時の report には、何が終わったか、誰が何を担当したか、成果の要点を具体的に含めてください。",
             "未達時の report には、何が足りないか、誰へ何を戻すか、次に必要なことを具体的に含めてください。",
-            "reason は短い判定根拠、report はそのまま会話に表示する本文です。",
+            "reason は短い判定根拠、directionProposal は今後の進め方、report はそのまま会話に表示する本文です。",
             "",
             "返答は次のJSONだけにしてください。",
             json.dumps(origin_judgement_template(), ensure_ascii=False, indent=2),
@@ -2641,6 +2643,18 @@ def parse_origin_judgement_response(text: str) -> tuple[dict[str, Any] | None, s
     ).strip()
     if status == "unmet" and not return_instruction:
         return None, "status が unmet の時は returnInstruction が必要です。"
+    direction_proposal = str(
+        payload.get("directionProposal")
+        or payload.get("direction_proposal")
+        or payload.get("nextDirection")
+        or payload.get("next_direction")
+        or payload.get("proposal")
+        or ""
+    ).strip()
+    if not direction_proposal:
+        return None, "directionProposal が空です。判定者として次にどう進めるべきかを書いてください。"
+    if len(direction_proposal) < 12:
+        return None, "directionProposal が短すぎます。次の進め方が分かる文で書いてください。"
     report = str(
         payload.get("report")
         or payload.get("humanReport")
@@ -2658,6 +2672,7 @@ def parse_origin_judgement_response(text: str) -> tuple[dict[str, Any] | None, s
         "status": status,
         "reason": reason,
         "returnInstruction": return_instruction,
+        "directionProposal": direction_proposal,
         "report": report,
         "raw": payload,
     }, ""
@@ -2719,6 +2734,10 @@ def render_origin_judgement_decision_message(
 
     if report_text:
         lines.extend(["", "報告:", report_text])
+
+    direction_proposal = str(decision.get("directionProposal") or "").strip()
+    if direction_proposal:
+        lines.extend(["", "方向性提案:", direction_proposal])
 
     if reports:
         lines.extend(["", "下流からの返答:"])
@@ -3103,6 +3122,9 @@ def render_origin_promoted_report(
         "報告:",
         decision_report or "報告本文なし。",
         "",
+        "方向性提案:",
+        str(decision.get("directionProposal") or "").strip() or "方向性提案なし。",
+        "",
         f"判定理由: {decision.get('reason') or ''}",
         "",
         "--- 下流からの報告 ---",
@@ -3122,6 +3144,9 @@ def render_origin_unmet_instruction(
         "",
         "--- 報告 ---",
         str(decision.get("report") or "").strip() or "報告本文なし。",
+        "",
+        "--- 方向性提案 ---",
+        str(decision.get("directionProposal") or "").strip() or "方向性提案なし。",
         "",
         "--- 差し戻し指示 ---",
         str(decision.get("returnInstruction") or "").strip(),
@@ -3229,6 +3254,9 @@ def route_origin_achieved(
             "",
             "報告:",
             str(decision.get("report") or "").strip() or "報告本文なし。",
+            "",
+            "方向性提案:",
+            str(decision.get("directionProposal") or "").strip() or "方向性提案なし。",
             "",
             f"判定理由: {decision.get('reason') or ''}",
         ]
