@@ -480,6 +480,34 @@ class InspectPowanRequest(BaseModel):
     recentMessageLimit: int = 5
 
 
+class WriteCodeTargetRequest(BaseModel):
+    title: str = ""
+    body: str = ""
+    targetId: str | None = None
+    childId: str | None = None
+    nodeId: str | None = None
+    path: list[str] = Field(default_factory=list)
+    code: str | None = None
+    codeLanguage: str | None = None
+    skip: bool = False
+    skipReason: str = ""
+    status: str = ""
+
+
+class WriteCodeRequest(BaseModel):
+    project: str
+    file: str = DEFAULT_FILE
+    title: str = ""
+    body: str = ""
+    targetId: str | None = None
+    childId: str | None = None
+    nodeId: str | None = None
+    path: list[str] = Field(default_factory=list)
+    code: str | None = None
+    codeLanguage: str | None = None
+    targets: list[WriteCodeTargetRequest] = Field(default_factory=list)
+
+
 class BulkCommandHistoryMessage(BaseModel):
     role: str = "system"
     text: str = ""
@@ -4331,6 +4359,136 @@ def resolve_powan_target(document: dict[str, Any], current_node_id: str, selecto
     raise HTTPException(status_code=400, detail="targetId, title, body, or path is required")
 
 
+def resolve_direct_child_powan_target(document: dict[str, Any], parent_id: str, selector: Any) -> dict[str, Any]:
+    children = document_direct_children(document, parent_id)
+    if not children:
+        raise HTTPException(status_code=400, detail="Child powans are required")
+    children_by_id = {
+        str(child.get("id") or ""): child
+        for child in children
+        if str(child.get("id") or "").strip()
+    }
+    target_id = target_selector_id(selector)
+    if target_id:
+        child = children_by_id.get(target_id)
+        if not child:
+            raise HTTPException(status_code=404, detail=f"Direct child powan not found: {target_id}")
+        return child
+
+    path = target_selector_path(selector)
+    if path:
+        target = resolve_powan_target(document, parent_id, selector)
+        if str(target.get("parent") or "") != str(parent_id):
+            raise HTTPException(status_code=400, detail=f"Target is not a direct child: {powan_label(target)}")
+        return target
+
+    title = target_selector_title(selector)
+    body = target_selector_body(selector)
+    if title or body:
+        matches = children
+        if title:
+            matches = [child for child in matches if str(child.get("title") or "").strip() == title]
+        if body:
+            matches = [child for child in matches if str(child.get("body") or "").strip() == body]
+        if not matches:
+            label = title or compact_console_text(body, 80)
+            raise HTTPException(status_code=404, detail=f"Direct child powan not found: {label}")
+        if len(matches) > 1:
+            label = title or compact_console_text(body, 80)
+            raise HTTPException(status_code=409, detail=f"Multiple direct child powans matched: {label}")
+        return matches[0]
+
+    raise HTTPException(status_code=400, detail="childId, targetId, title, body, or path is required")
+
+
+def write_code_skip_reason(item: WriteCodeTargetRequest) -> str:
+    if item.skip:
+        return item.skipReason.strip() or "skip=true"
+    status = str(getattr(item, "status", "") or "").strip().lower()
+    if status in {"skip", "skipped", "noop", "no-op", "none"}:
+        return item.skipReason.strip() or f"status={status}"
+    return ""
+
+
+def write_code_request_items(request: WriteCodeRequest) -> list[WriteCodeTargetRequest]:
+    items = list(request.targets)
+    has_direct_selector = any(
+        [
+            bool(request.title.strip()),
+            bool(request.body.strip()),
+            bool(request.path),
+            bool(request.targetId),
+            bool(request.childId),
+            bool(request.nodeId),
+        ]
+    )
+    if has_direct_selector or (not items and (request.code is not None or request.codeLanguage is not None)):
+        items.append(
+            WriteCodeTargetRequest(
+                title=request.title,
+                body=request.body,
+                targetId=request.targetId,
+                childId=request.childId,
+                nodeId=request.nodeId,
+                path=request.path,
+                code=request.code,
+                codeLanguage=request.codeLanguage,
+            )
+        )
+    return items
+
+
+def write_code_jobs(
+    document: dict[str, Any],
+    node_id: str,
+    request: WriteCodeRequest,
+    *,
+    direct_children_only: bool,
+) -> tuple[list[dict[str, Any]], list[dict[str, Any]]]:
+    document_node(document, node_id)
+    items = write_code_request_items(request)
+    if not items:
+        raise HTTPException(status_code=400, detail="targets are required")
+    jobs_by_id: dict[str, dict[str, Any]] = {}
+    skipped_by_id: dict[str, dict[str, Any]] = {}
+    for item in items:
+        target = (
+            resolve_direct_child_powan_target(document, node_id, item)
+            if direct_children_only
+            else resolve_powan_target(document, node_id, item)
+        )
+        target_id = str(target.get("id") or "")
+        if not target_id:
+            continue
+        skip_reason = write_code_skip_reason(item)
+        if skip_reason:
+            jobs_by_id.pop(target_id, None)
+            skipped_by_id[target_id] = {
+                "nodeId": target_id,
+                "meaning": powan_label(target),
+                "skipReason": skip_reason,
+            }
+            continue
+        code = item.code if item.code is not None else request.code
+        if code is None:
+            raise HTTPException(status_code=400, detail=f"code is required: {powan_label(target)}")
+        code_language = item.codeLanguage if item.codeLanguage is not None else request.codeLanguage
+        if target_id in jobs_by_id:
+            raise HTTPException(status_code=409, detail=f"Duplicate code write target: {powan_label(target)}")
+        jobs_by_id[target_id] = {
+            "node": target,
+            "nodeId": target_id,
+            "meaning": powan_label(target),
+            "code": code,
+            "codeLanguage": str(code_language or "").strip(),
+        }
+    if not jobs_by_id:
+        if skipped_by_id:
+            return [], list(skipped_by_id.values())
+        raise HTTPException(status_code=400, detail="code write target is required")
+    return list(jobs_by_id.values()), list(skipped_by_id.values())
+
+
 def normalize_inspect_include(value: Any, *, default: list[str] | None = None) -> set[str]:
     raw_items = value if isinstance(value, list) else []
     include = {str(item).strip() for item in raw_items if str(item).strip()}
@@ -5258,9 +5416,103 @@ def inspect_powan_response(
     return response
 
 
+def write_code_response(
+    node_id: str,
+    request: WriteCodeRequest,
+    *,
+    direct_children_only: bool,
+    action_name: str,
+) -> dict[str, Any]:
+    request_payload = base_model_payload(request)
+    try:
+        document = STORE.load_document(request.project, request.file)
+        document_node(document, node_id)
+        jobs, skipped_jobs = write_code_jobs(
+            document,
+            node_id,
+            request,
+            direct_children_only=direct_children_only,
+        )
+        updated_targets: list[dict[str, Any]] = []
+        for job in jobs:
+            target = job["node"]
+            target["code"] = job["code"]
+            if job["codeLanguage"]:
+                target["codeLanguage"] = job["codeLanguage"]
+            updated_targets.append(
+                {
+                    "nodeId": job["nodeId"],
+                    "meaning": job["meaning"],
+                    "status": "updated",
+                    "codeLanguage": str(target.get("codeLanguage") or ""),
+                    "charCount": len(str(target.get("code") or "")),
+                }
+            )
+        if updated_targets:
+            STORE.save_document(request.project, request.file, document, write_export=True)
+        response = {
+            "project": STORE.safe_project_name(request.project),
+            "file": STORE.safe_powan_name(request.file),
+            "requester": {"id": node_id, "meaning": powan_label_from_document(document, node_id)},
+            "updated": len(updated_targets),
+            "skipped": len(skipped_jobs),
+            "targets": updated_targets,
+            "skippedTargets": skipped_jobs,
+        }
+        record_api_action_safely(
+            project=request.project,
+            file=request.file,
+            node_id=node_id,
+            action=action_name,
+            status="completed",
+            request_payload=request_payload,
+            response_payload={
+                "updated": len(updated_targets),
+                "skipped": len(skipped_jobs),
+                "targets": [
+                    {"nodeId": target["nodeId"], "meaning": target["meaning"]}
+                    for target in updated_targets
+                ],
+            },
+        )
+        return response
+    except HTTPException as exc:
+        record_api_action_safely(
+            project=request.project,
+            file=request.file,
+            node_id=node_id,
+            action=action_name,
+            status="failed",
+            request_payload=request_payload,
+            response_payload={},
+            error_text=str(exc.detail),
+        )
+        raise
+
+
 @app.post("/api/ai/powans/{node_id}/actions/inspect-powan")
 def inspect_powan(node_id: str, request: InspectPowanRequest) -> dict[str, Any]:
     return inspect_powan_response(node_id, request)
+
+
+@app.post("/api/ai/powans/{node_id}/actions/write-child-code")
+def write_child_code(node_id: str, request: WriteCodeRequest) -> dict[str, Any]:
+    return write_code_response(
+        node_id,
+        request,
+        direct_children_only=True,
+        action_name="write-child-code",
+    )
+
+
+@app.post("/api/ai/powans/{node_id}/actions/write-target-code")
+def write_target_code(node_id: str, request: WriteCodeRequest) -> dict[str, Any]:
+    return write_code_response(
+        node_id,
+        request,
+        direct_children_only=False,
+        action_name="write-target-code",
+    )
 
 
 @app.post("/api/ai/powans/{node_id}/actions/command-targets")

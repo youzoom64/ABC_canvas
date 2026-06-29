@@ -33,6 +33,8 @@ def main() -> int:
             "command-targets",
             "inspect-powan",
             "write-my-code",
+            "write-child-code",
+            "write-target-code",
         ),
     )
     parser.add_argument("--api-base", default=os.environ.get("ABC_CANVAS_API_BASE", DEFAULT_API_BASE))
@@ -240,6 +242,32 @@ def dispatch(args: argparse.Namespace, payload: dict[str, Any]) -> dict[str, Any
         if code_language:
             body["codeLanguage"] = code_language
         return request_json(args.api_base, "PATCH", f"/api/ai/powans/{node_id}", body)
+    if args.operation in {"write-child-code", "write-target-code"}:
+        targets = payload.get("targets", [])
+        if not isinstance(targets, list):
+            raise ToolError("targets must be a list")
+        normalized_targets = []
+        for target in targets:
+            if isinstance(target, dict):
+                clean_target = dict(target)
+                if "code_language" in clean_target and "codeLanguage" not in clean_target:
+                    clean_target["codeLanguage"] = clean_target.pop("code_language")
+                normalized_targets.append(clean_target)
+            else:
+                normalized_targets.append(target)
+        body = {
+            **base_payload,
+            "targets": normalized_targets,
+        }
+        for key in ("title", "body", "path", "targetId", "childId", "nodeId", "code", "codeLanguage"):
+            if key in payload:
+                body[key] = payload[key]
+        if "code_language" in payload and "codeLanguage" not in body:
+            body["codeLanguage"] = payload["code_language"]
+        endpoint = "write-child-code" if args.operation == "write-child-code" else "write-target-code"
+        return summarize_write_code_response(
+            request_json(args.api_base, "POST", f"/api/ai/powans/{node_id}/actions/{endpoint}", body)
+        )
     raise ToolError(f"Unknown operation: {args.operation}")
 
 
@@ -278,6 +306,35 @@ def summarize_command_targets_response(response: dict[str, Any]) -> dict[str, An
         id_label="直接指示ID",
         sent_key="sentTargets",
     )
+
+
+def summarize_write_code_response(response: dict[str, Any]) -> dict[str, Any]:
+    targets = response.get("targets") if isinstance(response.get("targets"), list) else []
+    skipped_targets = response.get("skippedTargets") if isinstance(response.get("skippedTargets"), list) else []
+    return {
+        "status": "completed",
+        "updated": response.get("updated", len(targets)),
+        "skipped": response.get("skipped", len(skipped_targets)),
+        "updatedTargets": [
+            {
+                "nodeId": target.get("nodeId", ""),
+                "meaning": target.get("meaning", ""),
+                "codeLanguage": target.get("codeLanguage", ""),
+                "charCount": target.get("charCount", 0),
+            }
+            for target in targets
+            if isinstance(target, dict)
+        ],
+        "skippedTargets": [
+            {
+                "nodeId": target.get("nodeId", ""),
+                "meaning": target.get("meaning", ""),
+                "skipReason": target.get("skipReason", ""),
+            }
+            for target in skipped_targets
+            if isinstance(target, dict)
+        ],
+    }
 
 
 def summarize_command_response(

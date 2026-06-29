@@ -62,8 +62,10 @@ def build_powan_context(
         context["originChain"] = origin_chain
     if children:
         context["childCommandTemplate"] = build_child_command_template(children, origin_chain=origin_chain)
+        context["writeChildCodeTemplate"] = build_write_child_code_template(children)
     context["targetCommandTemplate"] = build_target_command_template(origin_chain=origin_chain)
     context["inspectPowanTemplate"] = build_inspect_powan_template()
+    context["writeTargetCodeTemplate"] = build_write_target_code_template()
     if include_meaning_tree:
         context["meaningTree"] = build_meaning_tree_text(document, node_id)
     if include_direct_child_code:
@@ -323,6 +325,44 @@ def build_inspect_powan_template() -> dict[str, Any]:
             "include": ["meaning", "status", "code_summary"],
             "codePreviewChars": 2000,
             "recentMessageLimit": 5,
+        },
+    }
+
+
+def build_write_child_code_template(children: list[dict[str, Any]]) -> dict[str, Any]:
+    return {
+        "purpose": "直下の子ポワンのコードを保存するためのJSON。直下の子だけが対象です。自分自身はwrite-my-code、孫や別枝はwrite-target-codeを使ってください。",
+        "command": "python .agents/skills/abc-powan/scripts/abc_powan_tool.py write-child-code --stdin-json",
+        "json": {
+            "targets": [
+                {
+                    "childId": str(child.get("id") or ""),
+                    "title": str(child.get("title") or ""),
+                    "codeLanguage": "",
+                    "code": "",
+                    "skip": False,
+                    "skipReason": "",
+                }
+                for child in children
+            ],
+        },
+    }
+
+
+def build_write_target_code_template() -> dict[str, Any]:
+    return {
+        "purpose": "任意の対象ポワンのコードを保存するためのJSON。targetId、title、pathのどれかで対象を指定できます。直下の子だけならwrite-child-codeを優先してください。",
+        "command": "python .agents/skills/abc-powan/scripts/abc_powan_tool.py write-target-code --stdin-json",
+        "json": {
+            "targets": [
+                {
+                    "targetId": "",
+                    "title": "",
+                    "path": [],
+                    "codeLanguage": "",
+                    "code": "",
+                }
+            ],
         },
     }
 

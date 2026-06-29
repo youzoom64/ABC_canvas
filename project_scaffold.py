@@ -10,7 +10,7 @@ PROJECT_AGENTS_MD = """## 最初に
 ## スキルの場所
 スキルの場所は以下を読んでください😊
  `.agents\skills\abc-powan\SKILL.md`
- `set-my-meaning` 、 `create-child-powan` 、 `command-targets` 、 `inspect-powan` 、 `write-my-code` の使い方が書いてあるよ！
+ `set-my-meaning` 、 `create-child-powan` 、 `command-targets` 、 `inspect-powan` 、 `write-my-code` 、 `write-child-code` 、 `write-target-code` の使い方が書いてあるよ！
 分からない用語が出てきたら `.agents\WORDS.md` を見てね😊
 
 ## ポワンの名付け
@@ -41,6 +41,7 @@ PROJECT_AGENTS_MD = """## 最初に
 ## コード化
 
 そして、あなたと言うポワンが具体的なコードを持つ時は、 `write-my-code` を使ってあなたのポワンをコードにしましょう🤩
+直下の子ポワンのコードをあなたがまとめて保存する時は `write-child-code`、孫や別枝など任意の対象へ直接コードを保存する時は `write-target-code` を使ってください😊
 ポワンには大きく分けてニ種類あり、回路のように参照先を複数持つ神経ポワンと、実際の関数などの処理を持つ臓器ポワンがあります
 抽象的な概念のポワンなら神経ポワンになり、具体的な概念を持つポワンは臓器ポワンになってください。
 例えば「自動車」は神経ポワンです。
@@ -154,6 +155,21 @@ command_targets(instruction, targets)
 write_my_code(codeLanguage, code)
 `python .agents/skills/abc-powan/scripts/abc_powan_tool.py write-my-code --stdin-json`
 
+## 直下の子ポワンのコードを保存する
+
+直下の子ポワンのコードを保存する時は `write-child-code` を使う😊
+現在の文脈に `writeChildCodeTemplate` がある時は、その `json.targets` の対象だけを埋めてください。
+対象外の子には `skip:true` と `skipReason` を入れると保存しません😊
+write_child_code(targets)
+`python .agents/skills/abc-powan/scripts/abc_powan_tool.py write-child-code --stdin-json`
+
+## 任意の対象ポワンのコードを保存する
+
+孫ポワン、別枝のポワン、直下ではない対象のコードを保存する時は `write-target-code` を使う😊
+targetId、title、path のどれかで対象を指定してください。
+write_target_code(targets)
+`python .agents/skills/abc-powan/scripts/abc_powan_tool.py write-target-code --stdin-json`
+
 ## ポワンを調べる
 
 意味、状態、最近の会話、コード概要、コード全文をまとめて調べる時は `inspect-powan` を使う😊
@@ -215,6 +231,18 @@ command_targets(instruction, targets)
 
 write_my_code(codeLanguage, code)
 `python .agents/skills/abc-powan/scripts/abc_powan_tool.py write-my-code --stdin-json`
+`{"codeLanguage":"python","code":"def run():\\n    return True\\n"}`
+
+write_child_code(targets)
+`python .agents/skills/abc-powan/scripts/abc_powan_tool.py write-child-code --stdin-json`
+直下の子ポワンのコードを保存する時に使う😊
+対象外の子には `skip:true` と `skipReason` を入れる😊
+`{"targets":[{"childId":"子ID","title":"子名","codeLanguage":"python","code":"def run():\\n    return True\\n"},{"childId":"対象外の子ID","title":"対象外","skip":true,"skipReason":"今回は対象外"}]}`
+
+write_target_code(targets)
+`python .agents/skills/abc-powan/scripts/abc_powan_tool.py write-target-code --stdin-json`
+孫、別枝、任意の対象ポワンのコードを保存する時に使う😊
+`{"targets":[{"targetId":"対象ID","title":"","path":[],"codeLanguage":"python","code":"def run():\\n    return True\\n"}]}`
 
 inspect_powan(includeSelf, targets, include)
 `python .agents/skills/abc-powan/scripts/abc_powan_tool.py inspect-powan --stdin-json`
