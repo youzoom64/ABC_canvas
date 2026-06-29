@@ -1,4 +1,4 @@
-const ABC_CANVAS_SCRIPT_VERSION = "design-git-tabs-176";
+const ABC_CANVAS_SCRIPT_VERSION = "git-history-compact-177";
 const ABC_CANVAS_SCRIPTS = [
   "/static/js/workspace.js",
   "/static/js/state.js",

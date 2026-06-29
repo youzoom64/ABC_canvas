@@ -160,31 +160,40 @@ def _count(diff: dict[str, Any], key: str) -> int:
 
 def commit_subject(diff: dict[str, Any]) -> str:
     return (
-        "powan:"
-        f" add {_count(diff, 'added')}"
-        f" delete {_count(diff, 'deleted')}"
-        f" move {_count(diff, 'moved')}"
-        f" code {_count(diff, 'codeChanged')}"
-        f" design {_count(diff, 'designChanged')}"
-        f" edit {_count(diff, 'edited')}"
+        "ポワン変更:"
+        f" 追加 {_count(diff, 'added')}"
+        f" 削除 {_count(diff, 'deleted')}"
+        f" 移動 {_count(diff, 'moved')}"
+        f" コード {_count(diff, 'codeChanged')}"
+        f" 設計 {_count(diff, 'designChanged')}"
+        f" 編集 {_count(diff, 'edited')}"
     )
 
 
 def _list_lines(label: str, rows: list[str]) -> list[str]:
     if not rows:
-        return [f"{label}: none"]
+        return [f"{label}: なし"]
     return [f"{label}:", *[f"- {row}" for row in rows]]
 
 
+def _field_label(field: str) -> str:
+    labels = {
+        "title": "名前",
+        "body": "意味",
+        "powanKind": "種類",
+    }
+    return labels.get(field, field)
+
+
 def commit_message(document_name: str, previous: dict[str, Any] | None, current: dict[str, Any], diff: dict[str, Any]) -> str:
-    lines = [commit_subject(diff), "", f"document: {document_name}", ""]
-    lines.extend(_list_lines("added", [_node_name(node, node.get("id")) for node in diff["added"]]))
+    lines = [commit_subject(diff), "", f"ファイル: {document_name}", ""]
+    lines.extend(_list_lines("追加", [_node_name(node, node.get("id")) for node in diff["added"]]))
     lines.append("")
-    lines.extend(_list_lines("deleted", [_node_name(node, node.get("id")) for node in diff["deleted"]]))
+    lines.extend(_list_lines("削除", [_node_name(node, node.get("id")) for node in diff["deleted"]]))
     lines.append("")
     lines.extend(
         _list_lines(
-            "moved",
+            "移動",
             [
                 f"{_node_name(item['node'], item['node'].get('id'))}: "
                 f"{_parent_name(previous or {}, item.get('from'))} -> {_parent_name(current, item.get('to'))}"
@@ -193,15 +202,16 @@ def commit_message(document_name: str, previous: dict[str, Any] | None, current:
         )
     )
     lines.append("")
-    lines.extend(_list_lines("code_changed", [_node_name(node, node.get("id")) for node in diff["codeChanged"]]))
+    lines.extend(_list_lines("コード変更", [_node_name(node, node.get("id")) for node in diff["codeChanged"]]))
     lines.append("")
-    lines.extend(_list_lines("design_changed", [_node_name(node, node.get("id")) for node in diff["designChanged"]]))
+    lines.extend(_list_lines("設計変更", [_node_name(node, node.get("id")) for node in diff["designChanged"]]))
     lines.append("")
     lines.extend(
         _list_lines(
-            "edited",
+            "本文変更",
             [
-                f"{_node_name(item['node'], item['node'].get('id'))}: {', '.join(item['fields'])}"
+                f"{_node_name(item['node'], item['node'].get('id'))}: "
+                f"{', '.join(_field_label(field) for field in item['fields'])}"
                 for item in diff["edited"]
             ],
         )

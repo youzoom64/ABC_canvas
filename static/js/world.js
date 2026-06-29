@@ -159,18 +159,76 @@ function renderPowanGitHistory(data) {
   for (const commit of commits) {
     const item = document.createElement("article");
     item.className = "git-history-item";
+    item.tabIndex = 0;
+    item.setAttribute("role", "button");
+    item.setAttribute("aria-expanded", "false");
     const subject = document.createElement("div");
     subject.className = "git-history-subject";
-    subject.textContent = commit.subject || commit.shortSha || "commit";
+    subject.textContent = formatPowanGitMessageLine(commit.subject || commit.shortSha || "commit");
     const meta = document.createElement("div");
-    meta.className = "conversation-history-meta";
-    meta.textContent = `${commit.shortSha || ""} / ${formatHistoryTime(commit.date)} / ${commit.author || ""}`;
+    meta.className = "git-history-date";
+    meta.textContent = formatHistoryTime(commit.date);
     const detail = document.createElement("pre");
     detail.className = "git-history-detail";
-    detail.textContent = commit.message || "";
+    detail.textContent = formatPowanGitMessage(commit.message || commit.subject || "");
+    item.addEventListener("click", () => togglePowanGitHistoryItem(item));
+    item.addEventListener("keydown", (event) => {
+      if (event.key !== "Enter" && event.key !== " ") {
+        return;
+      }
+      event.preventDefault();
+      togglePowanGitHistoryItem(item);
+    });
     item.append(subject, meta, detail);
     gitHistoryList.append(item);
   }
+}
+
+function togglePowanGitHistoryItem(item) {
+  const nextOpen = !item.classList.contains("is-open");
+  item.classList.toggle("is-open", nextOpen);
+  item.setAttribute("aria-expanded", nextOpen ? "true" : "false");
+}
+
+function formatPowanGitMessage(value) {
+  return String(value || "")
+    .split(/\r?\n/)
+    .map((line) => formatPowanGitMessageLine(line))
+    .join("\n");
+}
+
+function formatPowanGitMessageLine(value) {
+  const line = String(value || "");
+  const subjectMatch = line.match(
+    /^powan:\s+add\s+(\d+)\s+delete\s+(\d+)\s+move\s+(\d+)\s+code\s+(\d+)\s+design\s+(\d+)\s+edit\s+(\d+)$/,
+  );
+  if (subjectMatch) {
+    return `ポワン変更: 追加 ${subjectMatch[1]} 削除 ${subjectMatch[2]} 移動 ${subjectMatch[3]} コード ${subjectMatch[4]} 設計 ${subjectMatch[5]} 編集 ${subjectMatch[6]}`;
+  }
+  const prefixMap = [
+    [/^document:/, "ファイル:"],
+    [/^added:/, "追加:"],
+    [/^deleted:/, "削除:"],
+    [/^moved:/, "移動:"],
+    [/^code_changed:/, "コード変更:"],
+    [/^design_changed:/, "設計変更:"],
+    [/^edited:/, "本文変更:"],
+  ];
+  let formatted = line;
+  for (const [pattern, replacement] of prefixMap) {
+    if (pattern.test(formatted)) {
+      formatted = formatted.replace(pattern, replacement);
+      break;
+    }
+  }
+  formatted = formatted.replace(/: none$/, ": なし");
+  formatted = formatted.replace(/: title\b/g, ": 名前");
+  formatted = formatted.replace(/,\s*title\b/g, ", 名前");
+  formatted = formatted.replace(/: body\b/g, ": 意味");
+  formatted = formatted.replace(/,\s*body\b/g, ", 意味");
+  formatted = formatted.replace(/: powanKind\b/g, ": 種類");
+  formatted = formatted.replace(/,\s*powanKind\b/g, ", 種類");
+  return formatted;
 }
 
 function formatHistoryTime(value) {
