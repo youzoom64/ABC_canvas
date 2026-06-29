@@ -2482,9 +2482,9 @@ def codex_event_progress_text(event: dict[str, Any]) -> str:
         if "command-children" in command or '"instructions"' in command:
             return f"子ポワンへの指示送信完了 exit={exit_code}"
         if command:
-            head += f": `{command}`"
+            head += f": `{compact_console_text(command, 30)}`"
         if output:
-            return f"{head}\n出力: {compact_console_text(output, 600)}"
+            return f"{head}\n出力: {compact_console_text(output, 30)}"
         return head
     if event_type in {"item.started", "item.completed"} and item_type == "file_change":
         changes = item.get("changes") if isinstance(item.get("changes"), list) else []
