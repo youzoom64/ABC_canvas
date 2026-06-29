@@ -10,7 +10,7 @@ PROJECT_AGENTS_MD = """## 最初に
 ## スキルの場所
 スキルの場所は以下を読んでください😊
  `.agents\skills\abc-powan\SKILL.md`
- `set-my-meaning` 、 `create-child-powan` 、 `write-my-code` 、 `read-powan-codes` の使い方が書いてあるよ！
+ `set-my-meaning` 、 `create-child-powan` 、 `command-targets` 、 `inspect-powan` 、 `write-my-code` 、 `read-powan-codes` の使い方が書いてあるよ！
 分からない用語が出てきたら `.agents\WORDS.md` を見てね😊
 
 ## ポワンの名付け
@@ -66,6 +66,13 @@ PROJECT_AGENTS_MD = """## 最初に
 子ポワン、兄弟ポワン、親ポワン、別の枝のポワンでも、title、path、targetId で指定できます😊
 `python .agents/skills/abc-powan/scripts/abc_powan_tool.py read-powan-codes --stdin-json`
 `{"includeSelf":true,"targets":[{"title":"調査司書"},{"path":["親ポワン","兄弟ポワン"]}]}`
+
+## ポワンの意味や状態を調べたい時は
+
+`inspect-powan` を使って、意味、作業状態、最近の会話、コード概要を調べましょう😊
+DBを直接のぞかず、targetId、title、path で対象を指定できます😊
+`python .agents/skills/abc-powan/scripts/abc_powan_tool.py inspect-powan --stdin-json`
+`{"targets":[{"title":"調査司書"}],"include":["meaning","status","code_summary"]}`
 
 ## 最後に大事な事
 
@@ -140,11 +147,26 @@ command_children(instruction, instructions)
 command_child_powan(title, body, instruction)
 `python .agents/skills/abc-powan/scripts/abc_powan_tool.py command-child-powan --stdin-json`
 
+## 任意の対象ポワンに直接命令する
+
+孫ポワン、別枝のポワン、直下ではない対象へ直接命令する時は `command-targets` を使う😊
+返答はツリー上の親ではなく、由来システムで命令元へ戻ります。
+現在の文脈に `targetCommandTemplate` がある時は、そのJSONを使って、targetId、title、path のどれかで対象を指定してください😊
+command_targets(instruction, targets)
+`python .agents/skills/abc-powan/scripts/abc_powan_tool.py command-targets --stdin-json`
+
 ## 自分のコードを保存する
 
 自分のコードを書いた時は、 `write-my-code` で保存する😊
 write_my_code(codeLanguage, code)
 `python .agents/skills/abc-powan/scripts/abc_powan_tool.py write-my-code --stdin-json`
+
+## ポワンを調べる
+
+意味、状態、最近の会話、コード概要をまとめて調べる時は `inspect-powan` を使う😊
+include には `meaning`、`status`、`code_summary`、`code_full` を選べます。
+inspect_powan(includeSelf, targets, include)
+`python .agents/skills/abc-powan/scripts/abc_powan_tool.py inspect-powan --stdin-json`
 
 ## ポワンのコードを読む
 
@@ -199,8 +221,19 @@ command_child_powan(title, body, instruction)
 本当に1人だけに指示する時だけ使う😊
 `{"title":"対象の子","body":"","instruction":"この子だけへの指示"}`
 
+command_targets(instruction, targets)
+`python .agents/skills/abc-powan/scripts/abc_powan_tool.py command-targets --stdin-json`
+直下ではない孫、別枝、任意の対象ポワンへ直接指示する時に使う😊
+返答は由来システムで命令元へ戻るので、現在の `originChain` がある時はそのまま入れる😊
+`{"instruction":"","targets":[{"targetId":"対象ID","title":"","path":[],"instruction":"この対象への指示"}],"originChain":[]}`
+
 write_my_code(codeLanguage, code)
 `python .agents/skills/abc-powan/scripts/abc_powan_tool.py write-my-code --stdin-json`
+
+inspect_powan(includeSelf, targets, include)
+`python .agents/skills/abc-powan/scripts/abc_powan_tool.py inspect-powan --stdin-json`
+意味、状態、コード概要、コード全文を選んで調べる😊
+`{"targets":[{"title":"調べるポワン"}],"include":["meaning","status","code_summary"]}`
 
 read_powan_codes(includeSelf, targets)
 `python .agents/skills/abc-powan/scripts/abc_powan_tool.py read-powan-codes --stdin-json`

@@ -121,6 +121,7 @@ LOG_LEVEL_NAMES = ("trace", "debug", "info", "warn", "error", "fatal")
 ORIGIN_CHAIN_SCHEMA = "powan_origin_chain.v1"
 ORIGIN_JUDGEMENT_SCHEMA = "powan_origin_judgement.v1"
 ORIGIN_JUDGEMENT_MAX_ATTEMPTS = 3
+INSPECT_POWAN_INCLUDE_OPTIONS = {"meaning", "status", "code_summary", "code_full", "all"}
 DEFAULT_CONSOLE_LOG_LEVELS = ("info", "warn", "error")
 POWAN_WORK_EVENT_LIMIT = 500
 POWAN_COLOR_PALETTE = [
@@ -436,6 +437,47 @@ class CommandChildrenRequest(BaseModel):
     includeMeaningTree: bool = False
     continueAfterChildReplies: bool = False
     originChain: list[dict[str, Any]] = Field(default_factory=list)
+
+
+class TargetCommandRequest(BaseModel):
+    title: str = ""
+    body: str = ""
+    targetId: str | None = None
+    childId: str | None = None
+    nodeId: str | None = None
+    path: list[str] = Field(default_factory=list)
+    instruction: str = ""
+    skip: bool = False
+    skipReason: str = ""
+    status: str = ""
+
+
+class CommandTargetsRequest(BaseModel):
+    project: str
+    file: str = DEFAULT_FILE
+    instruction: str = ""
+    targets: list[TargetCommandRequest] = Field(default_factory=list)
+    includeMeaningTree: bool = False
+    originChain: list[dict[str, Any]] = Field(default_factory=list)
+
+
+class InspectPowanTarget(BaseModel):
+    title: str = ""
+    body: str = ""
+    targetId: str | None = None
+    childId: str | None = None
+    nodeId: str | None = None
+    path: list[str] = Field(default_factory=list)
+
+
+class InspectPowanRequest(BaseModel):
+    project: str
+    file: str = DEFAULT_FILE
+    includeSelf: bool = False
+    targets: list[InspectPowanTarget] = Field(default_factory=list)
+    include: list[str] = Field(default_factory=list)
+    codePreviewChars: int = 2000
+    recentMessageLimit: int = 5
 
 
 class BulkCommandHistoryMessage(BaseModel):
@@ -2040,7 +2082,7 @@ def limit_prompt_text(text: Any, limit: int = 12000) -> str:
 
 
 def incoming_kind_for_source(source: str) -> str:
-    if source == "command-children":
+    if source in {"command-children", "command-targets"}:
         return "parent_command"
     if source == "command-child-return":
         return "child_replies"
@@ -2066,6 +2108,12 @@ def incoming_from_payload(source: str, sender_node_id: str | None, sender_label:
             "id": sender_node_id,
             "name": sender_label,
         }
+    if source == "command-targets":
+        return {
+            "kind": "origin_powan",
+            "id": sender_node_id,
+            "name": sender_label,
+        }
     if source == "command-child-return":
         return {
             "kind": "child_powan_bundle",
@@ -2087,7 +2135,7 @@ def incoming_from_payload(source: str, sender_node_id: str | None, sender_label:
 
 def incoming_system_instruction(kind: str, allowed_action: str) -> str:
     if kind == "parent_command":
-        return "これは親ポワンからこのポワンへの命令です。from.kind と parentCommand を見て処理してください。"
+        return "これは上位または由来元ポワンからこのポワンへの命令です。from.kind と parentCommand と originChain を見て処理してください。"
     if kind == "child_replies":
         if allowed_action == "may_command_children":
             return "これは子ポワンから親ポワンへ戻った返答通知です。commandChildren.continueAfterChildReplies=true により、必要なら子返答後も command-children を続けて実行できます。"
@@ -3467,6 +3515,11 @@ def is_child_command_execution(command: str) -> bool:
     )
 
 
+def is_target_command_execution(command: str) -> bool:
+    clean = str(command or "")
+    return "command-targets" in clean
+
+
 def codex_event_progress_text(event: dict[str, Any]) -> str:
     event_type = str(event.get("type") or "").strip()
     item = event.get("item") if isinstance(event.get("item"), dict) else {}
@@ -3474,6 +3527,8 @@ def codex_event_progress_text(event: dict[str, Any]) -> str:
     if event_type == "item.started" and item_type == "command_execution":
         raw_command = str(item.get("command") or "")
         command = short_codex_command(raw_command)
+        if is_target_command_execution(raw_command):
+            return "対象ポワンへの直接指示を送信中..."
         if is_child_command_execution(raw_command):
             return "子ポワンへの指示を送信中..."
         return f"コマンド開始: `{compact_console_text(command, 30)}`" if command else "コマンド開始"
@@ -3487,18 +3542,21 @@ def codex_event_progress_text(event: dict[str, Any]) -> str:
                 payload = json.loads(output)
                 result = payload.get("result") if isinstance(payload, dict) else None
                 if isinstance(result, dict) and ("sent" in result or "skipped" in result or "dispatchSessionId" in result):
+                    target_command = is_target_command_execution(raw_command) or isinstance(result.get("sentTargets"), list)
                     sent = result.get("sent")
                     skipped = result.get("skipped")
                     failed = result.get("failed")
                     status = result.get("status")
                     dispatch_session_id = result.get("dispatchSessionId")
-                    sent_children = result.get("sentChildren") if isinstance(result.get("sentChildren"), list) else []
+                    sent_key = "sentTargets" if target_command else "sentChildren"
+                    sent_children = result.get(sent_key) if isinstance(result.get(sent_key), list) else []
                     sent_names = [
                         str(child.get("title") or child.get("childId") or "").strip()
                         for child in sent_children
                         if isinstance(child, dict)
                     ]
-                    lines = [f"子ポワンへの指示送信: {status or 'accepted'}"]
+                    label = "対象ポワンへの直接指示送信" if target_command else "子ポワンへの指示送信"
+                    lines = [f"{label}: {status or 'accepted'}"]
                     if sent is not None:
                         lines.append(f"送信: {sent}件")
                     if skipped is not None:
@@ -3515,6 +3573,8 @@ def codex_event_progress_text(event: dict[str, Any]) -> str:
         head = "コマンド完了"
         if exit_code is not None:
             head += f" exit={exit_code}"
+        if is_target_command_execution(raw_command):
+            return f"対象ポワンへの直接指示送信完了 exit={exit_code}"
         if is_child_command_execution(raw_command):
             return f"子ポワンへの指示送信完了 exit={exit_code}"
         if command:
@@ -4110,6 +4170,215 @@ def document_direct_children(document: dict[str, Any], parent_id: str) -> list[d
     return [node for node in document_nodes(document) if str(node.get("parent") or "") == str(parent_id)]
 
 
+def document_node_by_id(document: dict[str, Any]) -> dict[str, dict[str, Any]]:
+    return {
+        str(node.get("id") or ""): node
+        for node in document_nodes(document)
+        if str(node.get("id") or "").strip()
+    }
+
+
+def powan_path_nodes(document: dict[str, Any], node_id: str) -> list[dict[str, Any]]:
+    nodes_by_id = document_node_by_id(document)
+    path: list[dict[str, Any]] = []
+    seen: set[str] = set()
+    current = nodes_by_id.get(str(node_id))
+    while current:
+        current_id = str(current.get("id") or "")
+        if not current_id or current_id in seen:
+            break
+        seen.add(current_id)
+        path.append(current)
+        parent_id = str(current.get("parent") or "")
+        current = nodes_by_id.get(parent_id) if parent_id else None
+    return list(reversed(path))
+
+
+def powan_path_summary(document: dict[str, Any], node_id: str) -> dict[str, Any]:
+    path = powan_path_nodes(document, node_id)
+    return {
+        "ids": [str(node.get("id") or "") for node in path],
+        "names": [powan_label(node) for node in path],
+    }
+
+
+def target_selector_id(selector: Any) -> str:
+    if isinstance(selector, BaseModel):
+        selector = base_model_payload(selector)
+    if not isinstance(selector, dict):
+        return ""
+    return str(
+        selector.get("targetId")
+        or selector.get("target_id")
+        or selector.get("nodeId")
+        or selector.get("node_id")
+        or selector.get("childId")
+        or selector.get("child_id")
+        or selector.get("id")
+        or ""
+    ).strip()
+
+
+def target_selector_path(selector: Any) -> list[str]:
+    if isinstance(selector, BaseModel):
+        selector = base_model_payload(selector)
+    if not isinstance(selector, dict):
+        return []
+    path = selector.get("path")
+    if isinstance(path, list):
+        return [str(item).strip() for item in path if str(item).strip()]
+    if isinstance(path, str):
+        return [item.strip() for item in path.split("/") if item.strip()]
+    return []
+
+
+def target_selector_title(selector: Any) -> str:
+    if isinstance(selector, BaseModel):
+        selector = base_model_payload(selector)
+    if not isinstance(selector, dict):
+        return ""
+    return str(selector.get("title") or "").strip()
+
+
+def target_selector_body(selector: Any) -> str:
+    if isinstance(selector, BaseModel):
+        selector = base_model_payload(selector)
+    if not isinstance(selector, dict):
+        return ""
+    return str(selector.get("body") or "").strip()
+
+
+def resolve_powan_target(document: dict[str, Any], current_node_id: str, selector: Any) -> dict[str, Any]:
+    nodes = [node for node in document_nodes(document) if not node.get("archived")]
+    nodes_by_id = {str(node.get("id") or ""): node for node in nodes if str(node.get("id") or "").strip()}
+    target_id = target_selector_id(selector)
+    if target_id:
+        target = nodes_by_id.get(target_id)
+        if not target:
+            raise HTTPException(status_code=404, detail=f"Target powan not found: {target_id}")
+        return target
+
+    path = target_selector_path(selector)
+    if path:
+        matches: list[dict[str, Any]] = []
+        for node in nodes:
+            node_id = str(node.get("id") or "")
+            names = powan_path_summary(document, node_id)["names"]
+            if names == path or names[-len(path) :] == path:
+                matches.append(node)
+        if not matches:
+            raise HTTPException(status_code=404, detail=f"Target powan path not found: {'/'.join(path)}")
+        if len(matches) > 1:
+            raise HTTPException(status_code=409, detail=f"Multiple target powans matched path: {'/'.join(path)}")
+        return matches[0]
+
+    title = target_selector_title(selector)
+    body = target_selector_body(selector)
+    if title or body:
+        matches = nodes
+        if title:
+            matches = [node for node in matches if str(node.get("title") or "").strip() == title]
+        if body:
+            matches = [node for node in matches if str(node.get("body") or "").strip() == body]
+        if not matches:
+            label = title or compact_console_text(body, 80)
+            raise HTTPException(status_code=404, detail=f"Target powan not found: {label}")
+        if len(matches) > 1:
+            label = title or compact_console_text(body, 80)
+            raise HTTPException(status_code=409, detail=f"Multiple target powans matched: {label}")
+        return matches[0]
+
+    if isinstance(selector, dict) and selector.get("self"):
+        return document_node(document, current_node_id)
+    raise HTTPException(status_code=400, detail="targetId, title, body, or path is required")
+
+
+def normalize_inspect_include(value: Any, *, default: list[str] | None = None) -> set[str]:
+    raw_items = value if isinstance(value, list) else []
+    include = {str(item).strip() for item in raw_items if str(item).strip()}
+    if not include:
+        include = set(default or ["meaning", "status", "code_summary"])
+    if "all" in include:
+        include = {"meaning", "status", "code_summary", "code_full"}
+    unknown = include - INSPECT_POWAN_INCLUDE_OPTIONS
+    if unknown:
+        raise HTTPException(status_code=400, detail=f"Unknown inspect include: {', '.join(sorted(unknown))}")
+    return include
+
+
+def powan_code_payload(node: dict[str, Any], *, include: set[str], preview_chars: int) -> dict[str, Any]:
+    code = str(node.get("code") or "")
+    preview_limit = max(0, min(int(preview_chars), 50000))
+    lines = code.splitlines()
+    payload = {
+        "hasCode": bool(code.strip()),
+        "codeLanguage": str(node.get("codeLanguage") or ""),
+        "charCount": len(code),
+        "lineCount": len(lines),
+    }
+    if "code_summary" in include:
+        payload["preview"] = limit_prompt_text(code, preview_limit)
+    if "code_full" in include:
+        payload["code"] = code
+    return payload
+
+
+def inspect_powan_payload(
+    *,
+    project: str,
+    file: str,
+    document: dict[str, Any],
+    node: dict[str, Any],
+    include: set[str],
+    code_preview_chars: int,
+    recent_message_limit: int,
+) -> dict[str, Any]:
+    node_id = str(node.get("id") or "")
+    children = document_direct_children(document, node_id)
+    payload: dict[str, Any] = {"id": node_id}
+    if "meaning" in include:
+        parent_id = str(node.get("parent") or "")
+        payload["meaning"] = {
+            "title": str(node.get("title") or ""),
+            "body": str(node.get("body") or ""),
+            "label": powan_label(node),
+            "powanKind": str(node.get("powanKind") or "nerve"),
+            "parent": (
+                {"id": parent_id, "label": powan_label_from_document(document, parent_id)}
+                if parent_id
+                else None
+            ),
+            "children": [
+                {
+                    "id": str(child.get("id") or ""),
+                    "label": powan_label(child),
+                    "powanKind": str(child.get("powanKind") or "nerve"),
+                    "hasCode": bool(str(child.get("code") or "").strip()),
+                }
+                for child in children
+            ],
+            "path": powan_path_summary(document, node_id),
+            "globalDepth": max(0, len(powan_path_nodes(document, node_id)) - 1),
+            "archived": bool(node.get("archived")),
+        }
+    if "status" in include:
+        running = reconcile_running_agent_runs(project, file, node_id=node_id)
+        snapshot = STORE.powan_conversation_snapshot(
+            project,
+            file,
+            node_id,
+            message_limit=recent_message_limit,
+        )
+        payload["status"] = {
+            "activeRun": running[0] if running else snapshot.get("activeRun"),
+            "conversation": snapshot.get("conversation"),
+            "recentMessages": snapshot.get("messages") or [],
+        }
+    if "code_summary" in include or "code_full" in include:
+        payload["code"] = powan_code_payload(node, include=include, preview_chars=code_preview_chars)
+    return payload
+
+
 def resolve_discord_project(project: str) -> str:
     clean = str(project or "").strip()
     if clean:
@@ -4320,6 +4589,16 @@ def render_child_command(parent: dict[str, Any], child: dict[str, Any], instruct
 """
 
 
+def render_target_command(origin: dict[str, Any], target: dict[str, Any], instruction: str) -> str:
+    return f"""由来元ポワン「{powan_label(origin)}」から、あなたへの直接命令です。
+あなたは対象ポワン「{powan_label(target)}」として、この命令を実行してください。
+作業結果はツリー上の親ではなく、incomingMessage.originChain の由来へ戻ります。
+必要な状態変更は `.agents/skills/abc-powan/TOOL.md` の操作を使ってください。
+
+{instruction.strip()}
+"""
+
+
 def render_parent_child_command_log(
     *,
     parent_label: str,
@@ -4333,6 +4612,31 @@ def render_parent_child_command_log(
         f"親ポワン「{parent_label}」から、子ポワン「{child_label}」へ指示を送りました。",
         "",
         f"一括指示ID: {dispatch_session_id}",
+    ]
+    if dispatch_id is not None:
+        lines.append(f"送信ID: {dispatch_id}")
+    clean_instruction = str(instruction or "").strip()
+    clean_rendered = str(rendered_text or "").strip()
+    if clean_instruction:
+        lines.extend(["", "--- 指示 ---", clean_instruction])
+    elif clean_rendered:
+        lines.extend(["", "--- 指示 ---", clean_rendered])
+    return "\n".join(lines).strip()
+
+
+def render_parent_target_command_log(
+    *,
+    origin_label: str,
+    target_label: str,
+    instruction: str,
+    rendered_text: str,
+    dispatch_session_id: str,
+    dispatch_id: Any,
+) -> str:
+    lines = [
+        f"由来元ポワン「{origin_label}」から、対象ポワン「{target_label}」へ直接指示を送りました。",
+        "",
+        f"直接指示ID: {dispatch_session_id}",
     ]
     if dispatch_id is not None:
         lines.append(f"送信ID: {dispatch_id}")
@@ -4499,6 +4803,63 @@ def child_command_jobs(document: dict[str, Any], parent_id: str, request: Comman
                 }
             )
     return jobs, list(skipped_by_id.values())
+
+
+def target_command_skip_reason(item: TargetCommandRequest) -> str:
+    if item.skip:
+        return item.skipReason.strip() or "skip=true"
+    status = str(getattr(item, "status", "") or "").strip().lower()
+    if status in {"skip", "skipped", "noop", "no-op", "none"}:
+        return item.skipReason.strip() or f"status={status}"
+    instruction = item.instruction.strip()
+    if "今回の修正対象ではありません" in instruction:
+        return "not target"
+    if "作業不要" in instruction and "現状維持" in instruction:
+        return "no work requested"
+    return ""
+
+
+def command_target_jobs(document: dict[str, Any], origin_id: str, request: CommandTargetsRequest) -> tuple[list[dict[str, Any]], list[dict[str, Any]]]:
+    origin = document_node(document, origin_id)
+    common_instruction = request.instruction.strip()
+    jobs_by_id: dict[str, dict[str, Any]] = {}
+    skipped_by_id: dict[str, dict[str, Any]] = {}
+    if not request.targets:
+        raise HTTPException(status_code=400, detail="targets are required")
+    for item in request.targets:
+        target = resolve_powan_target(document, origin_id, item)
+        target_id = str(target.get("id") or "")
+        if not target_id:
+            continue
+        skip_reason = target_command_skip_reason(item)
+        if skip_reason:
+            skipped_by_id[target_id] = {
+                "nodeId": target_id,
+                "meaning": powan_label(target),
+                "instruction": item.instruction.strip(),
+                "skipReason": skip_reason,
+            }
+            jobs_by_id.pop(target_id, None)
+            continue
+        individual_instruction = item.instruction.strip()
+        if not individual_instruction and not common_instruction:
+            raise HTTPException(status_code=400, detail="instruction is required")
+        if target_id in jobs_by_id:
+            raise HTTPException(status_code=409, detail="Duplicate target command target")
+        instruction = common_instruction
+        if individual_instruction:
+            instruction = f"{common_instruction}\n\n個別命令:\n{individual_instruction}".strip()
+        jobs_by_id[target_id] = {
+            "nodeId": target_id,
+            "meaning": powan_label(target),
+            "instruction": instruction,
+            "text": render_target_command(origin, target, instruction),
+        }
+    if not jobs_by_id:
+        if skipped_by_id:
+            return [], list(skipped_by_id.values())
+        raise HTTPException(status_code=400, detail="instruction or targets is required")
+    return list(jobs_by_id.values()), list(skipped_by_id.values())
 
 
 @app.get("/api/conversation-history")
@@ -4782,6 +5143,630 @@ def talk_to_powan_with_codex(
         source="conversation",
         conversation_id=request.conversationId,
     )
+
+
+def inspect_powan_response(
+    node_id: str,
+    request: InspectPowanRequest,
+    *,
+    default_include: list[str] | None = None,
+    action_name: str = "inspect-powan",
+) -> dict[str, Any]:
+    request_payload = base_model_payload(request)
+    document = STORE.load_document(request.project, request.file)
+    document_node(document, node_id)
+    include = normalize_inspect_include(request.include, default=default_include)
+    selectors: list[Any] = []
+    if request.includeSelf:
+        selectors.append({"targetId": node_id})
+    selectors.extend(request.targets)
+    if not selectors:
+        selectors.append({"targetId": node_id})
+    seen: set[str] = set()
+    targets: list[dict[str, Any]] = []
+    for selector in selectors:
+        target = resolve_powan_target(document, node_id, selector)
+        target_id = str(target.get("id") or "")
+        if not target_id or target_id in seen:
+            continue
+        seen.add(target_id)
+        targets.append(
+            inspect_powan_payload(
+                project=request.project,
+                file=request.file,
+                document=document,
+                node=target,
+                include=include,
+                code_preview_chars=request.codePreviewChars,
+                recent_message_limit=request.recentMessageLimit,
+            )
+        )
+    response = {
+        "project": STORE.safe_project_name(request.project),
+        "file": STORE.safe_powan_name(request.file),
+        "requester": {"id": node_id, "meaning": powan_label_from_document(document, node_id)},
+        "include": sorted(include),
+        "count": len(targets),
+        "targets": targets,
+    }
+    record_api_action_safely(
+        project=request.project,
+        file=request.file,
+        node_id=node_id,
+        action=action_name,
+        status="completed",
+        request_payload=request_payload,
+        response_payload={"count": len(targets), "include": sorted(include)},
+    )
+    return response
+
+
+@app.post("/api/ai/powans/{node_id}/actions/inspect-powan")
+def inspect_powan(node_id: str, request: InspectPowanRequest) -> dict[str, Any]:
+    return inspect_powan_response(node_id, request)
+
+
+@app.post("/api/ai/powans/{node_id}/actions/read-powan-codes")
+def read_powan_codes(node_id: str, request: InspectPowanRequest) -> dict[str, Any]:
+    return inspect_powan_response(
+        node_id,
+        request,
+        default_include=["meaning", "code_summary", "code_full"],
+        action_name="read-powan-codes",
+    )
+
+
+@app.post("/api/ai/powans/{node_id}/actions/command-targets")
+def command_target_powans(node_id: str, request: CommandTargetsRequest) -> dict[str, Any]:
+    request_payload = base_model_payload(request)
+    active_key = f"{STORE.safe_project_name(request.project)}\n{STORE.safe_powan_name(request.file)}\ncommand-targets\n{node_id}"
+    origin_label = "名前のないポワン"
+    origin_conversation_id = 0
+    job_count = 0
+    dispatch_session_id = ""
+    release_active_key_in_finally = False
+    try:
+        document = STORE.load_document(request.project, request.file)
+        origin = document_node(document, node_id)
+        origin_label = powan_label(origin)
+        request_origin_chain = normalize_origin_chain(request.originChain)
+        origin_conversation = STORE.active_conversation(request.project, request.file, node_id)
+        origin_conversation_id = int(origin_conversation["id"])
+        jobs, skipped_jobs = command_target_jobs(document, node_id, request)
+        job_count = len(jobs)
+        skipped_results = [
+            {
+                "nodeId": item["nodeId"],
+                "meaning": item["meaning"],
+                "instruction": item.get("instruction", ""),
+                "renderedText": "",
+                "status": "skipped",
+                "skipReason": item.get("skipReason", ""),
+            }
+            for item in skipped_jobs
+        ]
+        if skipped_results and not jobs:
+            response_payload = {
+                "project": STORE.safe_project_name(request.project),
+                "file": STORE.safe_powan_name(request.file),
+                "origin": {"id": node_id, "meaning": origin_label},
+                "detached": False,
+                "dispatchSessionId": "",
+                "dispatchIntervalMs": 100,
+                "results": skipped_results,
+                "skippedCount": len(skipped_results),
+            }
+            record_api_action_safely(
+                project=request.project,
+                file=request.file,
+                node_id=node_id,
+                action="command-targets",
+                status="completed",
+                request_payload=request_payload,
+                response_payload=response_payload,
+            )
+            return response_payload
+
+        with COMMAND_CHILDREN_ACTIVE_LOCK:
+            if active_key in COMMAND_CHILDREN_ACTIVE_KEYS:
+                record_api_action_safely(
+                    project=request.project,
+                    file=request.file,
+                    node_id=node_id,
+                    action="command-targets",
+                    status="failed",
+                    request_payload=request_payload,
+                    response_payload={
+                        "message": "command-targets already running for this origin",
+                    },
+                    error_text="command-targets already running for this origin",
+                )
+                raise HTTPException(status_code=409, detail="command-targets already running for this origin")
+            COMMAND_CHILDREN_ACTIVE_KEYS.add(active_key)
+            release_active_key_in_finally = True
+
+        dispatch_session_id = f"targetcmd-{uuid4().hex}"
+        dispatch_interval_ms = 100
+        worker_count = max(1, min(len(jobs), 8))
+        STORE.create_child_command_session(
+            request.project,
+            request.file,
+            dispatch_session_id,
+            node_id,
+            request.instruction,
+            request_payload,
+            len(jobs),
+        )
+        start_message = f"{origin_label} -> 対象ポワン {len(jobs)}件 / 直接命令受信"
+        log_server_event(
+            "info",
+            "command-target-powans-start",
+            {
+                "console": True,
+                "message": start_message,
+                "project": STORE.safe_project_name(request.project),
+                "file": STORE.safe_powan_name(request.file),
+                "nodeId": node_id,
+                "meaning": origin_label,
+                "count": len(jobs),
+                "instructionPreview": compact_console_text(request.instruction),
+                "includeMeaningTree": bool(request.includeMeaningTree),
+                "originDepth": len(request_origin_chain),
+                "dispatchSessionId": dispatch_session_id,
+                "dispatchIntervalMs": dispatch_interval_ms,
+                "request": request_payload,
+            },
+        )
+        remember_powan_batch_work_event(
+            status="received",
+            message=start_message,
+            project=request.project,
+            file=request.file,
+            source="command-targets",
+            sender_id=node_id,
+            sender_label=origin_label,
+            receiver_label=f"対象ポワン {len(jobs)}件",
+            count=len(jobs),
+            instruction=request.instruction,
+            extra={
+                "includeMeaningTree": bool(request.includeMeaningTree),
+                "dispatchSessionId": dispatch_session_id,
+                "dispatchIntervalMs": dispatch_interval_ms,
+                "originDepth": len(request_origin_chain),
+            },
+        )
+
+        for job in jobs:
+            target_conversation = STORE.active_conversation(request.project, request.file, job["nodeId"])
+            log_powan_work_status(
+                "received",
+                project=request.project,
+                file=request.file,
+                source="command-targets",
+                sender_id=node_id,
+                sender_label=origin_label,
+                receiver_id=job["nodeId"],
+                receiver_label=job["meaning"],
+                conversation_id=target_conversation["id"],
+                extra={
+                    "textPreview": compact_console_text(job["text"]),
+                    "messageLength": len(job["text"].strip()),
+                    "includeMeaningTree": bool(request.includeMeaningTree),
+                    "includeDirectChildCode": False,
+                    "attachmentCount": 0,
+                    "preStored": True,
+                },
+            )
+            user_message = STORE.append_conversation_message(
+                request.project,
+                request.file,
+                job["nodeId"],
+                "user",
+                conversation_record_text(job["text"], []),
+            )
+            job["conversationId"] = target_conversation["id"]
+            job["userMessage"] = user_message
+            dispatch = STORE.record_child_command_dispatch(
+                request.project,
+                request.file,
+                dispatch_session_id,
+                node_id,
+                job["nodeId"],
+                job["meaning"],
+                job["instruction"],
+                job["text"],
+                int(target_conversation["id"]),
+                int(user_message["id"]),
+            )
+            job["dispatchId"] = dispatch["id"]
+            job["originChain"] = append_origin_hop(
+                request_origin_chain,
+                origin_hop(
+                    from_id=node_id,
+                    from_name=origin_label,
+                    to_id=job["nodeId"],
+                    to_name=job["meaning"],
+                    dispatch_session_id=dispatch_session_id,
+                    dispatch_id=dispatch.get("id"),
+                    instruction=job["instruction"],
+                ),
+            )
+            origin_log_message = emit_conversation_event(
+                project=request.project,
+                file=request.file,
+                node_id=node_id,
+                conversation_id=origin_conversation_id,
+                kind="target_command_sent",
+                role="system",
+                text=render_parent_target_command_log(
+                    origin_label=origin_label,
+                    target_label=job["meaning"],
+                    instruction=job["instruction"],
+                    rendered_text=job["text"],
+                    dispatch_session_id=dispatch_session_id,
+                    dispatch_id=dispatch.get("id"),
+                ),
+                receiver_label=origin_label,
+                source="command-targets",
+                metadata={
+                    "targetId": job["nodeId"],
+                    "dispatchSessionId": dispatch_session_id,
+                    "dispatchId": dispatch.get("id"),
+                },
+            )
+            log_server_event(
+                "info",
+                "command-target-origin-tab-log-appended",
+                {
+                    "project": STORE.safe_project_name(request.project),
+                    "file": STORE.safe_powan_name(request.file),
+                    "originId": node_id,
+                    "targetId": job["nodeId"],
+                    "conversationId": origin_conversation_id,
+                    "messageId": origin_log_message.get("id"),
+                    "dispatchSessionId": dispatch_session_id,
+                    "dispatchId": dispatch.get("id"),
+                },
+            )
+        STORE.update_child_command_session_status(request.project, request.file, dispatch_session_id, "sent")
+
+        def queue_failed_target_reports(results: list[dict[str, Any]]) -> None:
+            failed_results = [
+                result
+                for result in results
+                if str(result.get("status") or "") in {"failed", "cancelled"}
+            ]
+            if not failed_results:
+                return
+            report_lines = [f"対象ポワンへの直接指示で失敗またはキャンセルがありました。", ""]
+            downstream_reports: list[dict[str, Any]] = []
+            for result in failed_results:
+                target_id = str(result.get("nodeId") or "")
+                target_label = str(result.get("meaning") or "名前のないポワン").strip() or "名前のないポワン"
+                error_text = str(result.get("error") or "").strip()
+                report_lines.extend(
+                    [
+                        f"- {target_label}: {result.get('status') or 'failed'}",
+                        f"  {compact_origin_report_text(error_text, 500) if error_text else '詳細なし'}",
+                    ]
+                )
+                downstream_reports.append(
+                    {
+                        "childId": target_id,
+                        "childName": target_label,
+                        "status": str(result.get("status") or "failed"),
+                        "conversationId": result.get("conversationId"),
+                        "dispatchSessionId": dispatch_session_id,
+                        "dispatchId": result.get("dispatchId"),
+                        "originChain": normalize_origin_chain(result.get("originChain")),
+                        "reportText": limit_prompt_text(error_text or "直接指示の実行に失敗しました。", 12000),
+                    }
+                )
+            report_text = "\n".join(report_lines).strip()
+            required = build_required_origin_judgement(
+                judge_id=node_id,
+                judge_label=origin_label,
+                origin_chain=request_origin_chain,
+                downstream_reports=downstream_reports,
+                report_text=report_text,
+                dispatch_session_id=dispatch_session_id,
+            )
+            queue_origin_judgement_message(
+                project=request.project,
+                file=request.file,
+                judge_id=node_id,
+                judge_label=origin_label,
+                sender_id=str(failed_results[0].get("nodeId") or "") if len(failed_results) == 1 else None,
+                sender_label="対象ポワン直接指示",
+                report_text=report_text,
+                required_judgement=required,
+                source="origin-report-judgement",
+                reason="target-command-failed",
+            )
+
+        def run_job(index: int, job: dict[str, Any]) -> dict[str, Any]:
+            delay_ms = dispatch_interval_ms * index
+            if delay_ms:
+                time.sleep(delay_ms / 1000)
+            try:
+                if job.get("dispatchId") is not None:
+                    STORE.mark_child_command_dispatch_started(request.project, int(job["dispatchId"]))
+                target_origin_chain = normalize_origin_chain(job.get("originChain"))
+                target_incoming_message = build_incoming_message_payload(
+                    source="command-targets",
+                    text=job["text"],
+                    sender_node_id=node_id,
+                    sender_label=origin_label,
+                    receiver_node_id=job["nodeId"],
+                    receiver_label=job["meaning"],
+                    conversation_id=int(job.get("conversationId") or 0),
+                    user_message_id=int((job.get("userMessage") or {}).get("id")) if isinstance(job.get("userMessage"), dict) and (job.get("userMessage") or {}).get("id") is not None else None,
+                )
+                target_incoming_message["commandTargets"] = {
+                    "dispatchSessionId": dispatch_session_id,
+                    "dispatchId": job.get("dispatchId"),
+                }
+                target_incoming_message["originChain"] = target_origin_chain
+                target_incoming_message["originRoute"] = {
+                    "kind": "direct_target_command",
+                    "originChain": target_origin_chain,
+                    "reportBackOnComplete": True,
+                }
+                result = run_powan_codex_message(
+                    job["nodeId"],
+                    project=request.project,
+                    file=request.file,
+                    text=job["text"],
+                    include_meaning_tree=bool(request.includeMeaningTree),
+                    attachments=[],
+                    source="command-targets",
+                    sender_node_id=node_id,
+                    pre_appended_user_message=job.get("userMessage") if isinstance(job.get("userMessage"), dict) else None,
+                    incoming_message=target_incoming_message,
+                )
+                delegated = bool(result.get("earlyCompleted")) and str(result.get("earlyCompleteReason") or "") == "command_children_accepted"
+                run_status = "delegated" if delegated else "cancelled" if result.get("cancelled") else "completed"
+                item = {
+                    "nodeId": job["nodeId"],
+                    "meaning": job["meaning"],
+                    "instruction": job["instruction"],
+                    "renderedText": job["text"],
+                    "status": run_status,
+                    "dispatchSessionId": dispatch_session_id,
+                    "dispatchId": job.get("dispatchId"),
+                    "conversationId": result.get("conversationId"),
+                    "userMessage": result.get("userMessage"),
+                    "assistantMessage": result.get("assistantMessage"),
+                    "agentRun": result.get("agentRun"),
+                    "originChain": target_origin_chain,
+                    "earlyCompleted": bool(result.get("earlyCompleted")),
+                    "earlyCompleteReason": str(result.get("earlyCompleteReason") or ""),
+                }
+                if job.get("dispatchId") is not None:
+                    assistant_message = result.get("assistantMessage") if isinstance(result.get("assistantMessage"), dict) else None
+                    agent_run = result.get("agentRun") if isinstance(result.get("agentRun"), dict) else None
+                    STORE.mark_child_command_dispatch_replied(
+                        request.project,
+                        int(job["dispatchId"]),
+                        run_status,
+                        int(assistant_message["id"]) if assistant_message and assistant_message.get("id") is not None else None,
+                        int(agent_run["id"]) if agent_run and agent_run.get("id") is not None else None,
+                    )
+                return item
+            except HTTPException as exc:
+                if job.get("dispatchId") is not None:
+                    STORE.mark_child_command_dispatch_replied(request.project, int(job["dispatchId"]), "failed", error_text=str(exc.detail))
+                return {
+                    "nodeId": job["nodeId"],
+                    "meaning": job["meaning"],
+                    "instruction": job["instruction"],
+                    "renderedText": job["text"],
+                    "status": "failed",
+                    "dispatchSessionId": dispatch_session_id,
+                    "dispatchId": job.get("dispatchId"),
+                    "conversationId": job.get("conversationId"),
+                    "userMessage": job.get("userMessage"),
+                    "originChain": normalize_origin_chain(job.get("originChain")),
+                    "error": exc.detail,
+                    "httpStatus": exc.status_code,
+                }
+            except Exception as exc:
+                if job.get("dispatchId") is not None:
+                    STORE.mark_child_command_dispatch_replied(request.project, int(job["dispatchId"]), "failed", error_text=repr(exc))
+                return {
+                    "nodeId": job["nodeId"],
+                    "meaning": job["meaning"],
+                    "instruction": job["instruction"],
+                    "renderedText": job["text"],
+                    "status": "failed",
+                    "dispatchSessionId": dispatch_session_id,
+                    "dispatchId": job.get("dispatchId"),
+                    "conversationId": job.get("conversationId"),
+                    "userMessage": job.get("userMessage"),
+                    "originChain": normalize_origin_chain(job.get("originChain")),
+                    "error": repr(exc),
+                    "httpStatus": 500,
+                }
+
+        def run_batch_detached() -> None:
+            try:
+                ordered_results: list[dict[str, Any] | None] = [None] * len(jobs)
+                with ThreadPoolExecutor(max_workers=worker_count) as executor:
+                    futures = {executor.submit(run_job, index, job): index for index, job in enumerate(jobs)}
+                    for future in as_completed(futures):
+                        index = futures[future]
+                        ordered_results[index] = future.result()
+                results = [result for result in ordered_results if result is not None]
+                for result in results:
+                    result.pop("httpStatus", None)
+                failed_count = sum(1 for result in results if result.get("status") in {"failed", "cancelled"})
+                delegated_count = sum(1 for result in results if result.get("status") == "delegated")
+                if failed_count:
+                    session_status = "failed"
+                elif delegated_count:
+                    session_status = "delegated"
+                else:
+                    session_status = "completed"
+                response = {
+                    "project": STORE.safe_project_name(request.project),
+                    "file": STORE.safe_powan_name(request.file),
+                    "origin": {"id": node_id, "meaning": origin_label},
+                    "detached": True,
+                    "dispatchSessionId": dispatch_session_id,
+                    "dispatchIntervalMs": dispatch_interval_ms,
+                    "results": results,
+                }
+                complete_message = f"{origin_label} -> 対象ポワン {len(results)}件 / 直接命令完了"
+                log_server_event(
+                    "info",
+                    "command-target-powans-complete",
+                    {
+                        "console": True,
+                        "message": complete_message,
+                        "project": STORE.safe_project_name(request.project),
+                        "file": STORE.safe_powan_name(request.file),
+                        "nodeId": node_id,
+                        "meaning": origin_label,
+                        "count": len(results),
+                        "failed": failed_count,
+                        "delegated": delegated_count,
+                        "sessionStatus": session_status,
+                        "dispatchSessionId": dispatch_session_id,
+                        "request": request_payload,
+                        "response": response,
+                    },
+                )
+                STORE.update_child_command_session_status(request.project, request.file, dispatch_session_id, session_status)
+                remember_powan_batch_work_event(
+                    status=session_status,
+                    message=complete_message,
+                    project=request.project,
+                    file=request.file,
+                    source="command-targets",
+                    sender_id=node_id,
+                    sender_label=origin_label,
+                    receiver_label=f"対象ポワン {len(results)}件",
+                    count=len(results),
+                    instruction=request.instruction,
+                    extra={
+                        "detached": True,
+                        "failed": failed_count,
+                        "delegated": delegated_count,
+                        "dispatchSessionId": dispatch_session_id,
+                        "dispatchIntervalMs": dispatch_interval_ms,
+                    },
+                )
+                queue_failed_target_reports(results)
+            except Exception as exc:
+                STORE.update_child_command_session_status(request.project, request.file, dispatch_session_id, "failed")
+                log_server_event(
+                    "error",
+                    "command-target-powans-failed",
+                    {
+                        "console": True,
+                        "message": f"{origin_label} -> 対象ポワン {job_count or ''}件 / 直接命令失敗",
+                        "project": STORE.safe_project_name(request.project),
+                        "file": STORE.safe_powan_name(request.file),
+                        "nodeId": node_id,
+                        "meaning": origin_label,
+                        "error": repr(exc),
+                    },
+                )
+            finally:
+                with COMMAND_CHILDREN_ACTIVE_LOCK:
+                    COMMAND_CHILDREN_ACTIVE_KEYS.discard(active_key)
+
+        accepted_results = [
+            {
+                "nodeId": job["nodeId"],
+                "meaning": job["meaning"],
+                "instruction": job["instruction"],
+                "renderedText": job["text"],
+                "dispatchSessionId": dispatch_session_id,
+                "dispatchId": job.get("dispatchId"),
+                "conversationId": job.get("conversationId"),
+                "userMessage": job.get("userMessage"),
+                "status": "accepted",
+            }
+            for job in jobs
+        ] + skipped_results
+        accepted_response = {
+            "project": STORE.safe_project_name(request.project),
+            "file": STORE.safe_powan_name(request.file),
+            "origin": {"id": node_id, "meaning": origin_label},
+            "detached": True,
+            "dispatchSessionId": dispatch_session_id,
+            "dispatchIntervalMs": dispatch_interval_ms,
+            "results": accepted_results,
+            "skippedCount": len(skipped_results),
+        }
+        log_server_event(
+            "info",
+            "command-target-powans-accepted",
+            {
+                "console": True,
+                "message": f"{origin_label} -> 対象ポワン {len(jobs)}件 / 直接命令受付完了",
+                "project": STORE.safe_project_name(request.project),
+                "file": STORE.safe_powan_name(request.file),
+                "nodeId": node_id,
+                "meaning": origin_label,
+                "count": len(jobs),
+                "skippedCount": len(skipped_results),
+                "detached": True,
+                "dispatchSessionId": dispatch_session_id,
+                "dispatchIntervalMs": dispatch_interval_ms,
+                "request": request_payload,
+                "response": accepted_response,
+            },
+        )
+        record_api_action_safely(
+            project=request.project,
+            file=request.file,
+            node_id=node_id,
+            action="command-targets",
+            status="accepted",
+            request_payload=request_payload,
+            response_payload=accepted_response,
+        )
+        release_active_key_in_finally = False
+        threading.Thread(
+            target=run_batch_detached,
+            name=f"abc-command-targets-{node_id}",
+            daemon=True,
+        ).start()
+        return accepted_response
+    except HTTPException as exc:
+        if dispatch_session_id:
+            STORE.update_child_command_session_status(request.project, request.file, dispatch_session_id, "failed")
+        record_api_action_safely(
+            project=request.project,
+            file=request.file,
+            node_id=node_id,
+            action="command-targets",
+            status="failed",
+            request_payload=request_payload,
+            response_payload={},
+            error_text=str(exc.detail),
+        )
+        raise
+    except Exception as exc:
+        if dispatch_session_id:
+            STORE.update_child_command_session_status(request.project, request.file, dispatch_session_id, "failed")
+        record_api_action_safely(
+            project=request.project,
+            file=request.file,
+            node_id=node_id,
+            action="command-targets",
+            status="failed",
+            request_payload=request_payload,
+            response_payload={},
+            error_text=repr(exc),
+        )
+        raise
+    finally:
+        if release_active_key_in_finally:
+            with COMMAND_CHILDREN_ACTIVE_LOCK:
+                COMMAND_CHILDREN_ACTIVE_KEYS.discard(active_key)
 
 
 @app.get("/api/powan-work-events")

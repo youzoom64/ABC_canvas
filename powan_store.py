@@ -1339,6 +1339,61 @@ class PowanStore:
         conversation_id = self.active_conversation_id(project, document_name, powan_id)
         return self.conversation_messages_by_id(project, document_name, powan_id, conversation_id)
 
+    def powan_conversation_snapshot(
+        self,
+        project: str,
+        document_name: str,
+        powan_id: str,
+        *,
+        message_limit: int = 5,
+    ) -> dict[str, Any]:
+        document_name = self.safe_powan_name(document_name)
+        limit = max(0, min(int(message_limit), 50))
+        with self.session(project) as connection:
+            conversation = connection.execute(
+                """
+                SELECT id, document_name, powan_id, title, codex_thread_id, active, created_at, updated_at
+                FROM conversations
+                WHERE document_name = ? AND powan_id = ?
+                ORDER BY active DESC, updated_at DESC, id DESC
+                LIMIT 1
+                """,
+                (document_name, powan_id),
+            ).fetchone()
+            messages: list[sqlite3.Row] = []
+            if conversation is not None and limit:
+                messages = connection.execute(
+                    """
+                    SELECT id, role, text, created_at FROM conversation_messages
+                    WHERE conversation_id = ?
+                    ORDER BY id DESC
+                    LIMIT ?
+                    """,
+                    (int(conversation["id"]), limit),
+                ).fetchall()
+        conversation_id = int(conversation["id"]) if conversation is not None else None
+        return {
+            "conversation": (
+                {
+                    "id": conversation_id,
+                    "documentName": conversation["document_name"],
+                    "powanId": conversation["powan_id"],
+                    "title": conversation["title"],
+                    "codexThreadId": conversation["codex_thread_id"],
+                    "active": int(conversation["active"]),
+                    "createdAt": conversation["created_at"],
+                    "updatedAt": conversation["updated_at"],
+                }
+                if conversation is not None
+                else None
+            ),
+            "messages": [
+                {"id": int(row["id"]), "role": row["role"], "text": row["text"], "createdAt": row["created_at"]}
+                for row in reversed(messages)
+            ],
+            "activeRun": self.active_agent_run(project, document_name, powan_id, conversation_id),
+        }
+
     def conversation_messages_by_id(
         self,
         project: str,

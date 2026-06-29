@@ -30,6 +30,8 @@ def main() -> int:
             "restore-child-powan",
             "command-children",
             "command-child-powan",
+            "command-targets",
+            "inspect-powan",
             "read-powan-codes",
             "write-my-code",
         ),
@@ -52,6 +54,7 @@ def main() -> int:
     parser.add_argument("--target-parent-id", default="")
     parser.add_argument("--target-id", default="")
     parser.add_argument("--path", default="")
+    parser.add_argument("--include", default="")
     parser.add_argument("--include-self", action="store_true")
     args = parser.parse_args()
 
@@ -92,6 +95,8 @@ def request_payload(args: argparse.Namespace) -> dict[str, Any]:
         payload["targetId"] = args.target_id
     if args.path:
         payload["path"] = [item.strip() for item in args.path.split("/") if item.strip()]
+    if args.include:
+        payload["include"] = [item.strip() for item in args.include.split(",") if item.strip()]
     if args.include_self:
         payload["includeSelf"] = True
     return payload
@@ -187,13 +192,33 @@ def dispatch(args: argparse.Namespace, payload: dict[str, Any]) -> dict[str, Any
         }
         response = request_json(args.api_base, "POST", f"/api/ai/powans/{node_id}/actions/command-children", body)
         return summarize_command_children_response(response)
-    if args.operation == "read-powan-codes":
+    if args.operation == "command-targets":
         targets = payload.get("targets", [])
         if not isinstance(targets, list):
             raise ToolError("targets must be a list")
         direct_target = {
             key: payload.get(key)
-            for key in ("title", "body", "path", "targetId", "childId")
+            for key in ("title", "body", "path", "targetId", "childId", "nodeId", "instruction", "skip", "skipReason")
+            if payload.get(key)
+        }
+        if direct_target:
+            targets = [*targets, direct_target]
+        body = {
+            **base_payload,
+            "instruction": payload.get("instruction", ""),
+            "targets": targets,
+            "includeMeaningTree": payload_flag(payload, "includeMeaningTree", "include_meaning_tree"),
+            "originChain": payload.get("originChain") if isinstance(payload.get("originChain"), list) else [],
+        }
+        response = request_json(args.api_base, "POST", f"/api/ai/powans/{node_id}/actions/command-targets", body)
+        return summarize_command_targets_response(response)
+    if args.operation == "inspect-powan":
+        targets = payload.get("targets", [])
+        if not isinstance(targets, list):
+            raise ToolError("targets must be a list")
+        direct_target = {
+            key: payload.get(key)
+            for key in ("title", "body", "path", "targetId", "childId", "nodeId")
             if payload.get(key)
         }
         if direct_target:
@@ -202,6 +227,29 @@ def dispatch(args: argparse.Namespace, payload: dict[str, Any]) -> dict[str, Any
             **base_payload,
             "includeSelf": bool(payload.get("includeSelf") or payload.get("include_self") or False),
             "targets": targets,
+            "include": payload.get("include") if isinstance(payload.get("include"), list) else [],
+            "codePreviewChars": int(payload.get("codePreviewChars") or payload.get("code_preview_chars") or 2000),
+            "recentMessageLimit": int(payload.get("recentMessageLimit") or payload.get("recent_message_limit") or 5),
+        }
+        return request_json(args.api_base, "POST", f"/api/ai/powans/{node_id}/actions/inspect-powan", body)
+    if args.operation == "read-powan-codes":
+        targets = payload.get("targets", [])
+        if not isinstance(targets, list):
+            raise ToolError("targets must be a list")
+        direct_target = {
+            key: payload.get(key)
+            for key in ("title", "body", "path", "targetId", "childId", "nodeId")
+            if payload.get(key)
+        }
+        if direct_target:
+            targets = [*targets, direct_target]
+        body = {
+            **base_payload,
+            "includeSelf": bool(payload.get("includeSelf") or payload.get("include_self") or False),
+            "targets": targets,
+            "include": payload.get("include") if isinstance(payload.get("include"), list) else [],
+            "codePreviewChars": int(payload.get("codePreviewChars") or payload.get("code_preview_chars") or 2000),
+            "recentMessageLimit": int(payload.get("recentMessageLimit") or payload.get("recent_message_limit") or 5),
         }
         return request_json(args.api_base, "POST", f"/api/ai/powans/{node_id}/actions/read-powan-codes", body)
     if args.operation == "write-my-code":
@@ -236,14 +284,39 @@ def request_json(api_base: str, method: str, path: str, payload: dict[str, Any])
 
 
 def summarize_command_children_response(response: dict[str, Any]) -> dict[str, Any]:
+    return summarize_command_response(
+        response,
+        noun="子ポワン",
+        id_label="一括指示ID",
+        sent_key="sentChildren",
+    )
+
+
+def summarize_command_targets_response(response: dict[str, Any]) -> dict[str, Any]:
+    return summarize_command_response(
+        response,
+        noun="対象ポワン",
+        id_label="直接指示ID",
+        sent_key="sentTargets",
+    )
+
+
+def summarize_command_response(
+    response: dict[str, Any],
+    *,
+    noun: str,
+    id_label: str,
+    sent_key: str,
+) -> dict[str, Any]:
     results = response.get("results") if isinstance(response.get("results"), list) else []
-    sent_children = []
-    skipped_children = []
-    failed_children = []
+    sent_items = []
+    skipped_items = []
+    failed_items = []
     for item in results:
         if not isinstance(item, dict):
             continue
-        child = {
+        target = {
+            "nodeId": item.get("nodeId"),
             "childId": item.get("nodeId"),
             "title": item.get("meaning"),
             "status": item.get("status"),
@@ -251,81 +324,91 @@ def summarize_command_children_response(response: dict[str, Any]) -> dict[str, A
         }
         status = str(item.get("status") or "")
         if status in {"accepted", "completed"}:
-            sent_children.append(child)
+            sent_items.append(target)
         elif status == "skipped":
-            skipped_children.append({**child, "skipReason": item.get("skipReason") or ""})
+            skipped_items.append({**target, "skipReason": item.get("skipReason") or ""})
         else:
-            failed_children.append({**child, "error": item.get("error") or ""})
+            failed_items.append({**target, "error": item.get("error") or ""})
     detached = bool(response.get("detached"))
-    message = format_command_children_acceptance_message(
+    message = format_command_acceptance_message(
         status="accepted" if detached else "completed",
         dispatch_session_id=response.get("dispatchSessionId") or "",
-        sent_children=sent_children,
-        skipped_children=skipped_children,
-        failed_children=failed_children,
+        noun=noun,
+        id_label=id_label,
+        sent_items=sent_items,
+        skipped_items=skipped_items,
+        failed_items=failed_items,
     )
-    return {
+    payload = {
         "status": "accepted" if detached else "completed",
         "detached": detached,
         "dispatchSessionId": response.get("dispatchSessionId") or "",
         "dispatchIntervalMs": response.get("dispatchIntervalMs"),
         "continueAfterChildReplies": bool(response.get("continueAfterChildReplies")),
-        "parent": response.get("parent") or {},
-        "sent": len(sent_children),
-        "skipped": len(skipped_children),
-        "failed": len(failed_children),
-        "sentChildren": sent_children,
-        "skippedChildren": skipped_children,
-        "failedChildren": failed_children,
+        "parent": response.get("parent") or response.get("origin") or {},
+        "sent": len(sent_items),
+        "skipped": len(skipped_items),
+        "failed": len(failed_items),
+        sent_key: sent_items,
+        "sentChildren": sent_items,
+        "skippedChildren": skipped_items,
+        "failedChildren": failed_items,
         "nextAction": "report_acceptance_and_stop",
         "message": message,
     }
+    return payload
 
 
-def format_command_children_acceptance_message(
+def format_command_acceptance_message(
     *,
     status: str,
     dispatch_session_id: str,
-    sent_children: list[dict[str, Any]],
-    skipped_children: list[dict[str, Any]],
-    failed_children: list[dict[str, Any]],
+    noun: str,
+    id_label: str,
+    sent_items: list[dict[str, Any]],
+    skipped_items: list[dict[str, Any]],
+    failed_items: list[dict[str, Any]],
 ) -> str:
-    lines = ["子ポワンへの指示を受け付けました。" if status == "accepted" else "子ポワンへの指示が完了しました。"]
+    lines = [f"{noun}への指示を受け付けました。" if status == "accepted" else f"{noun}への指示が完了しました。"]
     lines.extend(
         [
             "",
-            f"一括指示ID: {dispatch_session_id or '-'}",
-            f"送信: {len(sent_children)}件",
-            f"対象外: {len(skipped_children)}件",
-            f"失敗: {len(failed_children)}件",
+            f"{id_label}: {dispatch_session_id or '-'}",
+            f"送信: {len(sent_items)}件",
+            f"対象外: {len(skipped_items)}件",
+            f"失敗: {len(failed_items)}件",
         ]
     )
-    if sent_children:
+    if sent_items:
         lines.extend(["", "送信先:"])
-        for child in sent_children:
-            lines.append(f"- {child_label(child)}")
+        for child in sent_items:
+            lines.append(f"- {target_label(child)}")
         lines.extend(["", "送信した指示:"])
-        for child in sent_children:
+        for child in sent_items:
             instruction = shorten_instruction(str(child.get("instruction") or ""))
-            lines.append(f"- {child_label(child)}")
+            lines.append(f"- {target_label(child)}")
             lines.append(f"  {instruction or '指示本文なし'}")
-    if skipped_children:
+    if skipped_items:
         lines.extend(["", "対象外:"])
-        for child in skipped_children:
+        for child in skipped_items:
             reason = str(child.get("skipReason") or "").strip()
             suffix = f": {reason}" if reason else ""
-            lines.append(f"- {child_label(child)}{suffix}")
-    if failed_children:
+            lines.append(f"- {target_label(child)}{suffix}")
+    if failed_items:
         lines.extend(["", "失敗:"])
-        for child in failed_children:
+        for child in failed_items:
             error = str(child.get("error") or "").strip()
             suffix = f": {shorten_instruction(error, limit=300)}" if error else ""
-            lines.append(f"- {child_label(child)}{suffix}")
+            lines.append(f"- {target_label(child)}{suffix}")
     return "\n".join(lines).strip()
 
 
 def child_label(child: dict[str, Any]) -> str:
     return str(child.get("title") or child.get("childId") or "名前のないポワン").strip() or "名前のないポワン"
+
+
+def target_label(target: dict[str, Any]) -> str:
+    return str(target.get("title") or target.get("nodeId") or target.get("childId") or "名前のないポワン").strip() or "名前のないポワン"
 
 
 def shorten_instruction(text: str, *, limit: int = 1200) -> str:

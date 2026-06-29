@@ -49,6 +49,8 @@ def build_powan_context(
         context["originChain"] = origin_chain
     if children:
         context["childCommandTemplate"] = build_child_command_template(children, origin_chain=origin_chain)
+    context["targetCommandTemplate"] = build_target_command_template(origin_chain=origin_chain)
+    context["inspectPowanTemplate"] = build_inspect_powan_template()
     if include_meaning_tree:
         context["meaningTree"] = build_meaning_tree_text(document, node_id)
     if include_direct_child_code:
@@ -163,6 +165,7 @@ def summarize_powan_for_prompt(
         return blank_prompt_powan()
     code = str(node.get("code") or "")
     return {
+        "id": node.get("id"),
         "meaning": meaning_text(node),
         "title": node.get("title") or "",
         "body": node.get("body") or "",
@@ -223,6 +226,50 @@ def build_child_command_template(children: list[dict[str, Any]], *, origin_chain
             "includeMeaningTree": False,
             "continueAfterChildReplies": False,
             "originChain": clean_origin_chain,
+        },
+    }
+
+
+def build_target_command_template(*, origin_chain: list[dict[str, Any]] | None = None) -> dict[str, Any]:
+    clean_origin_chain = origin_chain or []
+    return {
+        "purpose": "直下ではない孫・別枝・任意の対象ポワンへ、由来つきで直接指示するためのJSON。返答はツリー上の親ではなくoriginChainの由来へ戻ります。",
+        "command": "python .agents/skills/abc-powan/scripts/abc_powan_tool.py command-targets --stdin-json",
+        "important": "直下の子へまとめて出す時はcommand-childrenを使ってください。孫や別枝など、直下ではない相手を名指しする時だけcommand-targetsを使います。originChainは現在のincomingMessage.originChainをそのまま入れてください。",
+        "json": {
+            "instruction": "",
+            "targets": [
+                {
+                    "targetId": "",
+                    "title": "",
+                    "path": [],
+                    "instruction": "",
+                    "skip": False,
+                    "skipReason": "",
+                }
+            ],
+            "includeMeaningTree": False,
+            "originChain": clean_origin_chain,
+        },
+    }
+
+
+def build_inspect_powan_template() -> dict[str, Any]:
+    return {
+        "purpose": "任意のポワンの意味・状態・コードをDBから直接覗かずAPI経由で調べるためのJSON。",
+        "command": "python .agents/skills/abc-powan/scripts/abc_powan_tool.py inspect-powan --stdin-json",
+        "json": {
+            "includeSelf": False,
+            "targets": [
+                {
+                    "targetId": "",
+                    "title": "",
+                    "path": [],
+                }
+            ],
+            "include": ["meaning", "status", "code_summary"],
+            "codePreviewChars": 2000,
+            "recentMessageLimit": 5,
         },
     }
 
