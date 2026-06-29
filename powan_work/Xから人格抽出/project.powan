@@ -51,7 +51,13 @@
       "powanKind": "organ",
       "userSized": true,
       "codeLanguage": "python",
-      "holdingCount": 7
+      "holdingCount": 7,
+      "codexState": {
+        "disconnected": true,
+        "disconnectedAt": "2026-06-29T13:48:09.942",
+        "disconnectedReason": "codex-exec-failed",
+        "disconnectedMessage": "Codexが切断されました。返事は戻りません。"
+      }
     },
     {
       "id": "node-191ead6b82",
