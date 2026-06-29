@@ -333,30 +333,40 @@ function startPowanFaceClock() {
   powanFaceClockTimer = window.setInterval(updateAllPowanFaces, POWAN_FACE_CLOCK_INTERVAL_MS);
 }
 
-function resetPowanFaceClock(nodeId, reason = "powan-touch") {
-  try {
+function powanFaceWakeIds(nodeIds) {
+  const ids = new Set();
+  for (const nodeId of nodeIds || []) {
     const node = nodeById(nodeId);
     if (!node) {
-      return;
+      continue;
     }
-    powanFaceTouchedAtById.set(node.id, Date.now());
-    updatePowanFaceForNode(node.id);
-    logEvent("trace", "powan-face-reset", { nodeId: node.id, reason });
-  } catch (error) {
-    logEvent("error", "powan-face-reset-error", {
-      nodeId,
-      reason,
-      error: clientErrorLogPayload(error),
-    });
-    throw error;
+    ids.add(node.id);
+    const childIds = new Set(Array.isArray(node.children) ? node.children : []);
+    for (const candidate of doc?.nodes || []) {
+      if (!isArchivedNode(candidate) && candidate.parent === node.id) {
+        childIds.add(candidate.id);
+      }
+    }
+    for (const childId of childIds) {
+      if (nodeById(childId)) {
+        ids.add(childId);
+      }
+    }
   }
+  return [...ids];
+}
+
+function resetPowanFaceClock(nodeId, reason = "powan-touch") {
+  resetPowanFaceClocks([nodeId], reason);
 }
 
 function resetPowanFaceClocks(nodeIds, reason = "powan-touch-many") {
-  const ids = [...new Set((nodeIds || []).filter(Boolean))];
+  const inputIds = [...new Set((nodeIds || []).filter(Boolean))];
+  const ids = powanFaceWakeIds(inputIds);
   logEvent("debug", "powan-face-reset-many-start", {
     reason,
-    count: ids.length,
+    count: inputIds.length,
+    wakeCount: ids.length,
   });
   const now = Date.now();
   let touchedCount = 0;
@@ -371,7 +381,8 @@ function resetPowanFaceClocks(nodeIds, reason = "powan-touch-many") {
   schedulePowanFaceRefresh(ids, reason);
   logEvent("debug", "powan-face-reset-many-end", {
     reason,
-    count: ids.length,
+    count: inputIds.length,
+    wakeCount: ids.length,
     touchedCount,
   });
 }
